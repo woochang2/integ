@@ -1,0 +1,31 @@
+{
+    "key": {
+        "name": "ansible",
+        "path": "/home/sslab/.ssh/ansible",
+        "passphrase": ""
+    },
+    "user": "nezha",
+    "LAN" : {
+        "hosts": [
+            "141.223.121.124",
+            "141.223.121.125",
+            "141.223.121.126",
+            "141.223.121.127"
+        ]
+    },
+    "port": 5000,
+    "repo": {
+        "name": "sui",
+        "url": "https://github.com/Dong-Hyeon-Yu/sui",
+        "branch": "blockstm"
+    },
+    "instances": {
+        "type": "m5d.8xlarge",
+        "regions": [
+            "us-east-1",
+            "eu-north-1",
+            "ap-southeast-2",
+            "us-west-1"
+        ]
+    }
+}

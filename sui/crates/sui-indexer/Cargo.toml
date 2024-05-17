@@ -10,13 +10,18 @@ edition = "2021"
 [dependencies]
 anyhow = { version = "1.0.64", features = ["backtrace"] }
 async-trait = "0.1.61"
-backoff = { version = "0.4", features = ["futures", "futures-core", "pin-project-lite", "tokio", "tokio_1"] }
-chrono = { version = "0.4.23", features = [
-  "clock",
-  "serde",
+backoff = { version = "0.4", features = [
+  "futures",
+  "futures-core",
+  "pin-project-lite",
+  "tokio",
+  "tokio_1",
 ] }
+chrono = { version = "0.4.23", features = ["clock", "serde"] }
 clap = { version = "3.2.17", features = ["derive"] }
-diesel = { version = "2.0.0", features = ["chrono", "postgres", "r2d2", "serde_json"] }
+diesel.workspace = true
+diesel-derive-enum.workspace = true
+diesel_migrations.workspace = true
 futures = "0.3.23"
 jsonrpsee = { version = "0.16.2", features = ["full"] }
 jsonrpsee-proc-macros = "0.16.2"
@@ -33,7 +38,7 @@ sui-config = { path = "../sui-config" }
 sui-core = { path = "../sui-core" }
 sui-json = { path = "../sui-json" }
 sui-json-rpc = { path = "../sui-json-rpc" }
-sui-json-rpc-types= { path = "../sui-json-rpc-types" }
+sui-json-rpc-types = { path = "../sui-json-rpc-types" }
 sui-keys = { path = "../sui-keys" }
 sui-node = { path = "../sui-node" }
 sui-open-rpc = { path = "../sui-open-rpc" }

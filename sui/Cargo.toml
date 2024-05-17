@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
+    # "crates/sslab-execution/optme",
+    "crates/sslab-execution/evm",
+    # "crates/sslab-execution/serial",
+    # "crates/sslab-core",
+    # "crates/sslab-benchmark",
+
     "crates/mysten-metrics",
     "crates/mysten-network",
     "crates/mysten-util-mem",
@@ -101,8 +107,60 @@ opt-level = 1
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-
+# quote = "1.0.23"
 tokio = "1.24.1"
+tokio-retry = "0.3"
+tokio-stream = { version = "0.1.14", features = ["sync", "net"] }
+async-trait = "0.1.61"
+itertools = "0.10.5"
+num_cpus = "1.15.0"
+parking_lot = "0.12.1"
+tracing = "0.1.37"
+criterion = { version = "0.4.0", features = [
+    "async",
+    "async_tokio",
+    "html_reports",
+] }
+bytes = "1.5.0"
+cfg-if = "1.0.0"
+dashmap = "5.4.0"
+eyre = "0.6.8"
+futures = "0.3.25"
+rayon = "1.5.3"
+serde = { version = "1.0.144", features = ["derive", "rc"] }
+serde_json = { version = "1.0.95", features = [
+    "preserve_order",
+    "arbitrary_precision",
+] }
+serde_with = { version = "2.1.0", features = ["hex"] }
+sui-protocol-config = { path = "crates/sui-protocol-config" }
+# thiserror = "1.0.40"
+tracing-subscriber = { version = "0.3.15", default-features = false, features = [
+    "std",
+    "smallvec",
+    "fmt",
+    "ansi",
+    "time",
+    "json",
+    "registry",
+    "env-filter",
+] }
+anyhow = "1.0.71"
+bcs = "0.1.4"
+chrono = { version = "0.4.26", features = ["clock", "serde"] }
+either = "1.8.0"
+prometheus = "0.13.3"
+url = "2.3.1"
+diesel = { version = "2.0.3", features = [
+    "chrono",
+    "postgres",
+    "r2d2",
+    "serde_json",
+    "64-column-tables",
+] }
+diesel-derive-enum = { version = "2.0.1", features = ["postgres"] }
+diesel_migrations = { version = "2.0.0" }
+zstd = "=0.12.3"
 
 # Move dependencies
 move-binary-format = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d" }
@@ -110,7 +168,9 @@ move-bytecode-utils = { git = "https://github.com/move-language/move", rev = "29
 move-bytecode-verifier = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d" }
 move-cli = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d" }
 move-compiler = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d" }
-move-core-types = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d", features = ["address32"] }
+move-core-types = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d", features = [
+    "address32",
+] }
 move-disassembler = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d" }
 move-package = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d" }
 move-stdlib = { git = "https://github.com/move-language/move", rev = "299784312ca360f970c0e75f7a08116d7731ad1d" }
@@ -144,3 +204,37 @@ telemetry-subscribers = { path = "crates/telemetry-subscribers" }
 mysten-util-mem = { path = "crates/mysten-util-mem" }
 typed-store = { path = "crates/typed-store" }
 typed-store-derive = { path = "crates/typed-store-derive" }
+
+
+# # Reth dependencies
+reth = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }               #branch = "release/v0.1.0-alpha.22" }
+reth-db = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }
+reth-interfaces = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }
+reth-trie = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }
+reth-node-ethereum = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }
+
+
+# # Workspace members
+# sslab-core = { path = "crates/sslab-core" }
+# sslab-benchmark = { path = "crates/sslab-benchmark" }
+# sslab-execution-serial = { path = "crates/sslab-execution/serial" }
+sslab-execution = { path = "crates/sslab-execution/evm" }
+# sslab-execution-optme = { path = "crates/sslab-execution/optme" }
+
+narwhal-types = { path = "narwhal/types" }
+narwhal-executor = { path = "narwhal/executor" }
+narwhal-worker = { path = "narwhal/worker" }
+narwhal-config = { path = "narwhal/config" }
+narwhal-crypto = { path = "narwhal/crypto" }
+narwhal-network = { path = "narwhal/network" }
+narwhal-node = { path = "narwhal/node" }
+narwhal-primary = { path = "narwhal/primary" }
+
+sui-core = { path = "crates/sui-core" }
+sui-config = { path = "crates/sui-config" }
+sui-types = { path = "crates/sui-types" }
+sui-keys = { path = "crates/sui-keys" }
+sui-macros = { path = "crates/sui-macros" }
+sui-network = { path = "crates/sui-network" }
+
+mysten-metrics = { path = "crates/mysten-metrics" }

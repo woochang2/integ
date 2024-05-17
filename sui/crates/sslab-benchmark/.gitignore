@@ -1,0 +1,15 @@
+logs/
+results/
+data/
+plots/*.txt
+plots/*.pdf
+plots/*.png
+.db-*
+.committee.json
+.parameters.json
+.workers.json
+.primary-*-key.json
+.worker-*-key.json
+.primary-*-network-key.json
+
+settings.json
