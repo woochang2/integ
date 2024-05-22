@@ -3,8 +3,8 @@ resolver = "2"
 members = [
     # "crates/sslab-execution/optme",
     "crates/sslab-execution/evm",
-    # "crates/sslab-execution/serial",
-    # "crates/sslab-core",
+    "crates/sslab-execution/serial",
+    "crates/sslab-core",
     # "crates/sslab-benchmark",
 
     "crates/mysten-metrics",
@@ -207,17 +207,17 @@ typed-store-derive = { path = "crates/typed-store-derive" }
 
 
 # # Reth dependencies
-reth = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }               #branch = "release/v0.1.0-alpha.22" }
-reth-db = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }
-reth-interfaces = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }
-reth-trie = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }
-reth-node-ethereum = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "91cb1333589a571a1721687f7ad855871ad38f82" }
+reth = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "897e799a9f892b3a3bcbef6cc128ddbcafd93834" }               #branch = "release/v0.1.0-alpha.22" }
+reth-db = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "897e799a9f892b3a3bcbef6cc128ddbcafd93834" }
+reth-interfaces = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "897e799a9f892b3a3bcbef6cc128ddbcafd93834" }
+reth-trie = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "897e799a9f892b3a3bcbef6cc128ddbcafd93834" }
+reth-node-ethereum = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "897e799a9f892b3a3bcbef6cc128ddbcafd93834" }
 
 
 # # Workspace members
-# sslab-core = { path = "crates/sslab-core" }
+sslab-core = { path = "crates/sslab-core" }
 # sslab-benchmark = { path = "crates/sslab-benchmark" }
-# sslab-execution-serial = { path = "crates/sslab-execution/serial" }
+sslab-execution-serial = { path = "crates/sslab-execution/serial" }
 sslab-execution = { path = "crates/sslab-execution/evm" }
 # sslab-execution-optme = { path = "crates/sslab-execution/optme" }
 

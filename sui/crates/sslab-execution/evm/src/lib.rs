@@ -4,7 +4,7 @@ pub mod executor;
 pub mod traits;
 pub mod transaction_validator;
 pub mod types;
-
+pub use reth::primitives::TransactionSigned;
 #[cfg(any(feature = "benchmark", test))]
 pub mod utils;
 

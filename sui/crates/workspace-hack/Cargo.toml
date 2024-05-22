@@ -958,7 +958,7 @@ zstd-safe = { version = "=6.0.5", default-features = false, features = [
     "std",
     "zdict_builder",
 ] }
-zstd-sys = { version = "2", features = ['std'] }
+zstd-sys = { version = "=2.0.8", features = ['std'] }
 
 [build-dependencies]
 Inflector = { version = "0.11", default-features = false }
@@ -2060,7 +2060,7 @@ zstd-safe = { version = "=6.0.5", default-features = false, features = [
     "std",
     "zdict_builder",
 ] }
-zstd-sys = { version = "2", features = ["std"] }
+zstd-sys = { version = "2.0.8", features = ["std"] }
 
 [target.aarch64-apple-darwin.dependencies]
 ahash-c38e5c1d305a1b54 = { package = "ahash", version = "0.8" }

@@ -2,8 +2,7 @@ use dashmap::{
     iter::Iter,
     mapref::one::{Ref, RefMut},
 };
-use fastcrypto::hash::Hash;
-use narwhal_types::{BatchDigest, ConsensusOutput, ConsensusOutputDigest};
+use narwhal_types::BatchDigest;
 use reth::primitives::{TransactionSigned, U256};
 
 pub(crate) const NOT_SUPPORT: U256 = U256::ZERO;
@@ -145,26 +144,12 @@ impl ExecutableEthereumBatch {
 
 #[derive(Clone, Debug)]
 pub struct ExecutableConsensusOutput {
-    digest: ConsensusOutputDigest,
     data: Vec<ExecutableEthereumBatch>,
-    timestamp: u64,
-    round: u64,
-    sub_dag_index: u64,
 }
 
 impl ExecutableConsensusOutput {
-    pub fn new(data: Vec<ExecutableEthereumBatch>, consensus_output: &ConsensusOutput) -> Self {
-        Self {
-            digest: consensus_output.digest(),
-            data,
-            timestamp: consensus_output.sub_dag.commit_timestamp(),
-            round: consensus_output.sub_dag.leader_round(),
-            sub_dag_index: consensus_output.sub_dag.sub_dag_index,
-        }
-    }
-
-    pub fn digest(&self) -> &ConsensusOutputDigest {
-        &self.digest
+    pub fn new(data: Vec<ExecutableEthereumBatch>) -> Self {
+        Self { data }
     }
 
     pub fn take_data(self) -> Vec<ExecutableEthereumBatch> {
@@ -173,18 +158,6 @@ impl ExecutableConsensusOutput {
 
     pub fn data(&self) -> &Vec<ExecutableEthereumBatch> {
         &self.data
-    }
-
-    pub fn timestamp(&self) -> &u64 {
-        &self.timestamp
-    }
-
-    pub fn round(&self) -> &u64 {
-        &self.round
-    }
-
-    pub fn sub_dag_index(&self) -> &u64 {
-        &self.sub_dag_index
     }
 }
 

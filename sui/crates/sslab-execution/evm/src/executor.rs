@@ -3,7 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use async_trait::async_trait;
+use parking_lot::RwLock;
 use reth::{
     blockchain_tree::noop::NoopBlockchainTree,
     primitives::{
@@ -27,80 +27,85 @@ use reth_db::{
 };
 use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
 
-use tokio::sync::mpsc::Receiver;
-use tracing::{debug, trace};
+use tokio::{sync::mpsc::Receiver, task::JoinHandle};
+use tracing::trace;
 
 use crate::{
     evm_processor::EVMProcessor,
     get_provider_factory_rw,
     revm_utiles::unpack_batches,
-    traits::{Executable, ExecutionComponent, ParallelBlockExecutor as _},
+    traits::{Executable, ParallelBlockExecutor as _, SuiExecutionAdapter},
     types::ExecutableConsensusOutput,
     ProviderFactoryMDBX,
 };
 
 /// Client is [reth::provider::BlockchainProvider].
 pub struct ParallelExecutor<ParallelExecutionModel> {
-    rx_consensus_certificate: Receiver<ExecutableConsensusOutput>,
-
     // rx_shutdown: ConditionalBroadcastReceiver,
-    inner: Inner<ParallelExecutionModel>,
+    inner: Option<Inner<ParallelExecutionModel>>,
 }
 
-#[async_trait(?Send)]
-impl<ParallelExecutionModel: Executable> ExecutionComponent
+impl<ParallelExecutionModel: Executable + Send + 'static> SuiExecutionAdapter
     for ParallelExecutor<ParallelExecutionModel>
 {
-    async fn run(&mut self) {
-        while let Some(consensus_output) = self.rx_consensus_certificate.recv().await {
-            debug!(
-                "Received consensus output at leader round {}, subdag index {}, timestamp {} ",
-                consensus_output.round(),
-                consensus_output.sub_dag_index(),
-                consensus_output.timestamp(),
-            );
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "benchmark")] {
-                    use tracing::info;
-                    // NOTE: This log entry is used to compute performance.
-                    consensus_output.data().iter().for_each(|batch_digest|
-                        info!("Received Batch -> {:?}", batch_digest.digest())
-                    );
+    fn run(
+        &mut self,
+        rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
+    ) -> JoinHandle<()> {
+        let mut inner = std::mem::take(&mut self.inner).expect("inner is not None");
+        let mut _rx_consensus_output = rx_executable_consensus_output;
+
+        tokio::spawn(async move {
+            //TODO: take rw_consensus_certificate
+            loop {
+                tokio::select! {
+                    Some(consensus_output) = _rx_consensus_output.recv() => {
+                        cfg_if::cfg_if! {
+                            if #[cfg(feature = "benchmark")] {
+                                use tracing::info;
+                                // NOTE: This log entry is used to compute performance.
+                                consensus_output.data().iter().for_each(|batch_digest|
+                                    info!("Received Batch -> {:?}", batch_digest.digest())
+                                );
+                            }
+                        }
+
+                        let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
+                        let _ = inner.execute_and_persist(transactions).await;
+
+                        cfg_if::cfg_if! {
+                            if #[cfg(feature = "benchmark")] {
+                                // NOTE: This log entry is used to compute performance.
+                                _digests.iter().for_each(|batch_digest|
+                                    info!("Executed Batch -> {:?}", batch_digest)
+                                );
+                            }
+                        }
+                    }
                 }
             }
-
-            let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
-            let _ = self.inner.execute_and_persist(transactions).await;
-
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "benchmark")] {
-                    // NOTE: This log entry is used to compute performance.
-                    _digests.iter().for_each(|batch_digest|
-                        info!("Executed Batch -> {:?}", batch_digest)
-                    );
-                }
-            }
-        }
+        })
     }
 }
 
-impl<ParallelExecutionModel: Executable> ParallelExecutor<ParallelExecutionModel> {
+impl<ParallelExecutionModel: Executable + Send + 'static> ParallelExecutor<ParallelExecutionModel> {
     pub fn new(
-        rx_consensus_certificate: Receiver<ExecutableConsensusOutput>,
         // rx_shutdown: ConditionalBroadcastReceiver,
         chain_spec: Arc<ChainSpec>,
     ) -> Self {
         Self {
-            rx_consensus_certificate,
             // rx_shutdown,
-            inner: Inner::new(get_provider_factory_rw(chain_spec.clone()), chain_spec),
+            inner: Some(Inner::new(
+                get_provider_factory_rw(chain_spec.clone()),
+                chain_spec,
+            )),
         }
     }
 }
 
 pub struct Inner<ParallelExecutionModel> {
-    pub(crate) latest: Header,
-    pub(crate) latest_hash: B256,
+    pub(crate) latest: Arc<RwLock<Header>>,
+    pub(crate) latest_hash: Arc<RwLock<B256>>,
 
     pub(crate) chain_spec: Arc<ChainSpec>,
 
@@ -110,7 +115,7 @@ pub struct Inner<ParallelExecutionModel> {
     pub(crate) executor: EVMProcessor<'static, ParallelExecutionModel>,
 }
 
-impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
+impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel> {
     pub fn new(factory: ProviderFactoryMDBX, chain_spec: Arc<ChainSpec>) -> Self {
         let client =
             BlockchainProvider::new(factory.clone(), NoopBlockchainTree::default()).unwrap();
@@ -124,8 +129,8 @@ impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
         let (header, best_hash) = best_header.split();
 
         Self {
-            latest: header,
-            latest_hash: best_hash,
+            latest: Arc::new(RwLock::new(header)),
+            latest_hash: Arc::new(RwLock::new(best_hash)),
             chain_spec: chain_spec.clone(),
             db: factory.clone(),
             executor: EVMProcessor::<ParallelExecutionModel>::new(factory, chain_spec),
@@ -133,11 +138,13 @@ impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
     }
 
     /// Inserts a new header+body pair
-    pub(crate) fn record_new_block(&mut self, header: Header) {
-        self.latest = header;
-        self.latest_hash = self.latest.hash_slow();
+    pub(crate) fn record_new_block(&self, header: Header) {
+        let hash = header.hash_slow();
+        let number = header.number;
+        *self.latest.write() = header;
+        *self.latest_hash.write() = hash.clone();
 
-        trace!(target: "consensus::auto", num=self.latest.number, hash=?self.latest_hash, "inserting new block");
+        trace!(target: "consensus::auto", num=number, hash=?hash, "inserting new block");
     }
 
     /// Fills in pre-execution header fields based on the current best block and given
@@ -155,10 +162,11 @@ impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
         // check previous block for base fee
         let base_fee_per_gas = self
             .latest
+            .read()
             .next_block_base_fee(chain_spec.base_fee_params(timestamp));
 
         Header {
-            parent_hash: self.latest_hash,
+            parent_hash: *self.latest_hash.read(),
             ommers_hash: EMPTY_OMMER_ROOT_HASH,
             beneficiary: Default::default(),
             state_root: Default::default(),
@@ -167,7 +175,7 @@ impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
             withdrawals_root: None,
             logs_bloom: Default::default(),
             difficulty: U256::from(2),
-            number: self.latest.number + 1,
+            number: self.latest.read().number + 1,
             gas_limit: ETHEREUM_BLOCK_GAS_LIMIT,
             gas_used: 0,
             timestamp,
@@ -199,11 +207,12 @@ impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
         trace!(target: "consensus::auto", transactions=?&block.body, "executing transactions");
         // TODO: there isn't really a parent beacon block root here, so not sure whether or not to
         // call the 4788 beacon contract
+        // let mut executor = self.executor.lock();
 
         // set the first block to find the correct index in bundle state
         self.executor.set_first_block(block.number - 1);
 
-        let (mut new_block, receipts, gas_used) = self.executor.execute_transactions(block).await?;
+        let (mut new_block, receipts, gas_used) = self.executor.execute_transactions(block)?;
 
         if !new_block.body.is_empty() {
             new_block.block.header.transactions_root =
@@ -303,9 +312,16 @@ impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
         self.record_new_block(header.clone());
 
         // set new header with hash that should have been updated by insert_new_block
-        let new_header = header.seal(self.latest_hash);
+        let new_header = header.seal(*self.latest_hash.read());
 
-        self.persist(new_header, body, bundle_state)
+        let db = self
+            .db
+            .provider_rw()
+            .map_err(|e| BlockExecutionError::CanonicalCommit {
+                inner: e.to_string(),
+            })?;
+
+        Self::persist(db, new_header, body, bundle_state)
             .await
             .map_err(|e| BlockExecutionError::CanonicalCommit {
                 inner: e.to_string(),
@@ -315,7 +331,7 @@ impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
     }
 
     pub(crate) async fn persist(
-        &self,
+        db: DatabaseProviderRW<DatabaseEnv>,
         header: SealedHeader,
         body: Vec<TransactionSigned>,
         bundle_state: BundleStateWithReceipts,
@@ -333,7 +349,7 @@ impl<ParallelExecutionModel: Executable> Inner<ParallelExecutionModel> {
         // let tx_header = self.db.provider_rw()?;
         // let tx_body = self.db.provider_rw()?;
 
-        let db = self.db.provider_rw()?;
+        // let db = self.db.provider_rw()?;
 
         bundle_state.write_to_db(db.tx_ref(), reth::providers::OriginalValuesKnown::Yes)?;
         write_header(db.tx_ref(), header)?;

@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use reth::{
     primitives::{
         Block, BlockNumber, BlockWithSenders, Bloom, ChainSpec, GotExpected, Hardfork, Receipt,
@@ -164,12 +163,11 @@ where
     // }
 
     /// Execute the block, verify gas usage and apply post-block state changes.
-    pub(crate) async fn execute_inner(
+    pub(crate) fn execute_inner(
         &mut self,
         block: BlockWithSenders,
     ) -> Result<(BlockWithSenders, Vec<Receipt>, u64), BlockExecutionError> {
-        let (new_block, receipts, cumulative_gas_used) =
-            self.execution_model.execute(block).await?;
+        let (new_block, receipts, cumulative_gas_used) = self.execution_model.execute(block)?;
 
         //* no need to check header gas limit in OX architecture.
         // // Check if gas used matches the value set in header.
@@ -217,7 +215,7 @@ where
     /// Apply post execution state changes, including block rewards, withdrawals, and irregular DAO
     /// hardfork state change.
     pub fn apply_post_execution_state_change(
-        &mut self,
+        &self,
         block: &Block,
     ) -> Result<(), BlockExecutionError> {
         let mut balance_increments = post_block_balance_increments(
@@ -285,24 +283,20 @@ where
 }
 
 /// Default Ethereum implementation of the [ParallelBlockExecutor] trait for the [EVMProcessor].
-#[async_trait(?Send)]
 impl<'a, ParallelExecutionModel> ParallelBlockExecutor for EVMProcessor<'a, ParallelExecutionModel>
 where
     ParallelExecutionModel: Executable,
 {
     type Error = BlockExecutionError;
 
-    async fn execute(&mut self, block: BlockWithSenders) -> Result<(), Self::Error> {
-        let (_, receipts, _) = self.execute_inner(block).await?;
+    fn execute(&mut self, block: BlockWithSenders) -> Result<(), Self::Error> {
+        let (_, receipts, _) = self.execute_inner(block)?;
         self.save_receipts(receipts)
     }
 
-    async fn execute_and_verify_receipt(
-        &mut self,
-        block: BlockWithSenders,
-    ) -> Result<(), Self::Error> {
+    fn execute_and_verify_receipt(&mut self, block: BlockWithSenders) -> Result<(), Self::Error> {
         // execute block
-        let (new_block, receipts, _) = self.execute_inner(block).await?;
+        let (new_block, receipts, _) = self.execute_inner(block)?;
 
         // TODO Before Byzantium, receipts contained state root that would mean that expensive
         // operation as hashing that is needed for state root got calculated in every
@@ -328,11 +322,11 @@ where
         self.save_receipts(receipts)
     }
 
-    async fn execute_transactions(
+    fn execute_transactions(
         &mut self,
         block: BlockWithSenders,
     ) -> Result<(BlockWithSenders, Vec<Receipt>, u64), BlockExecutionError> {
-        self.execution_model.execute(block).await
+        self.execution_model.execute(block)
     }
 
     // async fn execute_transactions(

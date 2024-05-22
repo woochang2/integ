@@ -1,15 +1,14 @@
-use async_trait::async_trait;
 use reth::primitives::{BlockWithSenders, ChainSpec, Receipt};
 use std::sync::Arc;
+use tokio::{sync::mpsc::Receiver, task::JoinHandle};
 
 use reth_interfaces::executor::BlockExecutionError;
 
-use crate::{db::ThreadSafeCacheState, ProviderFactoryMDBX};
+use crate::{db::ThreadSafeCacheState, types::ExecutableConsensusOutput, ProviderFactoryMDBX};
 
-#[async_trait(?Send)]
 pub trait Executable {
     /// This takes a block and returns new [BlockWithSenders] since some execution algorithm reorders transactions.
-    async fn execute(
+    fn execute(
         &mut self,
         consensus_output: BlockWithSenders,
     ) -> Result<(BlockWithSenders, Vec<Receipt>, u64), BlockExecutionError>;
@@ -22,27 +21,26 @@ pub trait Executable {
 }
 
 /// An abstraction for an executor in a sui PrimaryNode.
-#[async_trait(?Send)]
-pub(crate) trait ExecutionComponent {
-    async fn run(&mut self);
+/// Executor receives ExecutableConsensusOutput from primary node calling [ExecutionState]::handle_consunsus_output, and it executes the block.
+pub trait SuiExecutionAdapter {
+    fn run(
+        &mut self,
+        rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
+    ) -> JoinHandle<()>;
 }
 
 /// An executor capable of executing a block in parallel.
-#[async_trait(?Send)]
 pub(crate) trait ParallelBlockExecutor {
     /// The error type returned by the executor.
     type Error;
 
     /// Execute a block.
-    async fn execute(&mut self, block: BlockWithSenders) -> Result<(), Self::Error>;
+    fn execute(&mut self, block: BlockWithSenders) -> Result<(), Self::Error>;
 
     /// Executes the block and checks receipts.
     ///
     /// See [execute](BlockExecutor::execute) for more details.
-    async fn execute_and_verify_receipt(
-        &mut self,
-        block: BlockWithSenders,
-    ) -> Result<(), Self::Error>;
+    fn execute_and_verify_receipt(&mut self, block: BlockWithSenders) -> Result<(), Self::Error>;
 
     /// Runs the provided transactions and commits their state to the run-time database.
     ///
@@ -56,7 +54,7 @@ pub(crate) trait ParallelBlockExecutor {
     /// The second returned value represents the total gas used by this block of transactions.
     ///
     /// See [execute](BlockExecutor::execute) for more details.
-    async fn execute_transactions(
+    fn execute_transactions(
         &mut self,
         block: BlockWithSenders,
     ) -> Result<(BlockWithSenders, Vec<Receipt>, u64), Self::Error>;

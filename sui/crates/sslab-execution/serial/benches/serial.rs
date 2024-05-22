@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use criterion::Throughput;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
-use reth::core::init::init_genesis;
-use reth::primitives::{BlockWithSenders, ChainSpec};
+use reth::primitives::ChainSpec;
 use sslab_execution::executor::Inner;
 use sslab_execution::traits::Executable;
 use sslab_execution::types::ExecutableEthereumBatch;
@@ -80,7 +79,7 @@ fn serial(c: &mut Criterion) {
                                 (serial, consensus_output)
                             },
                             |(mut serial, consensus_output)| async move {
-                                let _ = serial.execute(consensus_output).await;
+                                let _ = serial.execute(consensus_output);
                             },
                             BatchSize::SmallInput,
                         );
@@ -137,5 +136,5 @@ fn serial_with_storage_op(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, serial_with_storage_op);
+criterion_group!(benches, serial_with_storage_op, serial);
 criterion_main!(benches);

@@ -27,7 +27,6 @@ narwhal-executor.workspace = true
 narwhal-types.workspace = true
 narwhal-worker.workspace = true
 tracing-subscriber.workspace = true
-sui-protocol-config.workspace = true
 sui-types.workspace = true
 eyre.workspace = true
 

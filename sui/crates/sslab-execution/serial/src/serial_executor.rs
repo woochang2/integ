@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use parking_lot::RwLock;
 use reth::{
     core::node_config::ConfigureEvmEnv,
     primitives::{
@@ -22,12 +23,11 @@ use sslab_execution::{
     BlockExecutionError, BlockValidationError, EthEvmConfig, ProviderFactoryMDBX,
 };
 
-use tokio::sync::Mutex;
 use tracing::debug;
 
 pub struct SerialExecutor {
     evm: Arc<
-        Mutex<
+        RwLock<
             Evm<
                 'static,
                 InspectorStack,
@@ -38,13 +38,12 @@ pub struct SerialExecutor {
     chain_spec: Arc<ChainSpec>,
 }
 
-#[async_trait::async_trait(?Send)]
 impl Executable for SerialExecutor {
-    async fn execute(
+    fn execute(
         &mut self,
         consensus_output: BlockWithSenders,
     ) -> Result<(BlockWithSenders, Vec<Receipt>, u64), BlockExecutionError> {
-        self._execute(consensus_output).await
+        self._execute(consensus_output)
     }
 
     fn new_with_db(
@@ -58,7 +57,7 @@ impl Executable for SerialExecutor {
             .with_bundle_update()
             .build();
         Self {
-            evm: Arc::new(Mutex::new(
+            evm: Arc::new(RwLock::new(
                 EvmBuilder::default()
                     .with_db(db)
                     .with_external_context(InspectorStack::new(InspectorStackConfig::default()))
@@ -88,12 +87,12 @@ impl SerialExecutor {
     /// to return the result and state diff (without applying it).
     ///
     /// Assumes the rest of the block environment has been filled via `init_block_env`.
-    async fn transact(
+    fn transact(
         &self,
         transaction: &TransactionSigned,
         sender: Address,
     ) -> Result<ResultAndState, BlockExecutionError> {
-        let mut evm = self.evm.lock().await;
+        let mut evm = self.evm.write();
 
         // Fill revm structure.
         fill_tx_env(evm.tx_mut(), transaction, sender);
@@ -129,8 +128,8 @@ impl SerialExecutor {
     }
 
     /// Initializes the config and block env.
-    async fn init_env(&mut self, header: &Header) -> Result<(), BlockExecutionError> {
-        let mut evm = self.evm.lock().await;
+    fn init_env(&mut self, header: &Header) -> Result<(), BlockExecutionError> {
+        let mut evm = self.evm.write();
 
         let mut cfg: CfgEnvWithHandlerCfg =
             CfgEnvWithHandlerCfg::new_with_spec_id(evm.cfg().clone(), evm.spec_id());
@@ -160,22 +159,22 @@ impl SerialExecutor {
     }
 
     #[inline]
-    async fn _execute(
+    fn _execute(
         &mut self,
         block: BlockWithSenders,
     ) -> Result<(BlockWithSenders, Vec<Receipt>, u64), BlockExecutionError> {
-        self.init_env(&block.header).await?;
+        self.init_env(&block.header)?;
         let mut cumulative_gas_used = 0;
         let mut receipts = vec![];
 
         for (sender, tx) in block.transactions_with_sender() {
-            let ResultAndState { result, state } = self.transact(tx, *sender).await?;
+            let ResultAndState { result, state } = self.transact(tx, *sender)?;
 
             cumulative_gas_used += result.gas_used();
 
             let receipt = match result {
                 reth::revm::primitives::ExecutionResult::Success { logs, .. } => {
-                    self.evm.lock().await.context.evm.db.commit(state);
+                    self.evm.read().context.evm.db.commit(state);
 
                     Receipt {
                         tx_type: tx.tx_type(),

@@ -1,44 +1,37 @@
 use async_trait::async_trait;
-use core::panic;
-use fastcrypto::hash::Hash as _Hash;
+use fastcrypto::hash::Hash as _;
 use futures::stream::FuturesUnordered;
-use mysten_metrics::spawn_logged_monitored_task;
 use narwhal_executor::ExecutionState;
-use narwhal_types::{BatchAPI, BatchDigest, CertificateAPI, ConsensusOutput, HeaderAPI};
+use narwhal_types::ConsensusOutput;
 use rayon::prelude::*;
 use sslab_execution::{
-    executor::ExecutionComponent,
-    types::{EthereumTransactable, ExecutableConsensusOutput, ExecutableEthereumBatch},
+    traits::SuiExecutionAdapter,
+    types::{ExecutableConsensusOutput, ExecutableEthereumBatch},
+    TransactionSigned,
 };
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
-use tracing::{info, instrument, warn};
+use tracing::{instrument, warn};
 
 #[allow(dead_code)]
-pub struct SimpleConsensusHandler<T: EthereumTransactable + Clone> {
-    tx_consensus_certificate: Sender<ExecutableConsensusOutput<T>>,
+pub struct SimpleConsensusHandler {
+    tx_executable_consensus_output: Sender<ExecutableConsensusOutput>,
     // tx_shutdown: Option<PreSubscribedBroadcastSender>,
     handles: FuturesUnordered<JoinHandle<()>>,
 }
 
-impl<T: EthereumTransactable + Clone> SimpleConsensusHandler<T> {
-    pub fn new<Executor>(
-        mut executor: Executor,
-        tx_consensus_certificate: Sender<ExecutableConsensusOutput<T>>,
-    ) -> Self
+impl SimpleConsensusHandler {
+    pub fn new<Executor>(mut executor: Executor) -> Self
     where
-        Executor: ExecutionComponent + Send + Sync + 'static,
+        Executor: SuiExecutionAdapter + Send + Sync + 'static,
     {
         let handles = FuturesUnordered::new();
+        let (tx_executable_consensus_output, rx_executable_consensus_output) =
+            tokio::sync::mpsc::channel(1000);
 
-        handles.push(spawn_logged_monitored_task!(
-            async move {
-                executor.run().await;
-            },
-            "executor.run()"
-        ));
+        handles.push(executor.run(rx_executable_consensus_output));
 
         Self {
-            tx_consensus_certificate,
+            tx_executable_consensus_output,
             // tx_shutdown: Some(tx_shutdown),
             handles,
         }
@@ -67,80 +60,55 @@ impl<T: EthereumTransactable + Clone> SimpleConsensusHandler<T> {
 }
 
 #[async_trait]
-impl<T: EthereumTransactable + Clone + Send + 'static> ExecutionState
-    for SimpleConsensusHandler<T>
-{
+impl ExecutionState for SimpleConsensusHandler {
     /// This function will be called by Narwhal, after Narwhal sequenced this certificate.
     #[instrument(level = "trace", skip_all)]
     async fn handle_consensus_output(&self, consensus_output: ConsensusOutput) {
-        info!(
-            "Received consensus output {:?} at leader round {}, subdag index {}, timestamp {} ",
-            consensus_output.digest(),
-            consensus_output.sub_dag.leader_round(),
-            consensus_output.sub_dag.sub_dag_index,
-            consensus_output.sub_dag.commit_timestamp(),
-        );
+        let sub_dag_index = consensus_output.sub_dag.sub_dag_index;
 
         cfg_if::cfg_if! {
             if #[cfg(feature = "benchmark")] {
+                use trancing::info;
                 // NOTE: This log entry is used to compute performance.
                 consensus_output.sub_dag.certificates.iter().for_each(|cert| {
                     cert.header().payload().keys().for_each(|digest| info!("Consensus handler received a batch -> {:?}", digest));
                 });
 
                 // NOTE: This log entry is used to compute performance.
-                info!("Received consensus_output has {} batches at subdag_index {}.", consensus_output.sub_dag.num_batches(), consensus_output.sub_dag.sub_dag_index);
+                info!("Received consensus_output has {} batches at subdag_index {}.", consensus_output.sub_dag.num_batches(), sub_dag_index);
             }
         }
 
         /* (serialized, transaction, output_cert) */
-        let mut ethereum_batches: Vec<ExecutableEthereumBatch<T>> = vec![];
+        let mut ethereum_batches = vec![];
 
-        for (cert, batches) in consensus_output
-            .sub_dag
-            .certificates
-            .iter()
-            .zip(consensus_output.batches.iter())
-        {
-            assert_eq!(cert.header().payload().len(), batches.len());
+        for (cert, batches) in consensus_output.batches.into_iter() {
+            assert_eq!(cert.header.payload.len(), batches.len());
 
             for batch in batches {
-                assert!(cert.header().payload().contains_key(&batch.digest()));
+                assert!(cert.header.payload.contains_key(&batch.digest()));
 
-                if batch.transactions().is_empty() {
+                if batch.transactions.is_empty() {
                     continue;
                 }
 
-                let _batch = std::sync::Arc::new(batch.clone());
-                let digest = _batch.digest();
-                let _digest = digest.clone();
+                let digest = batch.digest();
 
-                let _batch_tx = tokio::task::spawn_blocking(move || {
-                    _batch
-                        .transactions()
-                        .par_iter()
-                        .map(|serialized_transaction| {
-                            decode_transaction(serialized_transaction, _digest)
-                        })
-                        .collect::<Vec<_>>()
-                })
-                .await
-                .expect("Failed to spawn a thread for decoding transactions.");
+                let decoded_batch = decode_batch(batch.transactions).await;
 
-                if !_batch_tx.is_empty() {
-                    ethereum_batches.push(ExecutableEthereumBatch::new(_batch_tx, digest));
+                if !decoded_batch.is_empty() {
+                    ethereum_batches.push(ExecutableEthereumBatch::new(decoded_batch, digest));
                 } else {
-                    warn!("Received an empty decoded batch at subdag_index {}. This couldn't possible.", consensus_output.sub_dag.sub_dag_index)
+                    warn!("Received an empty decoded batch at subdag_index {}. This couldn't possible.", sub_dag_index)
                 }
             }
         }
 
-        let executable_consensus_output =
-            ExecutableConsensusOutput::new(ethereum_batches, &consensus_output);
+        let executable_consensus_output = ExecutableConsensusOutput::new(ethereum_batches);
 
         if !executable_consensus_output.data().is_empty() {
             let _ = self
-                .tx_consensus_certificate
+                .tx_executable_consensus_output
                 .send(executable_consensus_output)
                 .await;
         }
@@ -151,18 +119,20 @@ impl<T: EthereumTransactable + Clone + Send + 'static> ExecutionState
     }
 }
 
-pub fn decode_transaction<T: EthereumTransactable>(
-    serialized_transaction: &Vec<u8>,
-    batch_digest: BatchDigest,
-) -> T {
-    match T::from_json(serialized_transaction) {
-        Ok(transaction) => transaction,
-        Err(err) => {
-            // This should have been prevented by Narwhal batch verification.
-            panic!(
-                "Unexpected malformed transaction (failed to deserialize): {}\nBatchDigest={:?} Transaction={:?}",
-                err, batch_digest, serialized_transaction
-            );
-        }
-    }
+async fn decode_batch(raw_batch: Vec<Vec<u8>>) -> Vec<TransactionSigned> {
+    let (send, recv) = tokio::sync::oneshot::channel();
+    rayon::spawn(move || {
+        let batch = raw_batch
+            .into_par_iter() //TODO: prioritized less than execution threads
+            .map(|raw_tx| {
+                TransactionSigned::decode_enveloped(&mut raw_tx.as_slice()).expect(
+                    "No error occurs since every Tx has been validated in RPC server and workers",
+                )
+            })
+            .collect::<Vec<_>>();
+
+        let _ = send.send(batch).unwrap();
+    });
+
+    recv.await.unwrap()
 }

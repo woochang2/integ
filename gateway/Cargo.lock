@@ -1735,7 +1735,7 @@ dependencies = [
  "serde 1.0.175",
  "serde-hjson",
  "serde_json",
- "toml",
+ "toml 0.5.11",
  "yaml-rust",
 ]
 
@@ -2449,7 +2449,7 @@ dependencies = [
  "petgraph 0.6.3",
  "rayon",
  "serde 1.0.175",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
@@ -2475,6 +2475,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "diesel-derive-enum"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81c5131a2895ef64741dad1d483f358c2a229a3a2d1b256778cdc5e146db64d4"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2 1.0.66",
+ "quote 1.0.32",
+ "syn 2.0.27",
+]
+
+[[package]]
 name = "diesel_derives"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2484,6 +2496,17 @@ dependencies = [
  "proc-macro2 1.0.66",
  "quote 1.0.32",
  "syn 2.0.27",
+]
+
+[[package]]
+name = "diesel_migrations"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6036b3f0120c5961381b570ee20a02432d7e2d27ea60de9578799cf9156914ac"
+dependencies = [
+ "diesel",
+ "migrations_internals",
+ "migrations_macros",
 ]
 
 [[package]]
@@ -3640,7 +3663,7 @@ dependencies = [
  "smallvec",
  "static_assertions",
  "target-spec",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
@@ -3655,7 +3678,7 @@ dependencies = [
  "guppy-workspace-hack",
  "semver 1.0.18",
  "serde 1.0.175",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
@@ -3706,7 +3729,7 @@ dependencies = [
  "serde 1.0.175",
  "tabular",
  "target-spec",
- "toml",
+ "toml 0.5.11",
  "toml_edit 0.17.1",
  "twox-hash",
 ]
@@ -4744,6 +4767,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "migrations_internals"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f23f71580015254b020e856feac3df5878c2c7a8812297edd6c0a485ac9dada"
+dependencies = [
+ "serde 1.0.175",
+ "toml 0.7.8",
+]
+
+[[package]]
+name = "migrations_macros"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cce3325ac70e67bbab5bd837a31cae01f1a6db64e0e744a33cb03a543469ef08"
+dependencies = [
+ "migrations_internals",
+ "proc-macro2 1.0.66",
+ "quote 1.0.32",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5245,7 +5289,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.9.9",
  "tempfile",
- "toml",
+ "toml 0.5.11",
  "walkdir",
  "whoami",
 ]
@@ -5284,7 +5328,7 @@ dependencies = [
  "serde_json",
  "simplelog",
  "tokio",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
@@ -5566,7 +5610,7 @@ dependencies = [
  "socket2",
  "tap",
  "tokio-util 0.7.4",
- "toml",
+ "toml 0.5.11",
  "tracing",
  "tracing-subscriber 0.3.17",
 ]
@@ -5823,7 +5867,7 @@ dependencies = [
  "nexlint",
  "regex",
  "serde 1.0.175",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
@@ -6786,7 +6830,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e17d47ce914bf4de440332250b0edd23ce48c005f59fab39d3335866b114f11a"
 dependencies = [
  "thiserror",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
@@ -8093,6 +8137,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_spanned"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79e674e01f999af37c49f70a6ede167a8a60b2503e56c5599532a65baa5969a0"
+dependencies = [
+ "serde 1.0.175",
+]
+
+[[package]]
 name = "serde_test"
 version = "1.0.175"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9204,10 +9257,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd79e69d3b627db300ff956027cc6c3798cef26d22526befdfcd12feeb6d2257"
+dependencies = [
+ "serde 1.0.175",
+ "serde_spanned",
+ "toml_datetime 0.6.6",
+ "toml_edit 0.19.15",
+]
+
+[[package]]
 name = "toml_datetime"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4553f467ac8e3d374bc9a177a26801e5d0f9b211aa1673fb137a403afd1c9cf5"
+
+[[package]]
+name = "toml_datetime"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4badfd56924ae69bcc9039335b2e017639ce3f9b001c393c1b2d1ef846ce2cbf"
+dependencies = [
+ "serde 1.0.175",
+]
 
 [[package]]
 name = "toml_edit"
@@ -9230,7 +9304,7 @@ dependencies = [
  "combine",
  "indexmap 1.9.3",
  "itertools",
- "toml_datetime",
+ "toml_datetime 0.5.1",
 ]
 
 [[package]]
@@ -9242,7 +9316,20 @@ dependencies = [
  "indexmap 1.9.3",
  "itertools",
  "nom8",
- "toml_datetime",
+ "toml_datetime 0.5.1",
+]
+
+[[package]]
+name = "toml_edit"
+version = "0.19.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
+dependencies = [
+ "indexmap 2.0.0",
+ "serde 1.0.175",
+ "serde_spanned",
+ "toml_datetime 0.6.6",
+ "winnow 0.5.40",
 ]
 
 [[package]]
@@ -10269,6 +10356,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a515f5799fe4961cb532f983ce2b23082366b898e52ffbce459c86f67c8378a"
 
 [[package]]
+name = "winnow"
+version = "0.4.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "656953b22bcbfb1ec8179d60734981d1904494ecc91f8a3f0ee5c7389bb8eb4b"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
+name = "winnow"
+version = "0.5.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "winreg"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10474,7 +10579,9 @@ dependencies = [
  "determinator",
  "deunicode",
  "diesel",
+ "diesel-derive-enum",
  "diesel_derives",
+ "diesel_migrations",
  "diff",
  "difference",
  "difflib",
@@ -10999,8 +11106,8 @@ dependencies = [
  "tokio-rustls 0.23.4",
  "tokio-stream",
  "tokio-util 0.7.8",
- "toml",
- "toml_datetime",
+ "toml 0.5.11",
+ "toml_datetime 0.5.1",
  "toml_edit 0.14.4",
  "toml_edit 0.15.0",
  "tonic 0.8.3",
@@ -11079,6 +11186,7 @@ dependencies = [
  "winapi-util",
  "windows-sys 0.42.0",
  "windows_x86_64_msvc 0.42.2",
+ "winnow 0.4.11",
  "winreg",
  "wyz",
  "x509-parser",
@@ -11087,6 +11195,8 @@ dependencies = [
  "yasna",
  "zeroize",
  "zeroize_derive",
+ "zstd",
+ "zstd-safe",
  "zstd-sys",
 ]
 
@@ -11156,6 +11266,25 @@ dependencies = [
  "proc-macro2 1.0.66",
  "quote 1.0.32",
  "syn 2.0.27",
+]
+
+[[package]]
+name = "zstd"
+version = "0.12.3+zstd.1.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76eea132fb024e0e13fd9c2f5d5d595d8a967aa72382ac2f9d39fcc95afd0806"
+dependencies = [
+ "zstd-safe",
+]
+
+[[package]]
+name = "zstd-safe"
+version = "6.0.5+zstd.1.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d56d9e60b4b1758206c238a10165fbcae3ca37b01744e394c463463f6529d23b"
+dependencies = [
+ "libc",
+ "zstd-sys",
 ]
 
 [[package]]

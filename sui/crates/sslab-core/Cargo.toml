@@ -72,7 +72,7 @@ sui-core.workspace = true
 
 sslab-execution = { workspace = true, features = ["benchmark"] }
 sslab-execution-serial = { workspace = true }
-sslab-execution-optme = { workspace = true, optional = true }
+# sslab-execution-optme = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion.workspace = true
@@ -84,7 +84,7 @@ rayon = "1.8.0"
 benchmark = ["narwhal-node/benchmark", "sslab-execution/benchmark"]
 
 # execution model
-optme = ["sslab-execution-optme"]
+# optme = ["sslab-execution-optme"]
 serial = []
 
 [[bin]]
