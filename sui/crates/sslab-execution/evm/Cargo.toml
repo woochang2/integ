@@ -24,7 +24,7 @@ tokio = { workspace = true, features = ["full", "tracing", "test-util"] }
 
 mysten-metrics.workspace = true
 narwhal-executor.workspace = true
-narwhal-types.workspace = true
+narwhal_types = { path = "../../../narwhal/types", package = "narwhal-types" }
 narwhal-worker.workspace = true
 tracing-subscriber.workspace = true
 sui-types.workspace = true

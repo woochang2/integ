@@ -1,6 +1,6 @@
 use reth::primitives::{BlockWithSenders, ChainSpec, Receipt};
 use std::sync::Arc;
-use tokio::{sync::mpsc::Receiver, task::JoinHandle};
+use tokio::{sync::mpsc::Sender, sync::mpsc::Receiver, task::JoinHandle};
 
 use reth_interfaces::executor::BlockExecutionError;
 

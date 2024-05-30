@@ -21,11 +21,11 @@ def local(ctx, debug=False):
         'faults': 0,
         'nodes': 4,
         'workers': 1,
-        'rate': 250_000,
+        'rate': 1_000,
         'skewness': 0.0,
-        'duration': 30,
+        'duration': 2400*30,
         'concurrency_level': 20,
-        'execution_model': ExecutionModel.BLOCKSTM,
+        'execution_model': ExecutionModel.SERIAL,
     }
     node_params = {
         'header_num_of_batches_threshold': 32,

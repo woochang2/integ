@@ -1,25 +1,28 @@
 use async_trait::async_trait;
 use fastcrypto::hash::Hash as _;
 use futures::stream::FuturesUnordered;
-use narwhal_executor::ExecutionState;
-use narwhal_types::ConsensusOutput;
+use executor::ExecutionState;
+use types::ConsensusOutput;
 use rayon::prelude::*;
 use sslab_execution::{
     traits::SuiExecutionAdapter,
     types::{ExecutableConsensusOutput, ExecutableEthereumBatch},
     TransactionSigned,
 };
+use sslab_execution_serial::SerialExecutor;
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
 use tracing::{instrument, warn};
 
 #[allow(dead_code)]
 pub struct SimpleConsensusHandler {
+    tx_transaction_confirmation: Sender<types::ConsensusOutput>,
     tx_executable_consensus_output: Sender<ExecutableConsensusOutput>,
     // tx_shutdown: Option<PreSubscribedBroadcastSender>,
     handles: FuturesUnordered<JoinHandle<()>>,
 }
 
 impl SimpleConsensusHandler {
+    /*
     pub fn new<Executor>(mut executor: Executor) -> Self
     where
         Executor: SuiExecutionAdapter + Send + Sync + 'static,
@@ -34,6 +37,35 @@ impl SimpleConsensusHandler {
             tx_executable_consensus_output,
             // tx_shutdown: Some(tx_shutdown),
             handles,
+        }
+    }
+    */
+    pub fn new(tx_transaction_confirmation: Sender<types::ConsensusOutput>, executor: SerialExecutor) -> Self {
+        let handles = FuturesUnordered::new();
+        let (tx_executable_consensus_output, rx_executable_consensus_output) =
+            tokio::sync::mpsc::channel(100000);
+
+        //handles.push(executor.real_execute(tx_transaction_confirmation));
+        // let mut client = NarwhalGatewayClient::connect("http://[::1]:50051");
+            // .await
+            // .unwrap();
+
+        // let sub_dag = Bytes::from("hello");
+        // let batches = Bytes::from("gateway");
+        // let request: tonic::Request<GatewayConsensusOutput> = tonic::Request::new(GatewayConsensusOutput { sub_dag, batches });
+
+        // let _response = client.deliver_consensus_output(request).await;
+        // info!("Successfully connected to Gateway!, tested by sending Request");
+
+        Self {
+            tx_transaction_confirmation,
+            tx_executable_consensus_output,
+            // tx_shutdown: Some(tx_shutdown),
+            handles,
+            // cnt_consensusoutput: 0,
+            // cnt_batch: 0,
+            // cnt_tx: 0,
+            // gateway_client: client,
         }
     }
 
@@ -66,6 +98,8 @@ impl ExecutionState for SimpleConsensusHandler {
     async fn handle_consensus_output(&self, consensus_output: ConsensusOutput) {
         let sub_dag_index = consensus_output.sub_dag.sub_dag_index;
 
+        /*
+
         cfg_if::cfg_if! {
             if #[cfg(feature = "benchmark")] {
                 use trancing::info;
@@ -78,6 +112,7 @@ impl ExecutionState for SimpleConsensusHandler {
                 info!("Received consensus_output has {} batches at subdag_index {}.", consensus_output.sub_dag.num_batches(), sub_dag_index);
             }
         }
+        */
 
         /* (serialized, transaction, output_cert) */
         let mut ethereum_batches = vec![];

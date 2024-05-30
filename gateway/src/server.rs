@@ -175,7 +175,7 @@ impl NarwhalGateway for MyNarwhalGatewayServer {
             request.into_inner().requestor_id
         );
 
-        let (_tx, rx) = mpsc::channel(1000);
+        let (_tx, rx) = mpsc::channel(100000);
 
         // tokio::spawn(async move {
         //     // let batch_size = 5;

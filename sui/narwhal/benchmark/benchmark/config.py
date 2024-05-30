@@ -42,6 +42,8 @@ class WorkerCache:
                    for y in workers.values() for x in y.keys())
         assert all(isinstance(x, list) and len(x) >=
                    1 for y in workers.values() for x in y.values())
+        assert all(isinstance(x, list) and len(x) >=
+                   1 for y in workers.values() for x in y.values())
         assert all(
             isinstance(x, str) for z in workers.values() for y in z.values() for x in y
         )

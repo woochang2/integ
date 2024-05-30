@@ -24,7 +24,7 @@ class CommandMaker:
 
     @staticmethod
     def compile(failpoints=True, release=True, execution_model=None, LAN=False):
-        cmd = ["cargo", "build", "--quiet","--features", "benchmark"]
+        cmd = ["cargo", "build", "--features", "benchmark"]
 
         if execution_model:
             if LAN:

@@ -9,6 +9,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+arc-swap = { version = "1.5.1", features = ["serde"] }
 anyhow = { workspace = true, features = ["backtrace"] }
 # arc-swap.workspace = true
 async-trait.workspace = true
@@ -41,16 +42,18 @@ url.workspace = true
 fastcrypto.workspace = true
 
 mysten-metrics.workspace = true
-narwhal-config.workspace = true
-narwhal-crypto.workspace = true
-narwhal-executor.workspace = true
-narwhal-network.workspace = true
-narwhal-node = { workspace = true, features = [
-    "trace_transaction",
-    "benchmark",
-] }
-narwhal-types.workspace = true
-narwhal-worker.workspace = true
+config = { path = "../../narwhal/config", package = "narwhal-config" }
+crypto = { path = "../../narwhal/crypto", package = "narwhal-crypto" }
+types = { path = "../../narwhal/types", package = "narwhal-types" }
+executor = { path = "../../narwhal/executor", package = "narwhal-executor" }
+node = { path = "../../narwhal/node", package = "narwhal-node" }
+storage = { path = "../../narwhal/storage", package = "narwhal-storage" }
+# narwhal-config.workspace = true
+# narwhal-crypto.workspace = true
+# narwhal-executor.workspace = true
+# narwhal-network.workspace = true
+# narwhal-types.workspace = true
+# narwhal-worker.workspace = true
 # shared-crypto.workspace = true
 # sui-archival.workspace = true
 sui-config.workspace = true
@@ -68,11 +71,17 @@ sui-types.workspace = true
 tracing-subscriber.workspace = true
 # workspace-hack.workspace = true
 sui-core.workspace = true
+telemetry-subscribers.workspace = true
 
 
 sslab-execution = { workspace = true, features = ["benchmark"] }
 sslab-execution-serial = { workspace = true }
 # sslab-execution-optme = { workspace = true, optional = true }
+fail = "0.5.1"
+prost = "0.11"
+rand = "0.8.5"
+tonic = "0.8.2"
+bincode = "1.3.3"
 
 [dev-dependencies]
 criterion.workspace = true
@@ -81,7 +90,7 @@ ethers-providers = { version = "^2.0.0" }
 rayon = "1.8.0"
 
 [features]
-benchmark = ["narwhal-node/benchmark", "sslab-execution/benchmark"]
+benchmark = ["sslab-execution/benchmark"]
 
 # execution model
 # optme = ["sslab-execution-optme"]

@@ -11,6 +11,7 @@ use reth::{
     },
 };
 
+use tokio::{sync::mpsc::Sender};
 use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
 use reth_node_ethereum::EthEvmConfig;
 use std::{sync::Arc, time::Instant};

@@ -8,7 +8,7 @@ publish = false
 
 [dependencies]
 async-trait.workspace = true
-sui-types.workspace = true
+types = { path = "../../../narwhal/types", package = "narwhal-types" }
 sslab-execution.workspace = true
 tracing.workspace = true
 eyre.workspace = true

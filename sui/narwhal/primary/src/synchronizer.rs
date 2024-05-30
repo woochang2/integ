@@ -202,7 +202,7 @@ impl Synchronizer {
         let highest_created_certificate = certificate_store.last_round(&name).unwrap();
         let gc_round = (*rx_consensus_round_updates.borrow()).saturating_sub(gc_depth);
         let (tx_own_certificate_broadcast, _rx_own_certificate_broadcast) =
-            broadcast::channel(1000);
+            broadcast::channel(100000);
         let inner = Arc::new(Inner {
             name,
             committee: committee.clone(),

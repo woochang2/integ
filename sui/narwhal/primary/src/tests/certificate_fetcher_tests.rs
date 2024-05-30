@@ -154,9 +154,9 @@ async fn fetch_certificates_basic() {
     let (tx_new_certificates, _rx_new_certificates) = test_utils::test_channel!(1000);
     let (tx_parents, _rx_parents) = test_utils::test_channel!(1000);
     // FetchCertificateProxy -> test
-    let (tx_fetch_req, mut rx_fetch_req) = mpsc::channel(1000);
+    let (tx_fetch_req, mut rx_fetch_req) = mpsc::channel(100000);
     // test -> FetchCertificateProxy
-    let (tx_fetch_resp, rx_fetch_resp) = mpsc::channel(1000);
+    let (tx_fetch_resp, rx_fetch_resp) = mpsc::channel(100000);
 
     // Create test stores.
     let store = NodeStorage::reopen(temp_dir());

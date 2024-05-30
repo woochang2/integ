@@ -14,14 +14,16 @@ use reth::{
         interpreter::Host,
         primitives::{CfgEnvWithHandlerCfg, HandlerCfg, ResultAndState, SpecId},
         stack::{InspectorStack, InspectorStackConfig},
-        Database, DatabaseCommit, Evm, EvmBuilder, Handler,
+        Database, DatabaseCommit, Evm, EvmBuilder, Handler, DBBox,
     },
 };
+use tokio::sync::{Mutex, mpsc::Sender};
 use sslab_execution::{
     db::{SharableState, ThreadSafeCacheState},
     traits::Executable,
     BlockExecutionError, BlockValidationError, EthEvmConfig, ProviderFactoryMDBX,
 };
+use types::ConsensusOutput;
 
 use tracing::debug;
 
@@ -39,6 +41,7 @@ pub struct SerialExecutor {
 }
 
 impl Executable for SerialExecutor {
+    
     fn execute(
         &mut self,
         consensus_output: BlockWithSenders,
@@ -70,6 +73,27 @@ impl Executable for SerialExecutor {
 }
 
 impl SerialExecutor {
+    pub fn new(
+        db: ProviderFactoryMDBX,
+        cached_state: Option<ThreadSafeCacheState>,
+        chain_spec: Arc<ChainSpec>,
+    ) -> Self {
+        let db = SharableState::builder()
+            .with_database_boxed(Box::new(StateProviderDatabase::new(db.latest().unwrap())))
+            .with_cached_prestate(cached_state.unwrap_or_default())
+            .with_bundle_update()
+            .build();
+        Self {
+            evm: Arc::new(RwLock::new(
+                EvmBuilder::default()
+                    .with_db(db)
+                    .with_external_context(InspectorStack::new(InspectorStackConfig::default()))
+                    .with_handler_cfg(HandlerCfg::new(SpecId::ISTANBUL))
+                    .build(),
+            )),
+            chain_spec,
+        }
+    }
     // pub fn new(global_state: DBBox<'_, ProviderError>, chain_spec: Arc<ChainSpec>) -> Self {
     //     Self {
     //         evm: Arc::new(Mutex::new(

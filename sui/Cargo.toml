@@ -5,7 +5,7 @@ members = [
     "crates/sslab-execution/evm",
     "crates/sslab-execution/serial",
     "crates/sslab-core",
-    # "crates/sslab-benchmark",
+    "crates/sslab-benchmark",
 
     "crates/mysten-metrics",
     "crates/mysten-network",
@@ -216,7 +216,7 @@ reth-node-ethereum = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = 
 
 # # Workspace members
 sslab-core = { path = "crates/sslab-core" }
-# sslab-benchmark = { path = "crates/sslab-benchmark" }
+sslab-benchmark = { path = "crates/sslab-benchmark" }
 sslab-execution-serial = { path = "crates/sslab-execution/serial" }
 sslab-execution = { path = "crates/sslab-execution/evm" }
 # sslab-execution-optme = { path = "crates/sslab-execution/optme" }
