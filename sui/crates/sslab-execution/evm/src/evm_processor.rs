@@ -11,7 +11,6 @@ use reth::{
     },
 };
 
-use tokio::{sync::mpsc::Sender};
 use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
 use reth_node_ethereum::EthEvmConfig;
 use std::{sync::Arc, time::Instant};
@@ -79,8 +78,12 @@ where
     }
 
     /// Create a new pocessor with the given chain spec.
-    pub fn new(provider_factory: ProviderFactoryMDBX, chain_spec: Arc<ChainSpec>) -> Self {
-        let cached_state = ThreadSafeCacheState::default();
+    pub fn new(
+        provider_factory: ProviderFactoryMDBX,
+        chain_spec: Arc<ChainSpec>,
+        preloaded_state: Option<ThreadSafeCacheState>,
+    ) -> Self {
+        let cached_state = preloaded_state.unwrap_or_default();
         let state = SharableState::builder()
             .with_database_boxed(Box::new(StateProviderDatabase::new(
                 provider_factory.latest().unwrap(),

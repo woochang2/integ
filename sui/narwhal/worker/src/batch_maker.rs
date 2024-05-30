@@ -181,9 +181,9 @@ impl BatchMaker {
             let tx_ids: Vec<_> = batch
                 .transactions
                 .iter()
-                .filter(|tx| tx[0] == 0u8 && tx.len() > 8)
-                .filter_map(|tx| tx[1..9].try_into().ok())
+                .filter_map(|tx| tx[2..10].try_into().ok())
                 .collect();
+            let len_tx = tx_ids.len();
 
             for id in tx_ids {
                 // NOTE: This log entry is used to compute performance.
@@ -219,7 +219,7 @@ impl BatchMaker {
             }
 
             // NOTE: This log entry is used to compute performance.
-            tracing::info!("Batch {:?} contains {} B", digest, size);
+            tracing::info!("Batch {:?} contains {} B with {} tx", digest, size, len_tx);
         }
 
         let reason = if timeout { "timeout" } else { "size_reached" };

@@ -1,54 +1,41 @@
 use async_trait::async_trait;
+use executor::ExecutionState;
 use fastcrypto::hash::Hash as _;
 use futures::stream::FuturesUnordered;
-use executor::ExecutionState;
-use types::ConsensusOutput;
 use rayon::prelude::*;
 use sslab_execution::{
     traits::SuiExecutionAdapter,
     types::{ExecutableConsensusOutput, ExecutableEthereumBatch},
     TransactionSigned,
 };
-use sslab_execution_serial::SerialExecutor;
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
 use tracing::{instrument, warn};
+use types::ConsensusOutput;
 
 #[allow(dead_code)]
 pub struct SimpleConsensusHandler {
-    tx_transaction_confirmation: Sender<types::ConsensusOutput>,
     tx_executable_consensus_output: Sender<ExecutableConsensusOutput>,
     // tx_shutdown: Option<PreSubscribedBroadcastSender>,
     handles: FuturesUnordered<JoinHandle<()>>,
 }
 
 impl SimpleConsensusHandler {
-    /*
     pub fn new<Executor>(mut executor: Executor) -> Self
     where
-        Executor: SuiExecutionAdapter + Send + Sync + 'static,
+        Executor: SuiExecutionAdapter + Send + 'static,
     {
         let handles = FuturesUnordered::new();
         let (tx_executable_consensus_output, rx_executable_consensus_output) =
             tokio::sync::mpsc::channel(1000);
 
-        handles.push(executor.run(rx_executable_consensus_output));
-
-        Self {
-            tx_executable_consensus_output,
-            // tx_shutdown: Some(tx_shutdown),
-            handles,
-        }
-    }
-    */
-    pub fn new(tx_transaction_confirmation: Sender<types::ConsensusOutput>, executor: SerialExecutor) -> Self {
-        let handles = FuturesUnordered::new();
-        let (tx_executable_consensus_output, rx_executable_consensus_output) =
-            tokio::sync::mpsc::channel(100000);
+        handles.push(tokio::spawn(async move {
+            executor.run(rx_executable_consensus_output).await;
+        }));
 
         //handles.push(executor.real_execute(tx_transaction_confirmation));
         // let mut client = NarwhalGatewayClient::connect("http://[::1]:50051");
-            // .await
-            // .unwrap();
+        // .await
+        // .unwrap();
 
         // let sub_dag = Bytes::from("hello");
         // let batches = Bytes::from("gateway");
@@ -58,14 +45,9 @@ impl SimpleConsensusHandler {
         // info!("Successfully connected to Gateway!, tested by sending Request");
 
         Self {
-            tx_transaction_confirmation,
             tx_executable_consensus_output,
             // tx_shutdown: Some(tx_shutdown),
             handles,
-            // cnt_consensusoutput: 0,
-            // cnt_batch: 0,
-            // cnt_tx: 0,
-            // gateway_client: client,
         }
     }
 
@@ -98,21 +80,18 @@ impl ExecutionState for SimpleConsensusHandler {
     async fn handle_consensus_output(&self, consensus_output: ConsensusOutput) {
         let sub_dag_index = consensus_output.sub_dag.sub_dag_index;
 
-        /*
-
         cfg_if::cfg_if! {
             if #[cfg(feature = "benchmark")] {
-                use trancing::info;
+                use tracing::info;
                 // NOTE: This log entry is used to compute performance.
                 consensus_output.sub_dag.certificates.iter().for_each(|cert| {
-                    cert.header().payload().keys().for_each(|digest| info!("Consensus handler received a batch -> {:?}", digest));
+                    cert.header.payload.keys().for_each(|digest| info!("Consensus handler received a batch -> {:?}", digest));
                 });
 
                 // NOTE: This log entry is used to compute performance.
                 info!("Received consensus_output has {} batches at subdag_index {}.", consensus_output.sub_dag.num_batches(), sub_dag_index);
             }
         }
-        */
 
         /* (serialized, transaction, output_cert) */
         let mut ethereum_batches = vec![];
@@ -154,7 +133,7 @@ impl ExecutionState for SimpleConsensusHandler {
     }
 }
 
-async fn decode_batch(raw_batch: Vec<Vec<u8>>) -> Vec<TransactionSigned> {
+pub async fn decode_batch(raw_batch: Vec<Vec<u8>>) -> Vec<TransactionSigned> {
     let (send, recv) = tokio::sync::oneshot::channel();
     rayon::spawn(move || {
         let batch = raw_batch

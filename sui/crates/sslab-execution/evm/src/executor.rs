@@ -3,6 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use async_trait::async_trait;
 use parking_lot::RwLock;
 use reth::{
     blockchain_tree::noop::NoopBlockchainTree,
@@ -27,10 +28,11 @@ use reth_db::{
 };
 use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
 
-use tokio::{sync::mpsc::Receiver, task::JoinHandle};
+use tokio::sync::mpsc::Receiver;
 use tracing::trace;
 
 use crate::{
+    db::ThreadSafeCacheState,
     evm_processor::EVMProcessor,
     get_provider_factory_rw,
     revm_utiles::unpack_batches,
@@ -42,49 +44,40 @@ use crate::{
 /// Client is [reth::provider::BlockchainProvider].
 pub struct ParallelExecutor<ParallelExecutionModel> {
     // rx_shutdown: ConditionalBroadcastReceiver,
-    inner: Option<Inner<ParallelExecutionModel>>,
+    inner: Inner<ParallelExecutionModel>,
 }
 
+#[async_trait]
 impl<ParallelExecutionModel: Executable + Send + 'static> SuiExecutionAdapter
     for ParallelExecutor<ParallelExecutionModel>
 {
-    fn run(
+    async fn run(
         &mut self,
-        rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
-    ) -> JoinHandle<()> {
-        let mut inner = std::mem::take(&mut self.inner).expect("inner is not None");
-        let mut _rx_consensus_output = rx_executable_consensus_output;
-
-        tokio::spawn(async move {
-            //TODO: take rw_consensus_certificate
-            loop {
-                tokio::select! {
-                    Some(consensus_output) = _rx_consensus_output.recv() => {
-                        cfg_if::cfg_if! {
-                            if #[cfg(feature = "benchmark")] {
-                                use tracing::info;
-                                // NOTE: This log entry is used to compute performance.
-                                consensus_output.data().iter().for_each(|batch_digest|
-                                    info!("Received Batch -> {:?}", batch_digest.digest())
-                                );
-                            }
-                        }
-
-                        let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
-                        let _ = inner.execute_and_persist(transactions).await;
-
-                        cfg_if::cfg_if! {
-                            if #[cfg(feature = "benchmark")] {
-                                // NOTE: This log entry is used to compute performance.
-                                _digests.iter().for_each(|batch_digest|
-                                    info!("Executed Batch -> {:?}", batch_digest)
-                                );
-                            }
-                        }
-                    }
+        mut rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
+    ) {
+        while let Some(consensus_output) = rx_executable_consensus_output.recv().await {
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "benchmark")] {
+                    use tracing::info;
+                    // NOTE: This log entry is used to compute performance.
+                    consensus_output.data().iter().for_each(|batch_digest|
+                        info!("Received Batch -> {:?}", batch_digest.digest())
+                    );
                 }
             }
-        })
+
+            let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
+            let _ = self.inner.execute_and_persist(transactions).await;
+
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "benchmark")] {
+                    // NOTE: This log entry is used to compute performance.
+                    _digests.iter().for_each(|batch_digest|
+                        info!("Executed Batch -> {:?}", batch_digest)
+                    );
+                }
+            }
+        }
     }
 }
 
@@ -92,13 +85,15 @@ impl<ParallelExecutionModel: Executable + Send + 'static> ParallelExecutor<Paral
     pub fn new(
         // rx_shutdown: ConditionalBroadcastReceiver,
         chain_spec: Arc<ChainSpec>,
+        preloaded_state: Option<ThreadSafeCacheState>,
     ) -> Self {
         Self {
             // rx_shutdown,
-            inner: Some(Inner::new(
+            inner: Inner::new(
                 get_provider_factory_rw(chain_spec.clone()),
                 chain_spec,
-            )),
+                preloaded_state,
+            ),
         }
     }
 }
@@ -116,7 +111,11 @@ pub struct Inner<ParallelExecutionModel> {
 }
 
 impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel> {
-    pub fn new(factory: ProviderFactoryMDBX, chain_spec: Arc<ChainSpec>) -> Self {
+    pub fn new(
+        factory: ProviderFactoryMDBX,
+        chain_spec: Arc<ChainSpec>,
+        preloaded_state: Option<ThreadSafeCacheState>,
+    ) -> Self {
         let client =
             BlockchainProvider::new(factory.clone(), NoopBlockchainTree::default()).unwrap();
 
@@ -133,7 +132,11 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             latest_hash: Arc::new(RwLock::new(best_hash)),
             chain_spec: chain_spec.clone(),
             db: factory.clone(),
-            executor: EVMProcessor::<ParallelExecutionModel>::new(factory, chain_spec),
+            executor: EVMProcessor::<ParallelExecutionModel>::new(
+                factory,
+                chain_spec,
+                preloaded_state,
+            ),
         }
     }
 

@@ -14,16 +14,14 @@ use reth::{
         interpreter::Host,
         primitives::{CfgEnvWithHandlerCfg, HandlerCfg, ResultAndState, SpecId},
         stack::{InspectorStack, InspectorStackConfig},
-        Database, DatabaseCommit, Evm, EvmBuilder, Handler, DBBox,
+        Database, DatabaseCommit, Evm, EvmBuilder, Handler,
     },
 };
-use tokio::sync::{Mutex, mpsc::Sender};
 use sslab_execution::{
     db::{SharableState, ThreadSafeCacheState},
     traits::Executable,
     BlockExecutionError, BlockValidationError, EthEvmConfig, ProviderFactoryMDBX,
 };
-use types::ConsensusOutput;
 
 use tracing::debug;
 
@@ -40,8 +38,10 @@ pub struct SerialExecutor {
     chain_spec: Arc<ChainSpec>,
 }
 
+unsafe impl Send for SerialExecutor {}
+// unsafe impl Sync for SerialExecutor {}
+
 impl Executable for SerialExecutor {
-    
     fn execute(
         &mut self,
         consensus_output: BlockWithSenders,

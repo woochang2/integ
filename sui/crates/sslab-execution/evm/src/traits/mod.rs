@@ -1,6 +1,7 @@
+use async_trait::async_trait;
 use reth::primitives::{BlockWithSenders, ChainSpec, Receipt};
 use std::sync::Arc;
-use tokio::{sync::mpsc::Sender, sync::mpsc::Receiver, task::JoinHandle};
+use tokio::sync::mpsc::Receiver;
 
 use reth_interfaces::executor::BlockExecutionError;
 
@@ -22,11 +23,12 @@ pub trait Executable {
 
 /// An abstraction for an executor in a sui PrimaryNode.
 /// Executor receives ExecutableConsensusOutput from primary node calling [ExecutionState]::handle_consunsus_output, and it executes the block.
+#[async_trait]
 pub trait SuiExecutionAdapter {
-    fn run(
+    async fn run(
         &mut self,
-        rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
-    ) -> JoinHandle<()>;
+        mut rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
+    );
 }
 
 /// An executor capable of executing a block in parallel.

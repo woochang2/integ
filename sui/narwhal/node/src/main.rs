@@ -459,9 +459,11 @@ async fn handle_fabric_block(
     // ordered_blocks contains a list of EcBlocks, a transaction unit in narwhal.
     let mut ordered_blocks: Vec<bytes::Bytes> = Vec::new();
     // let mut ordered_blocks: Vec<bytes::Bytes> = Vec::with_capacity(consensus_ouput.);
-    
+
     if consensus_output.batches.is_empty() {
-        warn!("handle_fabric_block is obviosuly invoked, but the consensus_output.batches is empty!");
+        warn!(
+            "handle_fabric_block is obviosuly invoked, but the consensus_output.batches is empty!"
+        );
         return;
     }
 
@@ -479,10 +481,14 @@ async fn handle_fabric_block(
 
     let req = OrderedBlocks {
         sequence_number: consensus_output.sub_dag.sub_dag_index,
-        blocks: ordered_blocks
+        blocks: ordered_blocks,
     };
 
-    info!("Send ConsensusOutput[seq:{}, num_ecblocks:{}] to Executor!", req.sequence_number, req.blocks.len());
+    info!(
+        "Send ConsensusOutput[seq:{}, num_ecblocks:{}] to Executor!",
+        req.sequence_number,
+        req.blocks.len()
+    );
     let _resp = client.process_ordered_blocks(req).await;
     match _resp {
         Ok(response) => {
@@ -556,8 +562,7 @@ async fn relay_eth(mut rx_output: Receiver<types::ConsensusOutput>) {
 }
 
 async fn relay_noop(mut rx_output: Receiver<types::ConsensusOutput>) {
-    while let Some(_consensus_output) = rx_output.recv().await {
-    }
+    while let Some(_consensus_output) = rx_output.recv().await {}
 }
 
 async fn relay_fab(mut rx_output: Receiver<types::ConsensusOutput>) {
@@ -577,7 +582,7 @@ async fn relay_fab(mut rx_output: Receiver<types::ConsensusOutput>) {
         "Connecting to BSP Executor[addr:{}, validator:{}]",
         deliver_address, validator_id
     );
-    
+
     // get fabric client (for bsp executor)
     let mut client = get_fab_client(deliver_address).await.unwrap();
 
@@ -594,9 +599,9 @@ async fn get_fab_client(
     const MAX_RETRIES: usize = 500; // 최대 시도 횟수
     const RETRY_DELAY: Duration = Duration::from_secs(2); // 다음 재시도까지의 지연 시간
     const TIMEOUT: Duration = Duration::from_secs(2); // 연결 시도 타임아웃
-    // Narwhal Failed to connect to BSP Executor[addr:executor0_edgechain0_com:10000]. Retrying...
+                                                      // Narwhal Failed to connect to BSP Executor[addr:executor0_edgechain0_com:10000]. Retrying...
     let mut retries = 0;
-    
+
     // This loop ensures client have connection to Executor
     loop {
         let result = tonic::transport::Channel::builder(deliver_address.parse()?)
@@ -617,7 +622,10 @@ async fn get_fab_client(
                     println!("Reached max retries. Exiting.");
                     // return Err(Box::new(e));
                 } else {
-                    println!("Narwhal Failed to connect to BSP Executor[addr:{}]. Retrying...", deliver_address);
+                    println!(
+                        "Narwhal Failed to connect to BSP Executor[addr:{}]. Retrying...",
+                        deliver_address
+                    );
                     sleep(RETRY_DELAY).await;
                 }
             }

@@ -8,20 +8,23 @@
     rust_2021_compatibility
 )]
 
-use cfg_if;
 use arc_swap::ArcSwap;
 use clap::{crate_name, crate_version, App, AppSettings, ArgMatches, SubCommand};
+use config::{Committee, Import, Parameters, WorkerCache, WorkerId};
+use crypto::{KeyPair, NetworkKeyPair};
 use eyre::Context;
 use fastcrypto::traits::KeyPair as _;
 use mysten_metrics::RegistryService;
-use config::{Committee, Import, Parameters, WorkerCache, WorkerId};
-use crypto::{KeyPair, NetworkKeyPair};
-use node::{
-    primary_node::PrimaryNode, worker_node::WorkerNode};
 use node::metrics::{primary_metrics_registry, start_prometheus_server, worker_metrics_registry};
+use node::{primary_node::PrimaryNode, worker_node::WorkerNode};
 use prometheus::Registry;
 use sslab_core::consensus_handler::SimpleConsensusHandler;
-use sslab_execution::{get_provider_factory_rw, executor::ParallelExecutor, transaction_validator::EthereumTxValidator, utils::smallbank_contract_benchmark::cache_state_with_smallbank_contract, utils::test_utils::{convert_into_block, default_chain_spec},};
+use sslab_execution::{
+    executor::ParallelExecutor, transaction_validator::EthereumTxValidator,
+    utils::smallbank_contract_benchmark::cache_state_with_smallbank_contract,
+    utils::test_utils::default_chain_spec,
+};
+use sslab_execution_serial::SerialExecutor;
 use std::sync::Arc;
 use storage::NodeStorage;
 use sui_keys::keypair_file::{
@@ -31,7 +34,6 @@ use sui_keys::keypair_file::{
 use sui_types::crypto::{get_key_pair_from_rng, AuthorityKeyPair, SuiKeyPair};
 use telemetry_subscribers::TelemetryGuards;
 use tracing::{info, warn};
-use tokio::sync::mpsc::channel;
 
 #[cfg(feature = "benchmark")]
 use tracing::subscriber::set_global_default;
@@ -72,7 +74,7 @@ async fn main() -> Result<(), eyre::Report> {
                 .subcommand(
                     SubCommand::with_name("primary")
                     .about("Run a single primary")
-                    .args_from_usage("--concurrency-level=<INT> 'The number of transactions to execute in parallel, especially for NEZHA'")
+                    // .args_from_usage("--concurrency-level=<INT> 'The number of batches to execute in parallel, especially for NEZHA'")
                 )
                 .subcommand(
                     SubCommand::with_name("worker")
@@ -273,11 +275,9 @@ async fn run(
     //    CertificateStoreCacheMetrics::new(&registry_service.default_registry());
 
     let store = NodeStorage::reopen(store_path);
-    
-    //let (tx_consensus_certificate, rx_consensus_certificate) =
-    //tokio::sync::mpsc::channel(5);
-    let (tx_consensus_certificate, rx_consensus_certificate) =
-    channel::<ConsensusOutput>(100);
+
+    //TODO: Do we really need relay?
+    // let (tx_consensus_certificate, rx_consensus_certificate) = channel::<ConsensusOutput>(100);
 
     // Check whether to run a primary, a worker, or an entire authority.
     let (primary, worker) = match matches.subcommand() {
@@ -289,57 +289,41 @@ async fn run(
                 registry_service,
             );
 
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "nezha")] {
-                    //use sslab_execution::utils::smallbank_contract_benchmark::concurrent_evm_storage;
+            // cfg_if::cfg_if! {
+            //     if #[cfg(feature = "nezha")] {
+            //         use sslab_execution_nezha::Nezha;
 
-                    let memory_storage = concurrent_evm_storage();
-                } else if #[cfg(feature = "blockstm")] {
-                    use sslab_execution_blockstm::utils::smallbank_contract_benchmark::concurrent_evm_storage;
+            //         let concurrency_level = match matches.subcommand() {
+            //             ("primary", Some(sub_matches)) => {
+            //                 sub_matches
+            //                     .value_of("concurrency-level")
+            //                     .unwrap()
+            //                     .parse::<usize>()
+            //                     .context("The concurrency level must be a positive integer")?
+            //             }
+            //             _ => 10,
+            //         };
 
-                    let memory_storage = concurrent_evm_storage();
-                } else {
-                    //use sslab_execution::utils::smallbank_contract_benchmark::default_memory_storage;
+            //         let execution_model = Nezha::new(memory_storage, concurrency_level);
+            //     }
+            //     else {
+            //         use sslab_execution_serial::SerialExecutor;
 
-                    //let memory_storage = default_memory_storage();
-                }
-            }
-
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "nezha")] {
-                    use sslab_execution_nezha::Nezha;
-
-                    let concurrency_level = match matches.subcommand() {
-                        ("primary", Some(sub_matches)) => {
-                            sub_matches
-                                .value_of("concurrency-level")
-                                .unwrap()
-                                .parse::<usize>()
-                                .context("The concurrency level must be a positive integer")?
-                        }
-                        _ => 10,
-                    };
-
-                    let execution_model = Nezha::new(memory_storage, concurrency_level);
-                }
-                else {
-                    //use sslab_execution_serial::SerialExecutor;
-
-                    //let execution_model = SerialExecutor::new(Arc::new(memory_storage));
-                }
-            }
+            //         let execution_model = SerialExecutor::new(Arc::new(memory_storage));
+            //     }
+            // }
 
             let chain_spec = Arc::new(default_chain_spec());
-            let provider_factory = get_provider_factory_rw(chain_spec.clone());
 
-            use sslab_execution_serial::SerialExecutor;
+            let preloaded_state = if cfg!(feature = "benchmark") {
+                info!("Using preloaded state for benchmarking");
+                Some(cache_state_with_smallbank_contract())
+            } else {
+                None
+            };
+            let executor = ParallelExecutor::<SerialExecutor>::new(chain_spec, preloaded_state);
 
-            let executor = SerialExecutor::new(
-                provider_factory,
-                Some(cache_state_with_smallbank_contract()),
-                chain_spec,
-            );
-            let consensus_handler = SimpleConsensusHandler::new(tx_consensus_certificate, executor);
+            let consensus_handler = SimpleConsensusHandler::new(executor);
 
             primary
                 .start(
@@ -393,11 +377,12 @@ async fn run(
     let _metrics_server_handle = start_prometheus_server(prom_address, &registry);
 
     if let Some(primary) = primary {
+        //TODO: Do we really need relay?
         // relay the consensus' output.
-        let execution_block_type = env::var("EXECUTION_BLOCK_TYPE")
-            .expect("Environment EXECUTION_BLOCK_TYPE variable not found");
+        // let execution_block_type = env::var("EXECUTION_BLOCK_TYPE")
+        //     .expect("Environment EXECUTION_BLOCK_TYPE variable not found");
 
-        relay(rx_consensus_certificate, execution_block_type).await;
+        // relay(rx_consensus_certificate, execution_block_type).await;
         primary.wait().await;
     } else if let Some(worker) = worker {
         worker.wait().await;
@@ -513,9 +498,11 @@ async fn handle_fabric_block(
     // ordered_blocks contains a list of EcBlocks, a transaction unit in narwhal.
     let mut ordered_blocks: Vec<bytes::Bytes> = Vec::new();
     // let mut ordered_blocks: Vec<bytes::Bytes> = Vec::with_capacity(consensus_ouput.);
-    
+
     if consensus_output.batches.is_empty() {
-        warn!("handle_fabric_block is obviosuly invoked, but the consensus_output.batches is empty!");
+        warn!(
+            "handle_fabric_block is obviosuly invoked, but the consensus_output.batches is empty!"
+        );
         return;
     }
 
@@ -533,10 +520,14 @@ async fn handle_fabric_block(
 
     let req = OrderedBlocks {
         sequence_number: consensus_output.sub_dag.sub_dag_index,
-        blocks: ordered_blocks
+        blocks: ordered_blocks,
     };
 
-    info!("Send ConsensusOutput[seq:{}, num_ecblocks:{}] to Executor!", req.sequence_number, req.blocks.len());
+    info!(
+        "Send ConsensusOutput[seq:{}, num_ecblocks:{}] to Executor!",
+        req.sequence_number,
+        req.blocks.len()
+    );
     let _resp = client.process_ordered_blocks(req).await;
     match _resp {
         Ok(response) => {
@@ -610,8 +601,7 @@ async fn relay_eth(mut rx_output: Receiver<types::ConsensusOutput>) {
 }
 
 async fn relay_noop(mut rx_output: Receiver<types::ConsensusOutput>) {
-    while let Some(_consensus_output) = rx_output.recv().await {
-    }
+    while let Some(_consensus_output) = rx_output.recv().await {}
 }
 
 async fn relay_fab(mut rx_output: Receiver<types::ConsensusOutput>) {
@@ -631,7 +621,7 @@ async fn relay_fab(mut rx_output: Receiver<types::ConsensusOutput>) {
         "Connecting to BSP Executor[addr:{}, validator:{}]",
         deliver_address, validator_id
     );
-    
+
     // get fabric client (for bsp executor)
     let mut client = get_fab_client(deliver_address).await.unwrap();
 
@@ -648,9 +638,9 @@ async fn get_fab_client(
     const MAX_RETRIES: usize = 500; // 최대 시도 횟수
     const RETRY_DELAY: Duration = Duration::from_secs(2); // 다음 재시도까지의 지연 시간
     const TIMEOUT: Duration = Duration::from_secs(2); // 연결 시도 타임아웃
-    // Narwhal Failed to connect to BSP Executor[addr:executor0_edgechain0_com:10000]. Retrying...
+                                                      // Narwhal Failed to connect to BSP Executor[addr:executor0_edgechain0_com:10000]. Retrying...
     let mut retries = 0;
-    
+
     // This loop ensures client have connection to Executor
     loop {
         let result = tonic::transport::Channel::builder(deliver_address.parse()?)
@@ -671,7 +661,10 @@ async fn get_fab_client(
                     println!("Reached max retries. Exiting.");
                     // return Err(Box::new(e));
                 } else {
-                    println!("Narwhal Failed to connect to BSP Executor[addr:{}]. Retrying...", deliver_address);
+                    println!(
+                        "Narwhal Failed to connect to BSP Executor[addr:{}]. Retrying...",
+                        deliver_address
+                    );
                     sleep(RETRY_DELAY).await;
                 }
             }

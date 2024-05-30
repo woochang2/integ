@@ -90,7 +90,7 @@ ethers-providers = { version = "^2.0.0" }
 rayon = "1.8.0"
 
 [features]
-benchmark = ["sslab-execution/benchmark"]
+benchmark = ["sslab-execution/benchmark", "node/benchmark"]
 
 # execution model
 # optme = ["sslab-execution-optme"]

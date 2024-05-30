@@ -36,7 +36,11 @@ fn _get_serial_executor_with_evm_processor(
     provider_factory: ProviderFactoryMDBX,
     chain_spec: Arc<ChainSpec>,
 ) -> Inner<SerialExecutor> {
-    Inner::<SerialExecutor>::new(provider_factory, chain_spec)
+    Inner::<SerialExecutor>::new(
+        provider_factory,
+        chain_spec,
+        Some(cache_state_with_smallbank_contract()),
+    )
 }
 
 fn _create_random_smallbank_workload(

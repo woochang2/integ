@@ -104,7 +104,10 @@ async fn run_notify<State: ExecutionState + Send + Sync + 'static>(
     loop {
         tokio::select! {
             Some(message) = tr_notify.recv() => {
-                info!("RECEIVED MSG!");
+                message.sub_dag.certificates.iter().for_each(|cert| {
+                    cert.header.payload.keys().for_each(|digest| info!("Subscriber received a batch -> {:?}", digest));
+                });
+
                 // continue;
                 state.handle_consensus_output(message).await;
                 info!("PROCESSED MSG!");
