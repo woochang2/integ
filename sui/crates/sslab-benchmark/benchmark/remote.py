@@ -286,7 +286,7 @@ class Bench:
 
         return (committee, worker_cache)
 
-    def _run_single(self, rate, skewness, committee, worker_cache, bench_parameters, concurrency_level=1, debug=False):
+    def _run_single(self, rate, skewness, committee, worker_cache, bench_parameters, debug=False):
         faults = bench_parameters.faults
 
         # Kill any potentially unfinished run and delete logs.
@@ -328,7 +328,6 @@ class Bench:
                     PathMaker.workers_file(),
                     PathMaker.db_path(i),
                     PathMaker.parameters_file(),
-                    concurrency_level=concurrency_level,
                     debug=debug
                 )
                 log_file = PathMaker.primary_log_file(i)
@@ -385,7 +384,7 @@ class Bench:
             local=PathMaker.primary_log_file(i)
         )
 
-    def _logs(self, committee, worker_cache, faults, execution_model, concurrency_level):
+    def _logs(self, committee, worker_cache, faults, execution_model):
         # Delete local logs (if any).
         cmd = CommandMaker.clean_logs()
         subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
@@ -406,7 +405,7 @@ class Bench:
 
         # Parse logs and return the parser.
         Print.info('Parsing logs and computing performance...')
-        return LogParser.process(PathMaker.logs_path(), execution_model, faults=faults,concurrency_level=concurrency_level)
+        return LogParser.process(PathMaker.logs_path(), execution_model, faults=faults)
 
     def run(self, bench_parameters_dict, node_parameters_dict, debug=False, include_execution=True):
         assert isinstance(debug, bool)
@@ -451,36 +450,33 @@ class Bench:
                 worker_cache_copy.remove_nodes(worker_cache.size() - n)
 
                 for r in bench_parameters.rate:
-                    clevels = [1] if execution_model != ExecutionModel.NEZHA else bench_parameters.concurrency_level
-                    for concurrency_level in clevels:
                     
-                        for skewness in bench_parameters.skewness:
-                            
-                            Print.heading(f'\nRunning {n} nodes (input rate: {r:,} tx/s, skeness: {skewness:.1}, concurrency level: {concurrency_level})')
+                    for skewness in bench_parameters.skewness:
+                        
+                        Print.heading(f'\nRunning {n} nodes (input rate: {r:,} tx/s, skeness: {skewness:.1})')
 
-                            # Run the benchmark.
-                            for i in range(bench_parameters.runs):
-                                Print.heading(f'Run {i+1}/{bench_parameters.runs}')
-                                try:
-                                    self._run_single(
-                                        r, skewness, committee_copy, worker_cache_copy, bench_parameters, concurrency_level, debug
-                                    )
+                        # Run the benchmark.
+                        for i in range(bench_parameters.runs):
+                            Print.heading(f'Run {i+1}/{bench_parameters.runs}')
+                            try:
+                                self._run_single(
+                                    r, skewness, committee_copy, worker_cache_copy, bench_parameters, debug
+                                )
 
-                                    faults = bench_parameters.faults
-                                    logger = self._logs(
-                                        committee_copy, worker_cache_copy, faults, execution_model, concurrency_level)
-                                    logger.print(PathMaker.result_file(
-                                        faults,
-                                        n,
-                                        bench_parameters.workers,
-                                        bench_parameters.collocate,
-                                        r,
-                                        execution_model,
-                                        concurrency_level,
-                                    ))
-                                except (subprocess.SubprocessError, GroupException, ParseError) as e:
-                                    self.kill(hosts=selected_hosts)
-                                    if isinstance(e, GroupException):
-                                        e = FabricError(e)
-                                    Print.error(BenchError('Benchmark failed', e))
-                                    continue
+                                faults = bench_parameters.faults
+                                logger = self._logs(
+                                    committee_copy, worker_cache_copy, faults, execution_model)
+                                logger.print(PathMaker.result_file(
+                                    faults,
+                                    n,
+                                    bench_parameters.workers,
+                                    bench_parameters.collocate,
+                                    r,
+                                    execution_model,
+                                ))
+                            except (subprocess.SubprocessError, GroupException, ParseError) as e:
+                                self.kill(hosts=selected_hosts)
+                                if isinstance(e, GroupException):
+                                    e = FabricError(e)
+                                Print.error(BenchError('Benchmark failed', e))
+                                continue

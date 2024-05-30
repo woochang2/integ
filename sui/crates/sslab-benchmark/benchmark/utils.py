@@ -103,10 +103,10 @@ class PathMaker:
         return 'results'
 
     @staticmethod
-    def result_file(faults, nodes, workers, collocate, rate, execution_model, concurrency_level):
+    def result_file(faults, nodes, workers, collocate, rate, execution_model):
         return join(
             PathMaker.results_path(),
-            f'bench-{faults}-{nodes}-{workers}-{collocate}-{rate}-{execution_model}-{concurrency_level}.txt'
+            f'bench-{faults}-{nodes}-{workers}-{collocate}-{rate}-{execution_model}.txt'
         )
 
     @staticmethod
@@ -114,9 +114,9 @@ class PathMaker:
         return 'plots'
 
     @staticmethod
-    def agg_file(type, faults, nodes, workers, collocate, rate, execution_model, concurrency_level, skewness):
+    def agg_file(type, faults, nodes, workers, collocate, rate, execution_model, skewness):
 
-        name = f'{type}-bench-{faults}-{nodes}-{workers}-{collocate}-{rate}-{execution_model}-{concurrency_level}-{skewness}.txt'
+        name = f'{type}-bench-{faults}-{nodes}-{workers}-{collocate}-{rate}-{execution_model}-{skewness}.txt'
 
         return join(PathMaker.plots_path(), name)
 
@@ -273,7 +273,6 @@ def multiaddr_to_url_data(addr: str):  # noqa: C901
     return base_url
 
 class ExecutionModel:
-    SERIAL = 'serial'
-    NEZHA = 'nezha'
-    BLOCKSTM = "blockstm"
+    SERIAL = 'serial' # default value
+    OPTME = 'optme'
     

@@ -111,7 +111,6 @@ class LocalBench:
             self.node_parameters.print(PathMaker.parameters_file())
 
             for skewness in self.skewness:
-                for concurrency_level in self.concurrency_level:
                     # Run the clients (they will wait for the nodes to be ready).
                     workers_addresses = worker_cache.workers_addresses(self.faults)
                     rate_share = ceil(rate / worker_cache.workers())
@@ -136,7 +135,6 @@ class LocalBench:
                             PathMaker.workers_file(),
                             PathMaker.db_path(i),
                             PathMaker.parameters_file(),
-                            concurrency_level=concurrency_level,
                             debug=debug
                         )
                         log_file = PathMaker.primary_log_file(i)
@@ -166,7 +164,7 @@ class LocalBench:
 
                     # Parse logs and return the parser.
                     Print.info('Parsing logs...')
-                    return LogParser.process(PathMaker.logs_path(), self.execution_model, faults=self.faults, concurrency_level=self.concurrency_level)
+                    return LogParser.process(PathMaker.logs_path(), self.execution_model, faults=self.faults)
 
         except (subprocess.SubprocessError, ParseError) as e:
             self._kill_nodes()

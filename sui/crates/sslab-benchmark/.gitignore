@@ -4,6 +4,7 @@ data/
 plots/*.txt
 plots/*.pdf
 plots/*.png
+.db/
 .db-*
 .committee.json
 .parameters.json

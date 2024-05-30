@@ -78,8 +78,8 @@
 
   - name: Clone a github repository
     git:
-      repo: https://github.com/Dong-Hyeon-Yu/sui
-      dest: /home/nezha/sui
+      repo: https://github.com/woochang2/integ
+      dest: /home/nezha/integ
       clone: yes
       update: yes
 

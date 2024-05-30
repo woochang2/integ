@@ -308,12 +308,6 @@ class BenchParameters:
                 self.failpoints = False
 
             self.execution_model = json['execution_model']
-            
-            concurrency_level = json['concurrency_level']
-            concurrency_level = concurrency_level if isinstance(concurrency_level, list) else [concurrency_level]
-            if not concurrency_level:
-                raise ConfigError('Missing number of concurrency level')
-            self.concurrency_level = [int(x) for x in concurrency_level]
 
             self.runs = int(json['runs']) if 'runs' in json else 1
         except KeyError as e:
@@ -357,12 +351,6 @@ class PlotParameters:
             if not execution_model:
                 raise ConfigError('Missing execution model')
             self.execution_model = execution_model
-            
-            concurrency_level = json['concurrency_level']
-            concurrency_level = concurrency_level if isinstance(concurrency_level, list) else [concurrency_level]
-            if not concurrency_level:
-                raise ConfigError('Missing number of concurrency level')
-            self.concurrency_level = [int(x) for x in concurrency_level]
             
             skewness = json['skewness']
             skewness = skewness if isinstance(skewness, list) else [skewness]

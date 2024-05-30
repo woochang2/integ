@@ -153,16 +153,16 @@ class LANBench:
             f'(cd {self.settings.repo_name} && git reset --hard origin/{self.settings.branch})',
             # f'(cd {self.settings.repo_name} && git pull -f)',
             'source $HOME/.cargo/env',
-            f'(cd {self.settings.repo_name}/crates/sslab-benchmark && {compile_cmd})',  
+            f'(cd {self.settings.repo_name}/sui/crates/sslab-benchmark && {compile_cmd})',  
         ]
         if include_execution:
             compile_cmd = ' '.join(CommandMaker.compile(execution_model=execution_model, LAN=True))
-            cmd += [f'(cd {self.settings.repo_name}/crates/sslab-core && {compile_cmd})']
+            cmd += [f'(cd {self.settings.repo_name}/sui/crates/sslab-core && {compile_cmd})']
         else:
-            cmd += [f'(cd {self.settings.repo_name}/narwhal/node && {compile_cmd})']
+            cmd += [f'(cd {self.settings.repo_name}/sui/narwhal/node && {compile_cmd})']
 
         cmd += [CommandMaker.alias_binaries(
-            f'./{self.settings.repo_name}/target/release/', include_execution
+            f'./{self.settings.repo_name}/sui/target/release/', include_execution
         )]
         
         g = Group(*ips, user=self.settings.user, connect_kwargs=self.connect)
@@ -263,7 +263,7 @@ class LANBench:
 
         return (committee, worker_cache)
 
-    def _run_single(self, rate, skewness, committee, worker_cache, bench_parameters, concurrency_level=10, debug=False):
+    def _run_single(self, rate, skewness, committee, worker_cache, bench_parameters, debug=False):
         faults = bench_parameters.faults
 
         # Kill any potentially unfinished run and delete logs.
@@ -300,7 +300,6 @@ class LANBench:
                 PathMaker.workers_file(),
                 PathMaker.db_path(i),
                 PathMaker.parameters_file(),
-                concurrency_level=concurrency_level,
                 debug=debug
             )
             log_file = PathMaker.primary_log_file(i)
@@ -331,7 +330,7 @@ class LANBench:
             sleep(ceil(duration / 20))
         self.kill(hosts=hosts, delete_logs=False)
 
-    def _logs(self, committee, worker_cache, faults, execution_model, concurrency_level):
+    def _logs(self, committee, worker_cache, faults, execution_model):
         # Delete local logs (if any).
         cmd = CommandMaker.clean_logs()
         subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
@@ -367,7 +366,7 @@ class LANBench:
 
         # Parse logs and return the parser.
         Print.info('Parsing logs and computing performance...')
-        return LogParser.process(PathMaker.logs_path(), execution_model, faults=faults, concurrency_level=concurrency_level)
+        return LogParser.process(PathMaker.logs_path(), execution_model, faults=faults)
 
     def run(self, bench_parameters_dict, node_parameters_dict, debug=False, include_execution=True):
         assert isinstance(debug, bool)
@@ -413,36 +412,32 @@ class LANBench:
             
                 for r in bench_parameters.rate:
                     
-                    clevels = [1] if execution_model != ExecutionModel.NEZHA else bench_parameters.concurrency_level
-                    for concurrency_level in clevels:
-                    
-                        for skewness in bench_parameters.skewness:
-                            
-                            Print.heading(f'\nRunning {n} nodes (input rate: {r:,} tx/s, concurrency level: {concurrency_level})')
+                    for skewness in bench_parameters.skewness:
+                        
+                        Print.heading(f'\nRunning {n} nodes (input rate: {r:,} tx/s)')
 
-                            # Run the benchmark.
-                            for i in range(bench_parameters.runs):
-                                Print.heading(f'Run {i+1}/{bench_parameters.runs}')
-                                try:
-                                    self._run_single(
-                                        r, skewness, committee_copy, worker_cache_copy, bench_parameters, concurrency_level, debug
-                                    )
+                        # Run the benchmark.
+                        for i in range(bench_parameters.runs):
+                            Print.heading(f'Run {i+1}/{bench_parameters.runs}')
+                            try:
+                                self._run_single(
+                                    r, skewness, committee_copy, worker_cache_copy, bench_parameters, debug
+                                )
 
-                                    faults = bench_parameters.faults
-                                    logger = self._logs(
-                                        committee_copy, worker_cache_copy, faults, execution_model, concurrency_level)
-                                    logger.print(PathMaker.result_file(
-                                        faults,
-                                        n,
-                                        bench_parameters.workers,
-                                        bench_parameters.collocate,
-                                        r,
-                                        execution_model,
-                                        concurrency_level,
-                                    ))
-                                except (subprocess.SubprocessError, GroupException, ParseError) as e:
-                                    self.kill(hosts=selected_hosts)
-                                    if isinstance(e, GroupException):
-                                        e = FabricError(e)
-                                    Print.error(BenchError('Benchmark failed', e))
-                                    continue
+                                faults = bench_parameters.faults
+                                logger = self._logs(
+                                    committee_copy, worker_cache_copy, faults, execution_model)
+                                logger.print(PathMaker.result_file(
+                                    faults,
+                                    n,
+                                    bench_parameters.workers,
+                                    bench_parameters.collocate,
+                                    r,
+                                    execution_model,
+                                ))
+                            except (subprocess.SubprocessError, GroupException, ParseError) as e:
+                                self.kill(hosts=selected_hosts)
+                                if isinstance(e, GroupException):
+                                    e = FabricError(e)
+                                Print.error(BenchError('Benchmark failed', e))
+                                continue

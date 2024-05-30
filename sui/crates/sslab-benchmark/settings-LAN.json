@@ -15,9 +15,9 @@
     },
     "port": 5000,
     "repo": {
-        "name": "sui",
-        "url": "https://github.com/Dong-Hyeon-Yu/sui",
-        "branch": "blockstm"
+        "name": "integ",
+        "url": "https://github.com/woochang2/integ",
+        "branch": "migration_test"
     },
     "instances": {
         "type": "m5d.8xlarge",

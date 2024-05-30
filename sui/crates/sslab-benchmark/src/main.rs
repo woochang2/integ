@@ -4,20 +4,19 @@ use std::sync::Arc;
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
+use crate::workloads::handlers::{SmallBankTransactionHandler, DEFAULT_CHAIN_ID};
 use clap::{crate_name, crate_version, App, AppSettings};
 use ethers_providers::{Http, Provider, ProviderExt};
 use eyre::Context;
 use futures::{future::join_all, StreamExt};
+use narwhal_types::{TransactionProto, TransactionsClient};
 use tokio::{
     net::TcpStream,
     time::{interval, sleep, Duration, Instant},
 };
 use tracing::{info, subscriber::set_global_default, warn};
 use tracing_subscriber::filter::EnvFilter;
-use narwhal_types::{TransactionProto, TransactionsClient};
 use url::Url;
-use crate::workloads::handlers::{SmallBankTransactionHandler, DEFAULT_CHAIN_ID};
-
 
 #[tokio::main]
 async fn main() -> Result<(), eyre::Report> {
@@ -87,12 +86,13 @@ async fn main() -> Result<(), eyre::Report> {
 
     info!("Workload skewness: {skewness:.1}");
 
-    let client = MultipleClient::new(target, rate, skewness, nodes);
-    // let client = Client {
-    //     target,
-    //     rate,
-    //     nodes,
-    // };
+    // let client = MultipleClient::new(target, rate, skewness, nodes);
+    let client = Client {
+        target,
+        rate,
+        skewness,
+        nodes,
+    };
 
     // Wait for all nodes to be online and synchronized.
     client.wait().await;
@@ -106,11 +106,13 @@ struct MultipleClient {
 }
 
 impl MultipleClient {
-
     const MAX_RATE_PER_CLIENT: u64 = 5000;
 
-    pub fn new (target: Url, rate: u64, skewness: f32, nodes: Vec<Url>) -> MultipleClient {
-        let num_of_clients = std::cmp::max((rate + Self::MAX_RATE_PER_CLIENT - 1) / Self::MAX_RATE_PER_CLIENT, 1);
+    pub fn new(target: Url, rate: u64, skewness: f32, nodes: Vec<Url>) -> MultipleClient {
+        let num_of_clients = std::cmp::max(
+            (rate + Self::MAX_RATE_PER_CLIENT - 1) / Self::MAX_RATE_PER_CLIENT,
+            1,
+        );
 
         info!("Number of clients: {num_of_clients}");
 
@@ -119,35 +121,32 @@ impl MultipleClient {
         for _ in 0..num_of_clients {
             let client = Client {
                 target: target.clone(),
-                rate: rate *4 / num_of_clients,
+                rate: rate * 4 / num_of_clients,
                 skewness,
                 nodes: nodes.clone(),
             };
             clients.push(Arc::new(client));
         }
-        MultipleClient {
-            clients
-        }
+        MultipleClient { clients }
     }
 
     pub async fn wait(&self) {
-        join_all(
-            self.clients.iter().cloned().map(|client| {
-                tokio::spawn(async move {
-                    client.wait().await;
-                })
+        join_all(self.clients.iter().cloned().map(|client| {
+            tokio::spawn(async move {
+                client.wait().await;
             })
-        ).await;
+        }))
+        .await;
     }
 
     pub async fn send(&self) -> Result<(), eyre::Report> {
         let results = join_all(
-            self.clients.iter().cloned().map(|client| {
-                tokio::spawn(async move {
-                    client.send().await
-                })
-            })
-        ).await;
+            self.clients
+                .iter()
+                .cloned()
+                .map(|client| tokio::spawn(async move { client.send().await })),
+        )
+        .await;
 
         for result in results {
             if let Err(e) = result {
@@ -158,7 +157,6 @@ impl MultipleClient {
         Ok(())
     }
 }
-
 
 struct Client {
     target: Url,
@@ -198,13 +196,17 @@ impl Client {
         tokio::pin!(interval);
 
         let provider = Provider::<Http>::connect(self.target.as_str()).await;
-        let handler = SmallBankTransactionHandler::new(provider, client.clone(), DEFAULT_CHAIN_ID, self.skewness);
+        let handler = SmallBankTransactionHandler::new(
+            provider,
+            client.clone(),
+            DEFAULT_CHAIN_ID,
+            self.skewness,
+        );
         // if let Err(e) = handler.init().await {
         //     warn!("Failed to initialize workload handler: {e}");
         //     return Err(e.into());
         // }
         let handler = Arc::new(handler);
-
 
         // NOTE: This log entry is used to compute performance.
         info!("Start sending transactions");
@@ -216,14 +218,15 @@ impl Client {
             let handler_copy = handler.clone();
 
             let stream = tokio_stream::iter(0..burst).map(move |_| {
-
                 let raw_tx = handler_copy.create_random_request();
-            
+
                 // NOTE: This log entry is used to compute performance.
                 let tx_id = u64::from_be_bytes(raw_tx[2..10].try_into().unwrap());
                 info!("Sending sample transaction {tx_id}"); //, {}", hex::encode(&raw_tx));
-                
-                TransactionProto { transaction: raw_tx.into() }
+
+                TransactionProto {
+                    transaction: raw_tx.into(),
+                }
             });
 
             if let Err(e) = client.submit_transaction_stream(stream).await {

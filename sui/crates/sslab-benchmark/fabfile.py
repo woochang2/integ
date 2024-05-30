@@ -23,8 +23,7 @@ def local(ctx, debug=False):
         'workers': 1,
         'rate': 1_000,
         'skewness': 0.0,
-        'duration': 2400*30,
-        'concurrency_level': 20,
+        'duration': 30,
         'execution_model': ExecutionModel.SERIAL,
     }
     node_params = {
@@ -302,13 +301,12 @@ def LAN(ctx, debug=False):
         'nodes': [4],
         'workers': 1,
         'collocate': True,
-        'rate': [20_000, 40_000, 60_000, 80_000, 100_000, 120_000],
+        'rate': [20_000, 40_000, 60_000, 80_000, 100_000, 120_000, 150_000, 180_000, 200_000],
         'skewness': [0.0],
         'tx_size': 270,
-        'duration': 100,
+        'duration': 60,
         'runs': 3,
-        'execution_model': [ExecutionModel.NEZHA, ExecutionModel.BLOCKSTM],
-        'concurrency_level': [1], # only for nezha
+        'execution_model': [ExecutionModel.SERIAL],
     }
     node_params = {
         'header_num_of_batches_threshold': 32,
@@ -333,7 +331,7 @@ def LAN(ctx, debug=False):
         },
         'max_concurrent_requests': 500_000,
         'prometheus_metrics': {
-            "socket_addr": "/ip4/0.0.0.0/tcp/6000/http"
+            "socket_addr": "/ip4/0.0.0.0/tcp/0/http"
         },
         "network_admin_server": {
             # Use a random available local port.
@@ -360,7 +358,6 @@ def remote(ctx, debug=False):
         'duration': 100,
         'runs': 1,
         'execution_model': [ExecutionModel.NEZHA, ExecutionModel.BLOCKSTM],
-        'concurrency_level': [1], # only for nezha
     }
     for batch_size in [500_000]:
         node_params = {
@@ -411,7 +408,6 @@ def plot(ctx):
         'workers': [1],
         'collocate': False,
         'execution_model': [ExecutionModel.NEZHA, ExecutionModel.BLOCKSTM],
-        'concurrency_level': [1, 10000],
         'skewness': [0.0],
         'rate': [100_000, 200_000, 300_000, 350_000, 400_000, 500000, 600000, 700000,],
         'tx_size': 270,
