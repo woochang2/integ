@@ -86,13 +86,13 @@ async fn main() -> Result<(), eyre::Report> {
 
     info!("Workload skewness: {skewness:.1}");
 
-    // let client = MultipleClient::new(target, rate, skewness, nodes);
-    let client = Client {
-        target,
-        rate,
-        skewness,
-        nodes,
-    };
+    let client = MultipleClient::new(target, rate, skewness, nodes);
+    // let client = Client {
+    //     target,
+    //     rate,
+    //     skewness,
+    //     nodes,
+    // };
 
     // Wait for all nodes to be online and synchronized.
     client.wait().await;
@@ -106,7 +106,7 @@ struct MultipleClient {
 }
 
 impl MultipleClient {
-    const MAX_RATE_PER_CLIENT: u64 = 5000;
+    const MAX_RATE_PER_CLIENT: u64 = 10_000;
 
     pub fn new(target: Url, rate: u64, skewness: f32, nodes: Vec<Url>) -> MultipleClient {
         let num_of_clients = std::cmp::max(
