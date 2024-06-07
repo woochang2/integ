@@ -11,14 +11,20 @@ pub mod utils;
 use std::{path::Path, sync::Arc};
 
 use reth::{
+    blockchain_tree::{BlockchainTreeConfig, ShareableBlockchainTree},
+    builder::NodeConfig,
     core::init::init_genesis,
     primitives::ChainSpec,
     providers::{providers::BlockchainProvider, ProviderFactory},
+    revm::EvmProcessorFactory,
 };
 use reth_db::{init_db, DatabaseEnv};
 
 pub type ProviderFactoryMDBX = ProviderFactory<DatabaseEnv>;
-pub type BlockchainProviderMDBX<Tree> = BlockchainProvider<DatabaseEnv, Tree>;
+pub type BlockchainProviderMDBX = BlockchainProvider<
+    DatabaseEnv,
+    ShareableBlockchainTree<DatabaseEnv, EvmProcessorFactory<EthEvmConfig>>,
+>;
 
 pub fn get_provider_factory(chain_spec: Arc<ChainSpec>) -> ProviderFactoryMDBX {
     use reth_db::open_db_read_only;
@@ -35,6 +41,27 @@ pub fn get_provider_factory_rw(chain_spec: Arc<ChainSpec>) -> ProviderFactoryMDB
     let db = init_db(path, Default::default()).unwrap();
     let _ = init_genesis(db.clone(), chain_spec.clone());
     ProviderFactoryMDBX::new(db, chain_spec)
+}
+
+pub(crate) fn blockchain_provider(factory: ProviderFactoryMDBX) -> BlockchainProviderMDBX {
+    let (sync_metrics_tx, _sync_metrics_rx) = tokio::sync::mpsc::unbounded_channel();
+    let mut config = NodeConfig::default();
+    config.dev.dev = true; // deactivate beacon consensus
+
+    let tree = config
+        .build_blockchain_tree(
+            factory.clone(),
+            config.consensus(),
+            None,
+            sync_metrics_tx,
+            BlockchainTreeConfig::default(),
+            EthEvmConfig::default(),
+        )
+        .unwrap();
+    let blockchain_tree = ShareableBlockchainTree::new(tree);
+
+    BlockchainProviderMDBX::new(factory, blockchain_tree)
+        .expect("cannot create blockchain provider")
 }
 
 pub use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};

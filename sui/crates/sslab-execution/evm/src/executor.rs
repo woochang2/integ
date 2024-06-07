@@ -9,36 +9,34 @@ use reth::{
     blockchain_tree::noop::NoopBlockchainTree,
     primitives::{
         constants::ETHEREUM_BLOCK_GAS_LIMIT, proofs, Block, BlockWithSenders, ChainSpec, Header,
-        SealedBlock, SealedHeader, TransactionSigned, B256, EMPTY_OMMER_ROOT_HASH, U256,
+        SealedBlockWithSenders, SealedHeader, TransactionSigned, B256, EMPTY_OMMER_ROOT_HASH, U256,
     },
     providers::{
-        providers::BlockchainProvider, BlockReaderIdExt, BundleStateWithReceipts,
-        DatabaseProviderRW, ProviderError,
+        providers::BlockchainProvider, BlockIdReader, BlockReader, BlockReaderIdExt, BlockSource,
+        BundleStateWithReceipts, CanonChainTracker, ProviderError,
     },
     revm::db::states::bundle_state::BundleRetention,
 };
 
-use reth_db::{
-    cursor::{DbCursorRO, DbCursorRW},
-    database::Database,
-    models::{StoredBlockBodyIndices, StoredBlockOmmers, StoredBlockWithdrawals},
-    tables,
-    transaction::DbTxMut,
-    DatabaseEnv, DatabaseError,
+use reth_interfaces::{
+    blockchain_tree::{BlockchainTreeEngine, BlockchainTreeViewer},
+    consensus::ForkchoiceState,
+    executor::{BlockExecutionError, BlockValidationError},
+    RethError, RethResult,
 };
-use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
 
 use tokio::sync::mpsc::Receiver;
 use tracing::trace;
 
 use crate::{
+    blockchain_provider,
     db::ThreadSafeCacheState,
     evm_processor::EVMProcessor,
     get_provider_factory_rw,
     revm_utiles::unpack_batches,
     traits::{Executable, ParallelBlockExecutor as _, SuiExecutionAdapter},
     types::ExecutableConsensusOutput,
-    ProviderFactoryMDBX,
+    BlockchainProviderMDBX, ProviderFactoryMDBX,
 };
 
 /// Client is [reth::provider::BlockchainProvider].
@@ -108,6 +106,8 @@ pub struct Inner<ParallelExecutionModel> {
 
     // pub(crate) provider_factory: ProviderFactoryMDBX,
     pub(crate) executor: EVMProcessor<'static, ParallelExecutionModel>,
+
+    pub(crate) blockchain: BlockchainProviderMDBX,
 }
 
 impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel> {
@@ -125,6 +125,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             .flatten()
             .unwrap_or_else(|| chain_spec.sealed_genesis_header());
 
+        let blockchain_provider = blockchain_provider(factory.clone());
         let (header, best_hash) = best_header.split();
 
         Self {
@@ -137,17 +138,14 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
                 chain_spec,
                 preloaded_state,
             ),
+            blockchain: blockchain_provider,
         }
     }
 
     /// Inserts a new header+body pair
-    pub(crate) fn record_new_block(&self, header: Header) {
-        let hash = header.hash_slow();
-        let number = header.number;
-        *self.latest.write() = header;
-        *self.latest_hash.write() = hash.clone();
-
-        trace!(target: "consensus::auto", num=number, hash=?hash, "inserting new block");
+    pub(crate) fn record_new_block(&self, header: &SealedHeader) {
+        *self.latest.write() = header.header().clone();
+        *self.latest_hash.write() = header.hash();
     }
 
     /// Fills in pre-execution header fields based on the current best block and given
@@ -244,10 +242,20 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
     pub(crate) fn complete_header(
         &self,
         mut header: Header,
+        transactions: &[TransactionSigned],
         bundle_state: &BundleStateWithReceipts,
         gas_used: u64,
     ) -> Result<Header, BlockExecutionError> {
-        use reth::primitives::{constants::EMPTY_RECEIPTS, Bloom, ReceiptWithBloom};
+        use reth::primitives::{
+            constants::{EMPTY_RECEIPTS, EMPTY_TRANSACTIONS},
+            Bloom, ReceiptWithBloom,
+        };
+
+        header.transactions_root = if transactions.is_empty() {
+            EMPTY_TRANSACTIONS
+        } else {
+            proofs::calculate_transaction_root(transactions)
+        };
 
         let receipts = bundle_state.receipts_by_block(header.number);
         header.receipts_root = if receipts.is_empty() {
@@ -282,7 +290,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
     pub async fn execute_and_persist(
         &mut self,
         transactions: Vec<TransactionSigned>,
-    ) -> Result<(), BlockExecutionError> {
+    ) -> RethResult<()> {
         let header = self.build_header_template(self.chain_spec.clone());
 
         let block = Block {
@@ -301,179 +309,152 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         // now execute the block
         let (new_block, bundle_state, gas_used) = self.execute(block).await?;
 
-        let BlockWithSenders { block, senders: _ } = new_block;
+        let BlockWithSenders { block, senders } = new_block;
         let Block { header, body, .. } = block;
 
         trace!(target: "consensus::auto", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
 
         // fill in the rest of the fields
-        let header = self.complete_header(header, &bundle_state, gas_used)?;
+        let new_header = self.complete_header(header, body.as_slice(), &bundle_state, gas_used)?;
 
-        trace!(target: "consensus::auto", root=?header.state_root, ?body, "calculated root");
+        trace!(target: "consensus::auto", root=?new_header.state_root, ?body, "calculated root");
 
-        // finally insert into storage
-        self.record_new_block(header.clone());
-
-        // set new header with hash that should have been updated by insert_new_block
-        let new_header = header.seal(*self.latest_hash.read());
-
-        let db = self
-            .db
-            .provider_rw()
-            .map_err(|e| BlockExecutionError::CanonicalCommit {
-                inner: e.to_string(),
-            })?;
-
-        Self::persist(db, new_header, body, bundle_state)
-            .await
-            .map_err(|e| BlockExecutionError::CanonicalCommit {
-                inner: e.to_string(),
-            })?;
-
-        Ok(())
-    }
-
-    pub(crate) async fn persist(
-        db: DatabaseProviderRW<DatabaseEnv>,
-        header: SealedHeader,
-        body: Vec<TransactionSigned>,
-        bundle_state: BundleStateWithReceipts,
-    ) -> Result<(), ProviderError> {
         // seal the block
         let block = Block {
-            header: header.clone().unseal(),
+            header: new_header.clone(),
             body,
             ommers: vec![],
             withdrawals: None,
         };
-        let sealed_block = block.seal_slow();
 
-        // let tx_bundle_state = self.db.provider_rw()?;
-        // let tx_header = self.db.provider_rw()?;
-        // let tx_body = self.db.provider_rw()?;
+        let sealed_block =
+            SealedBlockWithSenders::new(block.seal_slow(), senders).expect("senders are valid");
+        self.blockchain
+            .insert_block(
+                sealed_block.clone(),
+                reth_interfaces::blockchain_tree::BlockValidationKind::SkipStateRootValidation,
+            )
+            .map_err(|e| RethError::Custom(e.to_string()))?;
 
-        // let db = self.db.provider_rw()?;
+        let state = ForkchoiceState {
+            head_block_hash: sealed_block.hash(),
+            finalized_block_hash: sealed_block.hash(),
+            safe_block_hash: sealed_block.hash(),
+        };
 
-        bundle_state.write_to_db(db.tx_ref(), reth::providers::OriginalValuesKnown::Yes)?;
-        write_header(db.tx_ref(), header)?;
-        write_block(&db, sealed_block)?;
-        db.commit()?;
+        match self.blockchain.make_canonical(&sealed_block.hash()) {
+            Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::Committed { head }) => {
+                self.record_new_block(&head);
+            }
+            Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::AlreadyCanonical { header }) => {
+                panic!("Block already canonical: {:?}", header);
+            }
+            Err(e) => {
+                panic!("Error making block canonical: {:?}", e);
+            }
+        }
 
-        // let handles = Vec::from([
-        //     tokio::spawn(async move {
-        //         println!("writing bundle state");
-        //         match bundle_state.write_to_db(
-        //             tx_bundle_state.tx_ref(),
-        //             reth::providers::OriginalValuesKnown::Yes,
-        //         ) {
-        //             Ok(_) => tx_bundle_state.commit(),
-        //             Err(e) => Err(e.into()),
-        //         }
-        //     }),
-        //     tokio::spawn(async move {
-        //         println!("writing header");
-        //         match write_header(tx_header.tx_ref(), header) {
-        //             Ok(_) => tx_header.commit(),
-        //             Err(e) => Err(e.into()),
-        //         }
-        //     }),
-        //     tokio::spawn(async move {
-        //         println!("writing block");
-        //         match write_block(&tx_body, sealed_block) {
-        //             Ok(_) => tx_body.commit(),
-        //             Err(e) => Err(e.into()),
-        //         }
-        //     }),
-        // ]);
+        self.ensure_consistent_state(state)?;
 
-        // for res in try_join_all(handles).await.unwrap() {
-        //     res?;
-        // }
+        // let chain = Arc::new(Chain::new(
+        //     vec![sealed_block],
+        //     bundle_state,
+        //     None,
+        // ));
+
+        // // send block notification
+        // let _ = self
+        //     .blockchain
+        //     .canon_state_notification
+        //     .send(reth_provider::CanonStateNotification::Commit { new: chain });
 
         Ok(())
     }
-}
 
-fn write_header(
-    tx: &<DatabaseEnv as Database>::TXMut,
-    header: SealedHeader,
-) -> Result<(), DatabaseError> {
-    // trace!(target: "sync::stages::headers", len = header.hash(), "writing header");
-
-    let mut cursor_header = tx.cursor_write::<tables::Headers>()?;
-    let mut cursor_canonical = tx.cursor_write::<tables::CanonicalHeaders>()?;
-
-    if header.number == 0 {
-        return Ok(());
-    }
-
-    let header_hash = header.hash();
-    let header_number = header.number;
-    let header = header.unseal();
-
-    // NOTE: HeaderNumbers are not sorted and can't be inserted with cursor.
-    tx.put::<tables::HeaderNumbers>(header_hash, header_number)?;
-    cursor_header.insert(header_number, header)?;
-    cursor_canonical.insert(header_number, header_hash)?;
-
-    Ok(())
-}
-
-fn write_block<DB: Database>(
-    provider: &DatabaseProviderRW<DB>,
-    block: SealedBlock,
-) -> Result<(), DatabaseError> {
-    // Cursors used to write bodies, ommers and transactions
-    let tx = provider.tx_ref();
-    let mut block_indices_cursor = tx.cursor_write::<tables::BlockBodyIndices>()?;
-    let mut tx_cursor = tx.cursor_write::<tables::Transactions>()?;
-    let mut tx_block_cursor = tx.cursor_write::<tables::TransactionBlock>()?;
-    let mut ommers_cursor = tx.cursor_write::<tables::BlockOmmers>()?;
-    let mut withdrawals_cursor = tx.cursor_write::<tables::BlockWithdrawals>()?;
-
-    // Get id for the next tx_num or zero if there are no transactions.
-    let mut next_tx_num = tx_cursor.last()?.map(|(id, _)| id + 1).unwrap_or_default();
-    let block_number = block.number;
-    let tx_count = block.body.len() as u64;
-
-    // write transaction block index
-    if !block.body.is_empty() {
-        tx_block_cursor.append(next_tx_num - 1, block_number)?;
-    }
-
-    // Write transactions
-    for transaction in block.body {
-        // Append the transaction
-        tx_cursor.append(next_tx_num, transaction.into())?;
-        // Increment transaction id for each transaction.
-        next_tx_num += 1;
-    }
-
-    // Write ommers if any
-    if !block.ommers.is_empty() {
-        ommers_cursor.append(
-            block_number,
-            StoredBlockOmmers {
-                ommers: block.ommers,
-            },
-        )?;
-    }
-
-    // Write withdrawals if any
-    if let Some(withdrawals) = block.withdrawals {
-        if !withdrawals.is_empty() {
-            withdrawals_cursor.append(block_number, StoredBlockWithdrawals { withdrawals })?;
+    /// Ensures that the given forkchoice state is consistent, assuming the head block has been
+    /// made canonical. This takes a status as input, and will only perform consistency checks if
+    /// the input status is VALID.
+    ///
+    /// If the forkchoice state is consistent, this will return Ok(None). Otherwise, this will
+    /// return an instance of [OnForkChoiceUpdated] that is INVALID.
+    ///
+    /// This also updates the safe and finalized blocks in the [CanonChainTracker], if they are
+    /// consistent with the head block.
+    fn ensure_consistent_state(&mut self, state: ForkchoiceState) -> RethResult<Option<bool>> {
+        // Ensure that the finalized block, if not zero, is known and in the canonical chain
+        // after the head block is canonicalized.
+        //
+        // This ensures that the finalized block is consistent with the head block, i.e. the
+        // finalized block is an ancestor of the head block.
+        if !state.finalized_block_hash.is_zero()
+            && !self.blockchain.is_canonical(state.finalized_block_hash)?
+        {
+            return Ok(Some(false));
         }
+
+        // Finalized block is consistent, so update it in the canon chain tracker.
+        self.update_finalized_block(state.finalized_block_hash)?;
+
+        // Also ensure that the safe block, if not zero, is known and in the canonical chain
+        // after the head block is canonicalized.
+        //
+        // This ensures that the safe block is consistent with the head block, i.e. the safe
+        // block is an ancestor of the head block.
+        if !state.safe_block_hash.is_zero()
+            && !self.blockchain.is_canonical(state.safe_block_hash)?
+        {
+            return Ok(Some(false));
+        }
+
+        // Safe block is consistent, so update it in the canon chain tracker.
+        self.update_safe_block(state.safe_block_hash)?;
+
+        Ok(None)
     }
 
-    // insert block meta
-    block_indices_cursor.append(
-        block_number,
-        StoredBlockBodyIndices {
-            first_tx_num: next_tx_num,
-            tx_count,
-        },
-    )?;
+    /// Updates the tracked finalized block if we have it
+    ///
+    /// Returns an error if the block is not found.
+    #[inline]
+    fn update_finalized_block(&self, finalized_block_hash: B256) -> RethResult<()> {
+        if !finalized_block_hash.is_zero() {
+            if self.blockchain.finalized_block_hash()? == Some(finalized_block_hash) {
+                // nothing to update
+                return Ok(());
+            }
 
-    Ok(())
+            let finalized = self
+                .blockchain
+                .find_block_by_hash(finalized_block_hash, BlockSource::Any)?
+                .ok_or_else(|| {
+                    RethError::Provider(ProviderError::UnknownBlockHash(finalized_block_hash))
+                })?;
+            self.blockchain.finalize_block(finalized.number);
+            self.blockchain
+                .set_finalized(finalized.header.seal(finalized_block_hash));
+        }
+        Ok(())
+    }
+
+    /// Updates the tracked safe block if we have it
+    ///
+    /// Returns an error if the block is not found.
+    #[inline]
+    fn update_safe_block(&self, safe_block_hash: B256) -> RethResult<()> {
+        if !safe_block_hash.is_zero() {
+            if self.blockchain.safe_block_hash()? == Some(safe_block_hash) {
+                // nothing to update
+                return Ok(());
+            }
+
+            let safe = self
+                .blockchain
+                .find_block_by_hash(safe_block_hash, BlockSource::Any)?
+                .ok_or_else(|| {
+                    RethError::Provider(ProviderError::UnknownBlockHash(safe_block_hash))
+                })?;
+            self.blockchain.set_safe(safe.header.seal(safe_block_hash));
+        }
+        Ok(())
+    }
 }
