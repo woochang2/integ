@@ -96,7 +96,7 @@ fn serial(c: &mut Criterion) {
 fn serial_with_storage_op(c: &mut Criterion) {
     let s = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
     let param = 1..81;
-    let mut group = c.benchmark_group("Serial");
+    let mut group = c.benchmark_group("Serial with storage operations");
 
     let chain_spec = Arc::new(default_chain_spec());
     let factory = get_provider_factory_rw(chain_spec.clone());
