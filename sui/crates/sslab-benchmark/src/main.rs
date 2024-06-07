@@ -121,7 +121,7 @@ impl MultipleClient {
         for _ in 0..num_of_clients {
             let client = Client {
                 target: target.clone(),
-                rate: rate * 4 / num_of_clients,
+                rate: rate / num_of_clients,
                 skewness,
                 nodes: nodes.clone(),
             };
