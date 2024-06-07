@@ -13,7 +13,7 @@ from benchmark.utils import PathMaker
 
 
 class Setup:
-    def __init__(self, faults, nodes, workers, collocate, rate, tx_size, execution_model, concurrency_level, skewness):
+    def __init__(self, faults, nodes, workers, collocate, rate, tx_size, execution_model, skewness):
         self.nodes = nodes
         self.workers = workers
         self.collocate = collocate
@@ -21,7 +21,6 @@ class Setup:
         self.tx_size = tx_size
         self.faults = faults
         self.execution_model = execution_model
-        self.concurrency_level = concurrency_level
         self.skewness = skewness
         self.max_latency = 'any'
 
@@ -35,7 +34,6 @@ class Setup:
             f' Skewness: {self.skewness}\n'
             f' Max latency: {self.max_latency} ms\n'
             f' Execution Model: {self.execution_model}\n'
-            f' Concurrency level: {self.concurrency_level}\n'
         )
 
     def __eq__(self, other):
@@ -56,13 +54,12 @@ class Setup:
             rate = int(search(r'Input rate: (\d+)', raw).group(1))
             tx_size = int(search(r'Average Transaction size: (\d+)', raw).group(1))
             execution_model = search(r'Execution mode: (\w+)', raw).group(1)
-            concurrency_level = int(search(r'Concurrency level: (\d+)', raw).group(1))
             skewness = float(search(r'skewness: (\d+\.\d+)', raw).group(1))
         except AttributeError as e:
             print(raw)
             raise e 
         
-        return cls(faults, nodes, workers, collocate, rate, tx_size, execution_model, concurrency_level, skewness)
+        return cls(faults, nodes, workers, collocate, rate, tx_size, execution_model, skewness)
 
 
 class Result:
@@ -162,7 +159,6 @@ class LogAggregator:
 
         results = [
             self._print_skewness(),
-            self._print_concurrency(),
             self._print_execution(),
         ]
         for name, records in results:
@@ -189,7 +185,6 @@ class LogAggregator:
                     setup.collocate,
                     setup.rate,
                     setup.execution_model,
-                    setup.concurrency_level,
                     setup.skewness,
                 )
                 with open(filename, 'w') as f:
@@ -223,19 +218,19 @@ class LogAggregator:
 
         return 'skewness', organized
 
-    def _print_concurrency(self):
-        records = deepcopy(self.records)
-        organized = defaultdict(list)
-        for setup, result in records.items():
-            clevel = setup.concurrency_level
-            setup.concurrency_level = 'any'
-            organized[setup] += [(clevel, result)]
+    # def _print_concurrency(self):
+    #     records = deepcopy(self.records)
+    #     organized = defaultdict(list)
+    #     for setup, result in records.items():
+    #         clevel = setup.concurrency_level
+    #         setup.concurrency_level = 'any'
+    #         organized[setup] += [(clevel, result)]
             
-        for setup, results in list(organized.items()):
-            results.sort(key=lambda x: x[0])
-            organized[setup] = [(x, y) for x, y in results]
+    #     for setup, results in list(organized.items()):
+    #         results.sort(key=lambda x: x[0])
+    #         organized[setup] = [(x, y) for x, y in results]
             
-        return 'concurrency', organized
+    #     return 'concurrency', organized
     
     def _print_execution(self):
         records = deepcopy(self.records)

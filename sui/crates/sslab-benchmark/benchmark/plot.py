@@ -182,8 +182,7 @@ class Ploter:
     @staticmethod
     def execution_model(data):
         x = search(r'Execution Model: (\w+)', data).group(1)
-        c = search(r'Concurrency level: (\d+)', data).group(1)
-        return f'{x} ({c})'
+        return f'{x}'
 
     @classmethod
     def plot_latency(cls, files, scalability):
@@ -205,36 +204,36 @@ class Ploter:
         ploter = cls(files)
         ploter._plot(x_label, y_label, ploter._tps, z_axis, 'tps')
         
+    # @classmethod
+    # def plot_concurrency(cls, files, skewness=0.0, tps=False, latency=False, abort_rate=False, effective_tps=False):
+    #     assert tps + latency + abort_rate + effective_tps == 1
+    #     assert isinstance(files, list)
+    #     assert all(isinstance(x, str) for x in files)
+    #     z_axis = cls.send_rates
+    #     x_label = 'Concurrency level'
+        
+    #     ploter = cls(files)
+    #     if tps:
+    #         y_label = ['Throughput (tx/s)']
+    #         output_filename = f"concurrency-tps-{skewness}"
+    #         plot_ftn = ploter._tps
+    #     elif latency:
+    #         y_label = ['Latency (s)']
+    #         output_filename = f"concurrency-latency-{skewness}"
+    #         plot_ftn = ploter._latency
+    #     elif abort_rate:
+    #         y_label = ['Abort rate (%)']
+    #         output_filename = f"concurrency-abort_rate-{skewness}"
+    #         plot_ftn = ploter._abort_rate
+    #     elif effective_tps:
+    #         y_label = ['Effective TPS (tx/s)']
+    #         output_filename = f"concurrency-effective_tps-{skewness}"
+    #         plot_ftn = ploter._effective_tps
+        
+    #     ploter._plot(x_label, y_label, plot_ftn, z_axis, output_filename)
+        
     @classmethod
-    def plot_concurrency(cls, files, skewness=0.0, tps=False, latency=False, abort_rate=False, effective_tps=False):
-        assert tps + latency + abort_rate + effective_tps == 1
-        assert isinstance(files, list)
-        assert all(isinstance(x, str) for x in files)
-        z_axis = cls.send_rates
-        x_label = 'Concurrency level'
-        
-        ploter = cls(files)
-        if tps:
-            y_label = ['Throughput (tx/s)']
-            output_filename = f"concurrency-tps-{skewness}"
-            plot_ftn = ploter._tps
-        elif latency:
-            y_label = ['Latency (s)']
-            output_filename = f"concurrency-latency-{skewness}"
-            plot_ftn = ploter._latency
-        elif abort_rate:
-            y_label = ['Abort rate (%)']
-            output_filename = f"concurrency-abort_rate-{skewness}"
-            plot_ftn = ploter._abort_rate
-        elif effective_tps:
-            y_label = ['Effective TPS (tx/s)']
-            output_filename = f"concurrency-effective_tps-{skewness}"
-            plot_ftn = ploter._effective_tps
-        
-        ploter._plot(x_label, y_label, plot_ftn, z_axis, output_filename)
-        
-    @classmethod
-    def plot_skewness(cls, files, execution_model, clevel=1, tps=False, latency=False, batch_latency=False, abort_rate=False):
+    def plot_skewness(cls, files, execution_model, tps=False, latency=False, batch_latency=False, abort_rate=False):
         assert tps + latency + abort_rate + batch_latency == 1
         assert isinstance(files, list)
         assert all(isinstance(x, str) for x in files)
@@ -243,19 +242,19 @@ class Ploter:
         ploter = cls(files)
         if tps:
             y_label = ['Throughput (tx/s)']
-            output_filename = f"skewness-tps-{execution_model}({clevel})"
+            output_filename = f"skewness-tps-{execution_model}"
             plot_ftn = ploter._tps
         elif latency:
             y_label = ['Latency (s)']
-            output_filename = f"skewness-latency-{execution_model}({clevel})"
+            output_filename = f"skewness-latency-{execution_model}"
             plot_ftn = ploter._latency
         elif abort_rate:
             y_label = ['Abort rate (%)']
-            output_filename = f"skewness-abort_rate-{execution_model}({clevel})"
+            output_filename = f"skewness-abort_rate-{execution_model}"
             plot_ftn = ploter._abort_rate
         elif batch_latency:
             y_label = ['Batch latency (s)']
-            output_filename = f"skewness-batch_latency-{execution_model}({clevel})"
+            output_filename = f"skewness-batch_latency-{execution_model}"
             plot_ftn = ploter._batch_latency
         
         ploter._plot(x_label, y_label, plot_ftn, z_axis, output_filename)
@@ -285,10 +284,7 @@ class Ploter:
         for skewness in params.skewness:
             execution_files = []
             for f in params.faults:
-                
                 for execution_model in params.execution_model:
-                    clevels = params.concurrency_level if execution_model == ExecutionModel.NEZHA else [1]
-                    for clevel in clevels:
                             execution_files += glob(
                                 PathMaker.agg_file(
                                     'execution',
@@ -298,57 +294,53 @@ class Ploter:
                                     params.collocate,
                                     'any',
                                     execution_model,
-                                    clevel,
                                     skewness
                                 )
                             )
             if execution_files:
                 cls.plot_execution(execution_files, skewness)
             
-            if ExecutionModel.NEZHA in params.execution_model:
-                for f in params.faults:
-                    concurrency_files = []
-                    for rate in params.rate:
-                        concurrency_files += glob(
-                            PathMaker.agg_file(
-                                'concurrency',
-                                f,
-                                params.nodes[0],
-                                params.workers[0],
-                                params.collocate,
-                                rate,
-                                ExecutionModel.NEZHA,
-                                'any',
-                                skewness
-                            )
-                        )
-                if concurrency_files:
-                    cls.plot_concurrency(concurrency_files, skewness, tps=True)
-                    cls.plot_concurrency(concurrency_files, skewness, latency=True)
-                    cls.plot_concurrency(concurrency_files, skewness, abort_rate=True)
-                    cls.plot_concurrency(concurrency_files, skewness, effective_tps=True)
+            # if ExecutionModel.NEZHA in params.execution_model:
+            #     for f in params.faults:
+            #         concurrency_files = []
+            #         for rate in params.rate:
+            #             concurrency_files += glob(
+            #                 PathMaker.agg_file(
+            #                     'concurrency',
+            #                     f,
+            #                     params.nodes[0],
+            #                     params.workers[0],
+            #                     params.collocate,
+            #                     rate,
+            #                     ExecutionModel.NEZHA,
+            #                     'any',
+            #                     skewness
+            #                 )
+            #             )
+            #     if concurrency_files:
+            #         cls.plot_concurrency(concurrency_files, skewness, tps=True)
+            #         cls.plot_concurrency(concurrency_files, skewness, latency=True)
+            #         cls.plot_concurrency(concurrency_files, skewness, abort_rate=True)
+            #         cls.plot_concurrency(concurrency_files, skewness, effective_tps=True)
         
         for f in params.faults:
             for execution_model in params.execution_model:
-                clevels = params.concurrency_level if execution_model == ExecutionModel.NEZHA else [1]
-                for clevel in clevels:
-                    skewness_files = []
-                    for rate in params.rate:                
-                        skewness_files += glob(
-                            PathMaker.agg_file(
-                                'skewness',
-                                f,
-                                params.nodes[0],
-                                params.workers[0],
-                                params.collocate,
-                                rate,
-                                execution_model,
-                                clevel,
-                                'any',
-                            )
+                skewness_files = []
+                for rate in params.rate:                
+                    skewness_files += glob(
+                        PathMaker.agg_file(
+                            'skewness',
+                            f,
+                            params.nodes[0],
+                            params.workers[0],
+                            params.collocate,
+                            rate,
+                            execution_model,
+                            'any',
                         )
-                    if skewness_files:
-                        cls.plot_skewness(skewness_files, execution_model, clevel, tps=True)
-                        cls.plot_skewness(skewness_files, execution_model, clevel, latency=True)
-                        cls.plot_skewness(skewness_files, execution_model, clevel, batch_latency=True)
-                        cls.plot_skewness(skewness_files, execution_model, clevel, abort_rate=True)
+                    )
+                if skewness_files:
+                    cls.plot_skewness(skewness_files, execution_model, tps=True)
+                    cls.plot_skewness(skewness_files, execution_model, latency=True)
+                    cls.plot_skewness(skewness_files, execution_model, batch_latency=True)
+                    cls.plot_skewness(skewness_files, execution_model, abort_rate=True)
