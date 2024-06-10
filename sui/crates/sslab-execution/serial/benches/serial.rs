@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use criterion::Throughput;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
+use parking_lot::RwLock;
 use reth::primitives::ChainSpec;
 use sslab_execution::executor::Inner;
 use sslab_execution::traits::Executable;
@@ -11,7 +12,7 @@ use sslab_execution::utils::test_utils::default_chain_spec;
 use sslab_execution::utils::{
     smallbank_contract_benchmark::get_smallbank_handler, test_utils::convert_into_block,
 };
-use sslab_execution::{get_provider_factory_rw, ProviderFactoryMDBX};
+use sslab_execution::{get_provider_factory, get_provider_factory_rw, ProviderFactoryMDBX};
 use sslab_execution_serial::SerialExecutor;
 
 const DEFAULT_BATCH_SIZE: usize = 200;
@@ -58,7 +59,7 @@ fn serial(c: &mut Criterion) {
     let mut group = c.benchmark_group("Serial");
 
     let chain_spec = Arc::new(default_chain_spec());
-    let provider_factory = get_provider_factory_rw(chain_spec.clone());
+    let provider_factory = get_provider_factory(chain_spec.clone());
 
     for zipfian in s {
         for i in param.clone() {
@@ -95,7 +96,7 @@ fn serial(c: &mut Criterion) {
 
 fn serial_with_storage_op(c: &mut Criterion) {
     let s = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
-    let param = 1..81;
+    let param = 80..81;
     let mut group = c.benchmark_group("Serial with storage operations");
 
     let chain_spec = Arc::new(default_chain_spec());
@@ -103,14 +104,15 @@ fn serial_with_storage_op(c: &mut Criterion) {
 
     for zipfian in s {
         for i in param.clone() {
+            let latency_metrics = Arc::new(RwLock::new(vec![]));
             group.throughput(Throughput::Elements((DEFAULT_BATCH_SIZE * i) as u64));
             group.bench_with_input(
                 criterion::BenchmarkId::new(
-                    "blocksize",
+                    "latency",
                     format!("(zipfian: {zipfian}, #batch: {i})"),
                 ),
-                &i,
-                |b, i| {
+                &(i, latency_metrics.clone()),
+                |b, (i, metrics)| {
                     b.to_async(tokio::runtime::Runtime::new().unwrap())
                         .iter_batched(
                             || {
@@ -130,11 +132,52 @@ fn serial_with_storage_op(c: &mut Criterion) {
                                 (serial, consensus_output)
                             },
                             |(mut serial, consensus_output)| async move {
-                                let _ = serial.execute_and_persist(consensus_output).await;
+                                let now = std::time::Instant::now();
+                                match serial.execute_and_persist(consensus_output).await {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        eprintln!("Error: {:?}", e);
+                                    }
+                                };
+                                let elapsed = now.elapsed().as_micros();
+                                metrics.write().push((elapsed, serial.metrics.report()));
                             },
                             BatchSize::SmallInput,
                         );
                 },
+            );
+            let len = latency_metrics.read().len() as f64;
+            if len == 0.0 {
+                continue;
+            }
+
+            let (
+                mut header_creation,
+                mut block_sealing,
+                mut execution_latency,
+                mut persistence_latency,
+                mut total,
+            ) = (0 as f64, 0 as f64, 0 as f64, 0 as f64, 0 as f64);
+
+            for (a1, a2) in latency_metrics.read().iter() {
+                total += *a1 as f64;
+                header_creation += a2.0 as f64;
+                block_sealing += a2.1 as f64;
+                execution_latency += a2.2 as f64;
+                persistence_latency += a2.3 as f64;
+            }
+            total /= len;
+            header_creation /= len;
+            block_sealing /= len;
+            execution_latency /= len;
+            persistence_latency /= len;
+            println!(
+                "Total: {:.4}, header_creation: {:.4}, block_sealing: {:.4}, execution: {:.4}, persistence: {:.4}",
+                total/1000.0, header_creation/1000.0, block_sealing/1000.0, execution_latency/1000.0, persistence_latency/1000.0
+            );
+            println!(
+                "Ktps: {:.4}",
+                (DEFAULT_BATCH_SIZE * i) as f64 / (total / 1000.0)
             );
         }
     }

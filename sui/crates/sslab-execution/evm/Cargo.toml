@@ -43,6 +43,8 @@ reth-interfaces.workspace = true
 reth-trie.workspace = true
 reth-node-ethereum.workspace = true
 
+incr_stats = "1.0.2"
+
 # benchmark utils
 ethers = { version = "^2.0.0", optional = true }
 ethers-core = { version = "^2.0.0", optional = true }

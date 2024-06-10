@@ -4,16 +4,16 @@ use std::{
 };
 
 use async_trait::async_trait;
+use incr_stats::incr::Stats;
 use parking_lot::RwLock;
 use reth::{
-    blockchain_tree::noop::NoopBlockchainTree,
     primitives::{
         constants::ETHEREUM_BLOCK_GAS_LIMIT, proofs, Block, BlockWithSenders, ChainSpec, Header,
         SealedBlockWithSenders, SealedHeader, TransactionSigned, B256, EMPTY_OMMER_ROOT_HASH, U256,
     },
     providers::{
-        providers::BlockchainProvider, BlockIdReader, BlockReader, BlockReaderIdExt, BlockSource,
-        BundleStateWithReceipts, CanonChainTracker, ProviderError,
+        BlockIdReader, BlockReader, BlockReaderIdExt, BlockSource, BundleStateWithReceipts,
+        CanonChainTracker, Chain, ProviderError,
     },
     revm::db::states::bundle_state::BundleRetention,
 };
@@ -96,6 +96,29 @@ impl<ParallelExecutionModel: Executable + Send + 'static> ParallelExecutor<Paral
     }
 }
 
+#[derive(Default)]
+pub struct ExecutionMetrics {
+    pub header_creation_latency: Stats,
+    pub block_sealing_latency: Stats,
+    pub block_execution_latency: Stats,
+    pub persistence_latency: Stats,
+}
+
+impl ExecutionMetrics {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn report(&self) -> (f64, f64, f64, f64) {
+        (
+            self.header_creation_latency.mean().unwrap_or_default(),
+            self.block_sealing_latency.mean().unwrap_or_default(),
+            self.block_execution_latency.mean().unwrap_or_default(),
+            self.persistence_latency.mean().unwrap_or_default(),
+        )
+    }
+}
+
 pub struct Inner<ParallelExecutionModel> {
     pub(crate) latest: Arc<RwLock<Header>>,
     pub(crate) latest_hash: Arc<RwLock<B256>>,
@@ -108,6 +131,8 @@ pub struct Inner<ParallelExecutionModel> {
     pub(crate) executor: EVMProcessor<'static, ParallelExecutionModel>,
 
     pub(crate) blockchain: BlockchainProviderMDBX,
+
+    pub metrics: ExecutionMetrics,
 }
 
 impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel> {
@@ -116,29 +141,30 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         chain_spec: Arc<ChainSpec>,
         preloaded_state: Option<ThreadSafeCacheState>,
     ) -> Self {
-        let client =
-            BlockchainProvider::new(factory.clone(), NoopBlockchainTree::default()).unwrap();
+        let blockchain_provider = blockchain_provider(factory.clone());
 
-        let best_header = client
+        let best_header = blockchain_provider
             .latest_header()
             .ok()
             .flatten()
             .unwrap_or_else(|| chain_spec.sealed_genesis_header());
 
-        let blockchain_provider = blockchain_provider(factory.clone());
         let (header, best_hash) = best_header.split();
+
+        let executor = EVMProcessor::<ParallelExecutionModel>::new(
+            factory.clone(),
+            chain_spec.clone(),
+            preloaded_state,
+        );
 
         Self {
             latest: Arc::new(RwLock::new(header)),
             latest_hash: Arc::new(RwLock::new(best_hash)),
-            chain_spec: chain_spec.clone(),
-            db: factory.clone(),
-            executor: EVMProcessor::<ParallelExecutionModel>::new(
-                factory,
-                chain_spec,
-                preloaded_state,
-            ),
+            chain_spec,
+            db: factory,
+            executor,
             blockchain: blockchain_provider,
+            metrics: ExecutionMetrics::default(),
         }
     }
 
@@ -210,8 +236,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         // call the 4788 beacon contract
         // let mut executor = self.executor.lock();
 
-        // set the first block to find the correct index in bundle state
-        self.executor.set_first_block(block.number - 1);
+        self.executor.set_first_block(block.number);
 
         let (mut new_block, receipts, gas_used) = self.executor.execute_transactions(block)?;
 
@@ -291,8 +316,11 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         &mut self,
         transactions: Vec<TransactionSigned>,
     ) -> RethResult<()> {
+        let now = tokio::time::Instant::now();
         let header = self.build_header_template(self.chain_spec.clone());
+        let mut header_creation_latency = now.elapsed().as_micros();
 
+        let now = tokio::time::Instant::now();
         let block = Block {
             header,
             body: transactions,
@@ -303,11 +331,17 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         .ok_or(BlockExecutionError::Validation(
             BlockValidationError::SenderRecoveryError,
         ))?;
+        let mut block_sealing_latency = now.elapsed().as_micros();
 
         trace!(target: "consensus::auto", transactions=?&block.body, "executing transactions");
 
         // now execute the block
+        let now = tokio::time::Instant::now();
         let (new_block, bundle_state, gas_used) = self.execute(block).await?;
+        self.metrics
+            .block_execution_latency
+            .update(now.elapsed().as_micros() as f64)
+            .unwrap();
 
         let BlockWithSenders { block, senders } = new_block;
         let Block { header, body, .. } = block;
@@ -315,26 +349,36 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         trace!(target: "consensus::auto", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
 
         // fill in the rest of the fields
+        let now = tokio::time::Instant::now();
         let new_header = self.complete_header(header, body.as_slice(), &bundle_state, gas_used)?;
+        header_creation_latency += now.elapsed().as_micros();
+        self.metrics
+            .header_creation_latency
+            .update(header_creation_latency as f64)
+            .unwrap();
 
         trace!(target: "consensus::auto", root=?new_header.state_root, ?body, "calculated root");
 
         // seal the block
-        let block = Block {
-            header: new_header.clone(),
-            body,
-            ommers: vec![],
-            withdrawals: None,
+        let now = tokio::time::Instant::now();
+        let sealed_block = SealedBlockWithSenders {
+            block: Block {
+                header: new_header.clone(),
+                body,
+                ommers: vec![],
+                withdrawals: None,
+            }
+            .seal_slow(),
+            senders,
         };
+        block_sealing_latency += now.elapsed().as_micros();
+        self.metrics
+            .block_sealing_latency
+            .update(block_sealing_latency as f64)
+            .unwrap();
 
-        let sealed_block =
-            SealedBlockWithSenders::new(block.seal_slow(), senders).expect("senders are valid");
-        self.blockchain
-            .insert_block(
-                sealed_block.clone(),
-                reth_interfaces::blockchain_tree::BlockValidationKind::SkipStateRootValidation,
-            )
-            .map_err(|e| RethError::Custom(e.to_string()))?;
+        let chain = Chain::new(vec![sealed_block.clone()], bundle_state.clone(), None);
+        let _ = self.blockchain.tree.insert_chain(chain);
 
         let state = ForkchoiceState {
             head_block_hash: sealed_block.hash(),
@@ -342,6 +386,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             safe_block_hash: sealed_block.hash(),
         };
 
+        let now = tokio::time::Instant::now();
         match self.blockchain.make_canonical(&sealed_block.hash()) {
             Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::Committed { head }) => {
                 self.record_new_block(&head);
@@ -354,14 +399,22 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             }
         }
 
-        self.ensure_consistent_state(state)?;
+        match self.ensure_consistent_state(state)? {
+            Some(false) => {
+                panic!("Forkchoice state is inconsistent after block execution");
+            }
+            _ => {}
+        };
+        self.metrics
+            .persistence_latency
+            .update(now.elapsed().as_micros() as f64)
+            .unwrap();
 
         // let chain = Arc::new(Chain::new(
         //     vec![sealed_block],
         //     bundle_state,
         //     None,
         // ));
-
         // // send block notification
         // let _ = self
         //     .blockchain
