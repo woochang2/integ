@@ -17,7 +17,7 @@
     "repo": {
         "name": "integ",
         "url": "https://github.com/woochang2/integ",
-        "branch": "migration_test"
+        "branch": "pipeline"
     },
     "instances": {
         "type": "m5d.8xlarge",

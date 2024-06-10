@@ -1,15 +1,15 @@
+use core::panic;
 use std::{
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use async_trait::async_trait;
-use incr_stats::incr::Stats;
-use parking_lot::RwLock;
+use narwhal_types::{ConditionalBroadcastReceiver, PreSubscribedBroadcastSender};
 use reth::{
     primitives::{
-        constants::ETHEREUM_BLOCK_GAS_LIMIT, proofs, Block, BlockWithSenders, ChainSpec, Header,
-        SealedBlockWithSenders, SealedHeader, TransactionSigned, B256, EMPTY_OMMER_ROOT_HASH, U256,
+        constants::ETHEREUM_BLOCK_GAS_LIMIT, proofs, Block, BlockNumber, BlockWithSenders,
+        ChainSpec, Header, SealedBlockWithSenders, SealedHeader, TransactionSigned, B256,
+        EMPTY_OMMER_ROOT_HASH, U256,
     },
     providers::{
         BlockIdReader, BlockReader, BlockReaderIdExt, BlockSource, BundleStateWithReceipts,
@@ -21,11 +21,14 @@ use reth::{
 use reth_interfaces::{
     blockchain_tree::{BlockchainTreeEngine, BlockchainTreeViewer},
     consensus::ForkchoiceState,
-    executor::{BlockExecutionError, BlockValidationError},
+    executor::BlockExecutionError,
     RethError, RethResult,
 };
 
-use tokio::sync::mpsc::Receiver;
+use tokio::{
+    sync::mpsc::{Receiver, Sender},
+    task::JoinHandle,
+};
 use tracing::trace;
 
 use crate::{
@@ -33,167 +36,277 @@ use crate::{
     db::ThreadSafeCacheState,
     evm_processor::EVMProcessor,
     get_provider_factory_rw,
-    revm_utiles::unpack_batches,
-    traits::{Executable, ParallelBlockExecutor as _, SuiExecutionAdapter},
+    revm_utiles::{recover_senders, unpack_batches},
+    traits::{Executable, ParallelBlockExecutor as _},
     types::ExecutableConsensusOutput,
     BlockchainProviderMDBX, ProviderFactoryMDBX,
 };
 
-/// Client is [reth::provider::BlockchainProvider].
-pub struct ParallelExecutor<ParallelExecutionModel> {
-    // rx_shutdown: ConditionalBroadcastReceiver,
-    inner: Inner<ParallelExecutionModel>,
+/// [ParallelExecutor] spawns the two components: [Inner] and [PostProcessor].
+/// [Inner] is responsible for recovering senders, executing the transactions, create a new header, and sealing the block.
+/// [PostProcessor] is responsible for persisting the block.
+/// The two components are performed in a pipelined fashion.
+/// Accordingly, [Inner] can execute the next block when the parent block is being persisted.
+/// [Inner] must wait for the parent block to be persisted before create a new header because the state root is calculated based on the parent block.
+pub struct ParallelExecutor {
+    _handles: Vec<JoinHandle<()>>,
 }
 
-#[async_trait]
-impl<ParallelExecutionModel: Executable + Send + 'static> SuiExecutionAdapter
-    for ParallelExecutor<ParallelExecutionModel>
-{
-    async fn run(
-        &mut self,
-        mut rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
-    ) {
-        while let Some(consensus_output) = rx_executable_consensus_output.recv().await {
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "benchmark")] {
-                    use tracing::info;
-                    // NOTE: This log entry is used to compute performance.
-                    consensus_output.data().iter().for_each(|batch_digest|
-                        info!("Received Batch -> {:?}", batch_digest.digest())
-                    );
-                }
-            }
-
-            let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
-            let _ = self.inner.execute_and_persist(transactions).await;
-
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "benchmark")] {
-                    // NOTE: This log entry is used to compute performance.
-                    _digests.iter().for_each(|batch_digest|
-                        info!("Executed Batch -> {:?}", batch_digest)
-                    );
-                }
-            }
-        }
-    }
-}
-
-impl<ParallelExecutionModel: Executable + Send + 'static> ParallelExecutor<ParallelExecutionModel> {
-    pub fn new(
-        // rx_shutdown: ConditionalBroadcastReceiver,
+impl ParallelExecutor {
+    pub fn spawn<ParallelExecutionModel>(
         chain_spec: Arc<ChainSpec>,
         preloaded_state: Option<ThreadSafeCacheState>,
-    ) -> Self {
-        Self {
-            // rx_shutdown,
-            inner: Inner::new(
-                get_provider_factory_rw(chain_spec.clone()),
-                chain_spec,
-                preloaded_state,
-            ),
-        }
-    }
-}
-
-#[derive(Default)]
-pub struct ExecutionMetrics {
-    pub header_creation_latency: Stats,
-    pub block_sealing_latency: Stats,
-    pub block_execution_latency: Stats,
-    pub persistence_latency: Stats,
-}
-
-impl ExecutionMetrics {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn report(&self) -> (f64, f64, f64, f64) {
-        (
-            self.header_creation_latency.mean().unwrap_or_default(),
-            self.block_sealing_latency.mean().unwrap_or_default(),
-            self.block_execution_latency.mean().unwrap_or_default(),
-            self.persistence_latency.mean().unwrap_or_default(),
-        )
-    }
-}
-
-pub struct Inner<ParallelExecutionModel> {
-    pub(crate) latest: Arc<RwLock<Header>>,
-    pub(crate) latest_hash: Arc<RwLock<B256>>,
-
-    pub(crate) chain_spec: Arc<ChainSpec>,
-
-    pub(crate) db: ProviderFactoryMDBX,
-
-    // pub(crate) provider_factory: ProviderFactoryMDBX,
-    pub(crate) executor: EVMProcessor<'static, ParallelExecutionModel>,
-
-    pub(crate) blockchain: BlockchainProviderMDBX,
-
-    pub metrics: ExecutionMetrics,
-}
-
-impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel> {
-    pub fn new(
-        factory: ProviderFactoryMDBX,
-        chain_spec: Arc<ChainSpec>,
-        preloaded_state: Option<ThreadSafeCacheState>,
-    ) -> Self {
+        rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
+        rx_shutdown: ConditionalBroadcastReceiver,
+    ) -> Vec<JoinHandle<()>>
+    where
+        ParallelExecutionModel: Executable + Send + 'static,
+    {
+        let factory = get_provider_factory_rw(chain_spec.clone());
         let blockchain_provider = blockchain_provider(factory.clone());
-
-        let best_header = blockchain_provider
+        let latest_header = blockchain_provider
             .latest_header()
             .ok()
             .flatten()
             .unwrap_or_else(|| chain_spec.sealed_genesis_header());
 
-        let (header, best_hash) = best_header.split();
+        let (tx_execution_output, rx_execution_output) = tokio::sync::mpsc::channel(1);
+        let (tx_latest_block_hash, rx_latest_block_hash) = tokio::sync::mpsc::channel(100);
 
-        let executor = EVMProcessor::<ParallelExecutionModel>::new(
-            factory.clone(),
-            chain_spec.clone(),
-            preloaded_state,
+        // let metrics = ExecutionMetrics::default();
+
+        let mut tx_shutdown_post_processor = PreSubscribedBroadcastSender::new(1);
+
+        let post_processor = PostProcessor::spawn(
+            rx_execution_output,
+            blockchain_provider,
+            tx_latest_block_hash,
+            // metrics.clone(),
+            tx_shutdown_post_processor.subscribe(),
         );
 
-        Self {
-            latest: Arc::new(RwLock::new(header)),
-            latest_hash: Arc::new(RwLock::new(best_hash)),
-            chain_spec,
-            db: factory,
-            executor,
-            blockchain: blockchain_provider,
-            metrics: ExecutionMetrics::default(),
+        let inner = Inner::<ParallelExecutionModel>::spawn(
+            factory,
+            chain_spec.clone(),
+            preloaded_state,
+            latest_header,
+            rx_executable_consensus_output,
+            tx_execution_output,
+            rx_latest_block_hash,
+            // metrics,
+            rx_shutdown,
+            tx_shutdown_post_processor,
+        );
+
+        Vec::from([inner, post_processor])
+    }
+}
+
+// #[derive(Default, Clone)]
+// pub struct ExecutionMetrics {
+//     total_latency: Arc<RwLock<Stats>>,
+//     sender_recovery_latency: Arc<RwLock<Stats>>,
+//     header_creation_latency: Arc<RwLock<Stats>>,
+//     block_sealing_latency: Arc<RwLock<Stats>>,
+//     block_execution_latency: Arc<RwLock<Stats>>,
+//     persistence_latency: Arc<RwLock<Stats>>,
+// }
+
+// pub enum LatencyType {
+//     Total,
+//     HeaderCreation,
+//     BlockSealing,
+//     BlockExecution,
+//     Persistence,
+//     SenderRecovery,
+// }
+
+// impl ExecutionMetrics {
+//     fn report(&self) -> (f64, f64, f64, f64) {
+//         (
+//             self.header_creation_latency
+//                 .read()
+//                 .mean()
+//                 .unwrap_or_default(),
+//             self.block_sealing_latency.read().mean().unwrap_or_default(),
+//             self.block_execution_latency
+//                 .read()
+//                 .mean()
+//                 .unwrap_or_default(),
+//             self.persistence_latency.read().mean().unwrap_or_default(),
+//         )
+//     }
+
+//     fn record(&self, latency: u128, latency_type: LatencyType) {
+//         match latency_type {
+//             LatencyType::Total => {
+//                 self.total_latency.write().update(latency as f64).unwrap();
+//             }
+//             LatencyType::HeaderCreation => {
+//                 self.header_creation_latency
+//                     .write()
+//                     .update(latency as f64)
+//                     .unwrap();
+//             }
+//             LatencyType::BlockSealing => {
+//                 self.block_sealing_latency
+//                     .write()
+//                     .update(latency as f64)
+//                     .unwrap();
+//             }
+//             LatencyType::BlockExecution => {
+//                 self.block_execution_latency
+//                     .write()
+//                     .update(latency as f64)
+//                     .unwrap();
+//             }
+//             LatencyType::Persistence => {
+//                 self.persistence_latency
+//                     .write()
+//                     .update(latency as f64)
+//                     .unwrap();
+//             }
+//             LatencyType::SenderRecovery => {
+//                 self.sender_recovery_latency
+//                     .write()
+//                     .update(latency as f64)
+//                     .unwrap();
+//             }
+//         }
+//     }
+// }
+
+pub struct Inner<ParallelExecutionModel> {
+    /// The latest block header processed by the executor.
+    latest: Header,
+
+    /// The hash of the latest block header processed by the executor.
+    latest_hash: B256,
+
+    chain_spec: Arc<ChainSpec>,
+
+    db: ProviderFactoryMDBX,
+
+    executor: EVMProcessor<'static, ParallelExecutionModel>,
+
+    /// The channel to send the sealed block to the post processor for persist.
+    tx_execution_output: Sender<(SealedBlockWithSenders, BundleStateWithReceipts)>,
+
+    /// The channel to receive the block number of the parent block finished persisting.
+    wait_post_processing: Receiver<BlockNumber>,
+
+    /// The block number sent to the post processor for persisting.
+    post_processing_request: Option<B256>,
+    // pub metrics: ExecutionMetrics,
+}
+
+impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutionModel> {
+    pub fn spawn(
+        factory: ProviderFactoryMDBX,
+        chain_spec: Arc<ChainSpec>,
+        preloaded_state: Option<ThreadSafeCacheState>,
+        latest_header: SealedHeader,
+        rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
+        tx_execution_output: Sender<(SealedBlockWithSenders, BundleStateWithReceipts)>,
+        wait_post_processing: Receiver<BlockNumber>,
+        // metrics: ExecutionMetrics,
+        rx_shutdown: ConditionalBroadcastReceiver,
+        tx_shutdown_post_processor: PreSubscribedBroadcastSender,
+    ) -> JoinHandle<()> {
+        tokio::spawn(async move {
+            let (latest, latest_hash) = latest_header.split();
+
+            let executor = EVMProcessor::<ParallelExecutionModel>::new(
+                factory.clone(),
+                chain_spec.clone(),
+                preloaded_state,
+            );
+
+            Self {
+                latest,
+                latest_hash,
+                chain_spec,
+                db: factory,
+                executor,
+                tx_execution_output,
+                wait_post_processing,
+                post_processing_request: None,
+                // metrics,
+            }
+            .run(
+                tx_shutdown_post_processor,
+                rx_shutdown,
+                rx_executable_consensus_output,
+            )
+            .await;
+        })
+    }
+
+    async fn run(
+        &mut self,
+        tx_shutdown_post_processor: PreSubscribedBroadcastSender,
+        mut rx_shutdown: ConditionalBroadcastReceiver,
+        mut rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
+    ) {
+        loop {
+            tokio::select! {
+                Some(consensus_output) = rx_executable_consensus_output.recv() => {
+                    cfg_if::cfg_if! {
+                        if #[cfg(feature = "benchmark")] {
+                            use tracing::info;
+                            // NOTE: This log entry is used to compute performance.
+                            consensus_output.data().iter().for_each(|batch_digest|
+                                info!("Received Batch -> {:?}", batch_digest.digest())
+                            );
+                        }
+                    }
+
+                    let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
+                    // let latency = tokio::time::Instant::now();
+                    let _ = self.execute_and_persist(transactions).await;
+                    // self.metrics
+                    //     .record(latency.elapsed().as_micros(), LatencyType::Total);
+
+                    cfg_if::cfg_if! {
+                        if #[cfg(feature = "benchmark")] {
+                            // NOTE: This log entry is used to compute performance.
+                            _digests.iter().for_each(|batch_digest|
+                                info!("Executed Batch -> {:?}", batch_digest)
+                            );
+                        }
+                    }
+                }
+
+                Ok(()) = rx_shutdown.receiver.recv() => {
+                    let _ = tx_shutdown_post_processor.send();
+                    println!("Inner shutting down");
+                    return;
+                }
+            }
         }
     }
 
     /// Inserts a new header+body pair
-    pub(crate) fn record_new_block(&self, header: &SealedHeader) {
-        *self.latest.write() = header.header().clone();
-        *self.latest_hash.write() = header.hash();
+    pub(crate) fn record_new_block(&mut self, header: &SealedHeader) {
+        self.latest = header.header().clone();
+        self.latest_hash = header.hash();
     }
 
     /// Fills in pre-execution header fields based on the current best block and given
     /// transactions.
-    pub(crate) fn build_header_template(
-        &self,
-        // transactions: &[TransactionSigned],
-        chain_spec: Arc<ChainSpec>,
-    ) -> Header {
+    pub(crate) fn build_header_template(&self) -> Header {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
-            .as_secs();
+            .as_secs(); //TODO: this is not appropriate for OX-like architecture
 
         // check previous block for base fee
         let base_fee_per_gas = self
             .latest
-            .read()
-            .next_block_base_fee(chain_spec.base_fee_params(timestamp));
+            .next_block_base_fee(self.chain_spec.base_fee_params(timestamp));
 
         Header {
-            parent_hash: *self.latest_hash.read(),
+            parent_hash: self.latest_hash,
             ommers_hash: EMPTY_OMMER_ROOT_HASH,
             beneficiary: Default::default(),
             state_root: Default::default(),
@@ -202,7 +315,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             withdrawals_root: None,
             logs_bloom: Default::default(),
             difficulty: U256::from(2),
-            number: self.latest.read().number + 1,
+            number: self.latest.number + 1,
             gas_limit: ETHEREUM_BLOCK_GAS_LIMIT,
             gas_used: 0,
             timestamp,
@@ -214,24 +327,16 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             extra_data: Default::default(),
             parent_beacon_block_root: None,
         }
-
-        // header.transactions_root = if transactions.is_empty() {
-        //     EMPTY_TRANSACTIONS
-        // } else {
-        //     proofs::calculate_transaction_root(transactions)
-        // };
-
-        // header
     }
 
     /// Executes the block with the given block and senders, on the provided [EVMProcessor].
     ///
     /// This returns the poststate from execution and post-block changes, as well as the gas used.
-    pub(crate) async fn execute(
+    pub(crate) async fn execute_inner(
         &mut self,
         block: BlockWithSenders,
     ) -> Result<(BlockWithSenders, BundleStateWithReceipts, u64), BlockExecutionError> {
-        trace!(target: "consensus::auto", transactions=?&block.body, "executing transactions");
+        trace!(target: "ParallelExecutor::Inner", transactions=?&block.body, "executing transactions");
         // TODO: there isn't really a parent beacon block root here, so not sure whether or not to
         // call the 4788 beacon contract
         // let mut executor = self.executor.lock();
@@ -316,51 +421,57 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         &mut self,
         transactions: Vec<TransactionSigned>,
     ) -> RethResult<()> {
-        let now = tokio::time::Instant::now();
-        let header = self.build_header_template(self.chain_spec.clone());
-        let mut header_creation_latency = now.elapsed().as_micros();
+        // let now = tokio::time::Instant::now();
+        let header = self.build_header_template();
+        // let mut header_creation_latency = now.elapsed().as_micros();
 
-        let now = tokio::time::Instant::now();
-        let block = Block {
-            header,
-            body: transactions,
-            ommers: vec![],
-            withdrawals: None,
-        }
-        .with_recovered_senders()
-        .ok_or(BlockExecutionError::Validation(
-            BlockValidationError::SenderRecoveryError,
-        ))?;
-        let mut block_sealing_latency = now.elapsed().as_micros();
+        // let now = tokio::time::Instant::now();
+        let block = recover_senders(transactions, header).await?;
+        // self.metrics
+        //     .record(now.elapsed().as_micros(), LatencyType::SenderRecovery);
 
-        trace!(target: "consensus::auto", transactions=?&block.body, "executing transactions");
+        trace!(target: "ParallelExecutor::Inner", transactions=?&block.body, "executing transactions");
 
         // now execute the block
-        let now = tokio::time::Instant::now();
-        let (new_block, bundle_state, gas_used) = self.execute(block).await?;
-        self.metrics
-            .block_execution_latency
-            .update(now.elapsed().as_micros() as f64)
-            .unwrap();
+        // let now = tokio::time::Instant::now();
+        let (new_block, bundle_state, gas_used) = self.execute_inner(block).await?;
+        // self.metrics
+        //     .record(now.elapsed().as_micros(), LatencyType::BlockExecution);
 
         let BlockWithSenders { block, senders } = new_block;
         let Block { header, body, .. } = block;
 
-        trace!(target: "consensus::auto", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
+        trace!(target: "ParallelExecutor::Inner", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
+
+        // wait for the parent block to be persisted
+        if let Some(parent_hash) = self.post_processing_request {
+            loop {
+                let block_no = self.wait_post_processing.recv().await.unwrap();
+                if block_no == header.parent_num_hash().number
+                    && parent_hash == header.parent_num_hash().hash
+                {
+                    break;
+                } else {
+                    panic!(
+                        "Received block number {} while waiting for block number {}",
+                        block_no,
+                        header.parent_num_hash().number
+                    );
+                }
+            }
+        }
 
         // fill in the rest of the fields
-        let now = tokio::time::Instant::now();
+        // let now = tokio::time::Instant::now();
         let new_header = self.complete_header(header, body.as_slice(), &bundle_state, gas_used)?;
-        header_creation_latency += now.elapsed().as_micros();
-        self.metrics
-            .header_creation_latency
-            .update(header_creation_latency as f64)
-            .unwrap();
+        // header_creation_latency += now.elapsed().as_micros();
+        // self.metrics
+        //     .record(header_creation_latency, LatencyType::HeaderCreation);
 
-        trace!(target: "consensus::auto", root=?new_header.state_root, ?body, "calculated root");
+        trace!(target: "ParallelExecutor::Inner", root=?new_header.state_root, ?body, "calculated root");
 
         // seal the block
-        let now = tokio::time::Instant::now();
+        // let now = tokio::time::Instant::now();
         let sealed_block = SealedBlockWithSenders {
             block: Block {
                 header: new_header.clone(),
@@ -371,57 +482,98 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             .seal_slow(),
             senders,
         };
-        block_sealing_latency += now.elapsed().as_micros();
-        self.metrics
-            .block_sealing_latency
-            .update(block_sealing_latency as f64)
+        // self.metrics
+        //     .record(now.elapsed().as_micros(), LatencyType::BlockSealing);
+
+        self.record_new_block(&sealed_block.header);
+
+        // send the sealed block to the post processor
+        self.post_processing_request = Some(sealed_block.hash());
+        let _ = self
+            .tx_execution_output
+            .send((sealed_block, bundle_state))
+            .await
             .unwrap();
-
-        let chain = Chain::new(vec![sealed_block.clone()], bundle_state.clone(), None);
-        let _ = self.blockchain.tree.insert_chain(chain);
-
-        let state = ForkchoiceState {
-            head_block_hash: sealed_block.hash(),
-            finalized_block_hash: sealed_block.hash(),
-            safe_block_hash: sealed_block.hash(),
-        };
-
-        let now = tokio::time::Instant::now();
-        match self.blockchain.make_canonical(&sealed_block.hash()) {
-            Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::Committed { head }) => {
-                self.record_new_block(&head);
-            }
-            Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::AlreadyCanonical { header }) => {
-                panic!("Block already canonical: {:?}", header);
-            }
-            Err(e) => {
-                panic!("Error making block canonical: {:?}", e);
-            }
-        }
-
-        match self.ensure_consistent_state(state)? {
-            Some(false) => {
-                panic!("Forkchoice state is inconsistent after block execution");
-            }
-            _ => {}
-        };
-        self.metrics
-            .persistence_latency
-            .update(now.elapsed().as_micros() as f64)
-            .unwrap();
-
-        // let chain = Arc::new(Chain::new(
-        //     vec![sealed_block],
-        //     bundle_state,
-        //     None,
-        // ));
-        // // send block notification
-        // let _ = self
-        //     .blockchain
-        //     .canon_state_notification
-        //     .send(reth_provider::CanonStateNotification::Commit { new: chain });
 
         Ok(())
+    }
+}
+
+pub struct PostProcessor {
+    tx_latest_blocknum: Sender<BlockNumber>,
+    blockchain: BlockchainProviderMDBX,
+    // metrics: ExecutionMetrics,
+}
+
+impl PostProcessor {
+    pub fn spawn(
+        rx_execution_output: Receiver<(SealedBlockWithSenders, BundleStateWithReceipts)>,
+        blockchain: BlockchainProviderMDBX,
+        tx_latest_blocknum: Sender<BlockNumber>,
+        // metrics: ExecutionMetrics,
+        rx_shutdown: ConditionalBroadcastReceiver,
+    ) -> JoinHandle<()> {
+        tokio::spawn(async move {
+            Self {
+                blockchain,
+                tx_latest_blocknum,
+                // metrics,
+            }
+            .run(rx_shutdown, rx_execution_output)
+            .await;
+        })
+    }
+
+    async fn run(
+        &self,
+        mut rx_shutdown: ConditionalBroadcastReceiver,
+        mut rx_execution_output: Receiver<(SealedBlockWithSenders, BundleStateWithReceipts)>,
+    ) {
+        loop {
+            tokio::select! {
+                Some((sealed_block, bundle_state)) = rx_execution_output.recv() => {
+                    let chain = Chain::new(vec![sealed_block.clone()], bundle_state.clone(), None);
+                    let _ = self.blockchain.tree.insert_chain(chain);
+
+                    let state = ForkchoiceState {
+                        head_block_hash: sealed_block.hash(),
+                        finalized_block_hash: sealed_block.hash(),
+                        safe_block_hash: sealed_block.hash(),
+                    };
+
+                    // let now = tokio::time::Instant::now();
+                    match self.blockchain.make_canonical(&sealed_block.hash()) {
+                        Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::Committed { head }) => {
+                            trace!(target: "ParallelExecutor::PostProcesscor", ?head, "block committed")
+                        }
+                        Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::AlreadyCanonical {
+                            header,
+                        }) => {
+                            panic!("Block already canonical: {:?}", header);
+                        }
+                        Err(e) => {
+                            panic!("Error making block canonical: {:?}", e);
+                        }
+                    }
+
+                    match self.ensure_consistent_state(state).unwrap() {
+                        Some(false) => {
+                            panic!("Forkchoice state is inconsistent after block execution");
+                        }
+                        _ => {}
+                    };
+                    // self.metrics
+                    //     .record(now.elapsed().as_micros(), LatencyType::Persistence);
+
+                    let _ = self.tx_latest_blocknum.send(sealed_block.number).await;
+                }
+
+                _ = rx_shutdown.receiver.recv() => {
+                    println!("PostProcessor shutting down");
+                    return;
+                }
+            }
+        }
     }
 
     /// Ensures that the given forkchoice state is consistent, assuming the head block has been
@@ -433,7 +585,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
     ///
     /// This also updates the safe and finalized blocks in the [CanonChainTracker], if they are
     /// consistent with the head block.
-    fn ensure_consistent_state(&mut self, state: ForkchoiceState) -> RethResult<Option<bool>> {
+    fn ensure_consistent_state(&self, state: ForkchoiceState) -> RethResult<Option<bool>> {
         // Ensure that the finalized block, if not zero, is known and in the canonical chain
         // after the head block is canonicalized.
         //

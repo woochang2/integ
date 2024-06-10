@@ -20,7 +20,7 @@ use node::{primary_node::PrimaryNode, worker_node::WorkerNode};
 use prometheus::Registry;
 use sslab_core::consensus_handler::SimpleConsensusHandler;
 use sslab_execution::{
-    executor::ParallelExecutor, transaction_validator::EthereumTxValidator,
+    transaction_validator::EthereumTxValidator,
     utils::smallbank_contract_benchmark::cache_state_with_smallbank_contract,
     utils::test_utils::default_chain_spec,
 };
@@ -321,9 +321,9 @@ async fn run(
             } else {
                 None
             };
-            let executor = ParallelExecutor::<SerialExecutor>::new(chain_spec, preloaded_state);
 
-            let consensus_handler = SimpleConsensusHandler::new(executor);
+            let consensus_handler =
+                SimpleConsensusHandler::new::<SerialExecutor>(chain_spec, preloaded_state);
 
             primary
                 .start(

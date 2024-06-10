@@ -1,37 +1,44 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use executor::ExecutionState;
 use fastcrypto::hash::Hash as _;
-use futures::stream::FuturesUnordered;
 use rayon::prelude::*;
 use sslab_execution::{
-    traits::SuiExecutionAdapter,
+    db::ThreadSafeCacheState,
+    executor::ParallelExecutor,
+    traits::Executable,
     types::{ExecutableConsensusOutput, ExecutableEthereumBatch},
-    TransactionSigned,
+    SslabChainSpec, TransactionSigned,
 };
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
 use tracing::{instrument, warn};
-use types::ConsensusOutput;
+use types::{ConsensusOutput, PreSubscribedBroadcastSender};
 
 #[allow(dead_code)]
 pub struct SimpleConsensusHandler {
     tx_executable_consensus_output: Sender<ExecutableConsensusOutput>,
-    // tx_shutdown: Option<PreSubscribedBroadcastSender>,
-    handles: FuturesUnordered<JoinHandle<()>>,
+    tx_shutdown: PreSubscribedBroadcastSender,
+    handles: Vec<JoinHandle<()>>,
 }
 
 impl SimpleConsensusHandler {
-    pub fn new<Executor>(mut executor: Executor) -> Self
+    pub fn new<ExecutionModel>(
+        chain_spec: Arc<SslabChainSpec>,
+        preloaded_state: Option<ThreadSafeCacheState>,
+    ) -> Self
     where
-        Executor: SuiExecutionAdapter + Send + 'static,
+        ExecutionModel: Executable + Send + 'static,
     {
-        let handles = FuturesUnordered::new();
         let (tx_executable_consensus_output, rx_executable_consensus_output) =
             tokio::sync::mpsc::channel(1000);
-
-        handles.push(tokio::spawn(async move {
-            executor.run(rx_executable_consensus_output).await;
-        }));
-
+        let mut tx_shutdown = PreSubscribedBroadcastSender::new(1);
+        let handles = ParallelExecutor::spawn::<ExecutionModel>(
+            chain_spec,
+            preloaded_state,
+            rx_executable_consensus_output,
+            tx_shutdown.subscribe(),
+        );
         //handles.push(executor.real_execute(tx_transaction_confirmation));
         // let mut client = NarwhalGatewayClient::connect("http://[::1]:50051");
         // .await
@@ -46,7 +53,7 @@ impl SimpleConsensusHandler {
 
         Self {
             tx_executable_consensus_output,
-            // tx_shutdown: Some(tx_shutdown),
+            tx_shutdown,
             handles,
         }
     }
