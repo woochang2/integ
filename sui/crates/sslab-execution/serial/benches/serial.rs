@@ -154,29 +154,26 @@ fn serial_with_storage_op(c: &mut Criterion) {
             let (
                 mut sender_recovery,
                 mut header_creation,
-                mut block_sealing,
                 mut execution_latency,
                 mut persistence_latency,
                 mut total,
-            ) = (0f64, 0f64, 0f64, 0f64, 0f64, 0f64);
+            ) = (0f64, 0f64, 0f64, 0f64, 0f64);
 
             for (a1, a2) in latency_metrics.read().iter() {
                 total += *a1 as f64;
                 sender_recovery += a2.0 as f64;
                 header_creation += a2.1 as f64;
-                block_sealing += a2.2 as f64;
-                execution_latency += a2.3 as f64;
-                persistence_latency += a2.4 as f64;
+                execution_latency += a2.2 as f64;
+                persistence_latency += a2.3 as f64;
             }
             total /= len;
             sender_recovery /= len;
             header_creation /= len;
-            block_sealing /= len;
             execution_latency /= len;
             persistence_latency /= len;
             println!(
-                "Total: {:.4}, sender_recovery: {:.4}, header_creation: {:.4}, block_sealing: {:.4}, execution: {:.4}, persistence: {:.4}",
-                total/1000.0, sender_recovery/1000.0, header_creation/1000.0, block_sealing/1000.0, execution_latency/1000.0, persistence_latency/1000.0
+                "Total: {:.4}, sender_recovery: {:.4}, header_creation: {:.4}, execution: {:.4}, persistence: {:.4}",
+                total/1000.0, sender_recovery/1000.0, header_creation/1000.0, execution_latency/1000.0, persistence_latency/1000.0
             );
             println!(
                 "Ktps: {:.4}",

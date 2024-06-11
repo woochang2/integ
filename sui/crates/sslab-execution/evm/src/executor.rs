@@ -325,7 +325,6 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         trace!(target: "consensus::auto", root=?new_header.state_root, ?body, "calculated root");
 
         // seal the block
-        let now = tokio::time::Instant::now();
         let sealed_block = SealedBlockWithSenders {
             block: Block {
                 header: new_header.clone(),
@@ -336,8 +335,6 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             .seal_slow(),
             senders,
         };
-        self.metrics
-            .record(now.elapsed().as_micros(), LatencyType::BlockSealing);
 
         let chain = Chain::new(vec![sealed_block.clone()], bundle_state.clone(), None);
         let _ = self.blockchain.tree.insert_chain(chain);
@@ -465,25 +462,22 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
 pub struct ExecutionMetrics {
     sender_recovery_latency: Stats,
     header_creation_latency: Stats,
-    block_sealing_latency: Stats,
     block_execution_latency: Stats,
     persistence_latency: Stats,
 }
 
 pub enum LatencyType {
     HeaderCreation,
-    BlockSealing,
     BlockExecution,
     Persistence,
     SenderRecovery,
 }
 
 impl ExecutionMetrics {
-    pub fn report(&self) -> (f64, f64, f64, f64, f64) {
+    pub fn report(&self) -> (f64, f64, f64, f64) {
         (
             self.sender_recovery_latency.mean().unwrap_or_default(),
             self.header_creation_latency.mean().unwrap_or_default(),
-            self.block_sealing_latency.mean().unwrap_or_default(),
             self.block_execution_latency.mean().unwrap_or_default(),
             self.persistence_latency.mean().unwrap_or_default(),
         )
@@ -493,9 +487,6 @@ impl ExecutionMetrics {
         match latency_type {
             LatencyType::HeaderCreation => {
                 self.header_creation_latency.update(latency as f64).unwrap();
-            }
-            LatencyType::BlockSealing => {
-                self.block_sealing_latency.update(latency as f64).unwrap();
             }
             LatencyType::BlockExecution => {
                 self.block_execution_latency.update(latency as f64).unwrap();

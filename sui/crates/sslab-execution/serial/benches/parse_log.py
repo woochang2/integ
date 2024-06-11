@@ -13,28 +13,25 @@ def _parse_throughput(log):
         
 
 def _parse_latency(log):
-    tmp = findall(r'Total: (\d+\.\d+), sender_recovery: \d+\.\d+, header_creation: \d+\.\d+, block_sealing: \d+\.\d+, execution: \d+\.\d+, persistence: \d+\.\d+', log)
+    tmp = findall(r'Total: (\d+\.\d+), sender_recovery: \d+\.\d+, header_creation: \d+\.\d+, execution: \d+\.\d+, persistence: \d+\.\d+', log)
     total = [float(s) for s in tmp]
     
-    tmp = findall(r'Total: \d+\.\d+, sender_recovery: (\d+\.\d+), header_creation: \d+\.\d+, block_sealing: \d+\.\d+, execution: \d+\.\d+, persistence: (\d+\.\d+)', log)
+    tmp = findall(r'Total: \d+\.\d+, sender_recovery: (\d+\.\d+), header_creation: \d+\.\d+, execution: \d+\.\d+, persistence: \d+\.\d+', log)
     sender_recovery = [float(s) for s in tmp]
     
-    tmp = findall(r'Total: \d+\.\d+, sender_recovery: \d+\.\d+, header_creation: (\d+\.\d+), block_sealing: \d+\.\d+, execution: \d+\.\d+, persistence: \d+\.\d+', log)
+    tmp = findall(r'Total: \d+\.\d+, sender_recovery: \d+\.\d+, header_creation: (\d+\.\d+), execution: \d+\.\d+, persistence: \d+\.\d+', log)
     header_creation = [float(s) for s in tmp]
     
-    tmp = findall(r'Total: \d+\.\d+, sender_recovery: \d+\.\d+, header_creation: \d+\.\d+, block_sealing: (\d+\.\d+), execution: \d+\.\d+, persistence: \d+\.\d+', log)
-    sealing = [float(e) for e in tmp]
-    
-    tmp = findall(r'Total: \d+\.\d+, sender_recovery: \d+\.\d+, header_creation: \d+\.\d+, block_sealing: \d+\.\d+, execution: (\d+\.\d+), persistence: \d+\.\d+', log)
+    tmp = findall(r'Total: \d+\.\d+, sender_recovery: \d+\.\d+, header_creation: \d+\.\d+, execution: (\d+\.\d+), persistence: \d+\.\d+', log)
     execution = [float(v) for v in tmp]
     
-    tmp = findall(r'Total: \d+\.\d+, sender_recovery: \d+\.\d+, header_creation: \d+\.\d+, block_sealing: \d+\.\d+, execution: \d+\.\d+, persistence: (\d+\.\d+)', log)
+    tmp = findall(r'Total: \d+\.\d+, sender_recovery: \d+\.\d+, header_creation: \d+\.\d+, execution: \d+\.\d+, persistence: (\d+\.\d+)', log)
     persist = [float(s) for s in tmp]
     
     tmp = findall(r'Ktps: (\d+\.\d+)', log)
     ktps = [float(t) for t in tmp]
     
-    return ktps, total, sender_recovery, header_creation, sealing, execution, persist
+    return ktps, total, sender_recovery, header_creation, execution, persist
 
 def result(log):
     result = ""
@@ -46,10 +43,10 @@ def result(log):
         
         
     if latency:= _parse_latency(log):
-        ktps, total, sender_recovery, header_creation, sealing, execution, persist = latency
-        result += "\n[Latency (Ktps; total (ms); sender_recovery (ms); header_creation (ms); sealing (ms); execution (ms); persist (ms))]\n"
-        for k, t, r, h, s, e, p in zip(ktps, total, sender_recovery, header_creation, sealing, execution, persist, strict=True):
-            result += f"{k} {t} {r} {h} {s} {e} {p}\n"
+        ktps, total, sender_recovery, header_creation, execution, persist = latency
+        result += "\n[Latency (Ktps; total (ms); sender_recovery (ms); header_creation (ms); execution (ms); persist (ms))]\n"
+        for k, t, r, h, e, p in zip(ktps, total, sender_recovery, header_creation, execution, persist, strict=True):
+            result += f"{k} {t} {r} {h} {e} {p}\n"
     
             
         
