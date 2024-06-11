@@ -81,7 +81,8 @@ pub mod revm_utiles {
     use reth::{
         core::node_config::{ConfigureEvm, ConfigureEvmEnv as _},
         primitives::{
-            revm::env::fill_tx_env, Address, ChainSpec, Hardfork, Header, TransactionSigned,
+            revm::env::fill_tx_env, Address, Block, BlockWithSenders, ChainSpec, Hardfork, Header,
+            TransactionSigned,
         },
         providers::ProviderError,
         revm::{
@@ -93,7 +94,10 @@ pub mod revm_utiles {
             Evm, Handler,
         },
     };
-    use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
+    use reth_interfaces::{
+        executor::{BlockExecutionError, BlockValidationError},
+        RethResult,
+    };
 
     pub type EvmWithSharableState<'a, DB> =
         Evm<'a, InspectorStack, SharableState<StateProviderDatabase<DB>>>;
@@ -209,5 +213,35 @@ pub mod revm_utiles {
         });
 
         recv.await.unwrap()
+    }
+
+    #[inline]
+    /// Recovers the senders of the transactions in the block.
+    /// [Block]::with_recovered_senders internally uses [rayon]::par_iter.
+    /// Thus, [BlockWithSenders] is created in a separate rayon thread pool rather than tokio thread pool.
+    pub async fn recover_senders(
+        transactions: Vec<TransactionSigned>,
+        header: Header,
+    ) -> RethResult<BlockWithSenders> {
+        let (send, recv) = tokio::sync::oneshot::channel();
+
+        rayon::spawn(move || {
+            let block = Block {
+                header,
+                body: transactions,
+                ommers: vec![],
+                withdrawals: None,
+            }
+            .with_recovered_senders(); // this function internally uses par-iter of rayon.
+
+            let _ = send.send(block).unwrap();
+        });
+
+        match recv.await.unwrap() {
+            Some(block) => Ok(block),
+            None => Err(
+                BlockExecutionError::Validation(BlockValidationError::SenderRecoveryError).into(),
+            ),
+        }
     }
 }

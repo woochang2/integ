@@ -21,7 +21,7 @@ use reth::{
 use reth_interfaces::{
     blockchain_tree::{BlockchainTreeEngine, BlockchainTreeViewer},
     consensus::ForkchoiceState,
-    executor::{BlockExecutionError, BlockValidationError},
+    executor::BlockExecutionError,
     RethError, RethResult,
 };
 
@@ -33,7 +33,7 @@ use crate::{
     db::ThreadSafeCacheState,
     evm_processor::EVMProcessor,
     get_provider_factory_rw,
-    revm_utiles::unpack_batches,
+    revm_utiles::{recover_senders, unpack_batches},
     traits::{Executable, ParallelBlockExecutor as _, SuiExecutionAdapter},
     types::ExecutableConsensusOutput,
     BlockchainProviderMDBX, ProviderFactoryMDBX,
@@ -93,29 +93,6 @@ impl<ParallelExecutionModel: Executable + Send + 'static> ParallelExecutor<Paral
                 preloaded_state,
             ),
         }
-    }
-}
-
-#[derive(Default)]
-pub struct ExecutionMetrics {
-    pub header_creation_latency: Stats,
-    pub block_sealing_latency: Stats,
-    pub block_execution_latency: Stats,
-    pub persistence_latency: Stats,
-}
-
-impl ExecutionMetrics {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn report(&self) -> (f64, f64, f64, f64) {
-        (
-            self.header_creation_latency.mean().unwrap_or_default(),
-            self.block_sealing_latency.mean().unwrap_or_default(),
-            self.block_execution_latency.mean().unwrap_or_default(),
-            self.persistence_latency.mean().unwrap_or_default(),
-        )
     }
 }
 
@@ -321,17 +298,9 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         let mut header_creation_latency = now.elapsed().as_micros();
 
         let now = tokio::time::Instant::now();
-        let block = Block {
-            header,
-            body: transactions,
-            ommers: vec![],
-            withdrawals: None,
-        }
-        .with_recovered_senders()
-        .ok_or(BlockExecutionError::Validation(
-            BlockValidationError::SenderRecoveryError,
-        ))?;
-        let mut block_sealing_latency = now.elapsed().as_micros();
+        let block = recover_senders(transactions, header).await?;
+        self.metrics
+            .record(now.elapsed().as_micros(), LatencyType::SenderRecovery);
 
         trace!(target: "consensus::auto", transactions=?&block.body, "executing transactions");
 
@@ -339,9 +308,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         let now = tokio::time::Instant::now();
         let (new_block, bundle_state, gas_used) = self.execute(block).await?;
         self.metrics
-            .block_execution_latency
-            .update(now.elapsed().as_micros() as f64)
-            .unwrap();
+            .record(now.elapsed().as_micros(), LatencyType::BlockExecution);
 
         let BlockWithSenders { block, senders } = new_block;
         let Block { header, body, .. } = block;
@@ -353,9 +320,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         let new_header = self.complete_header(header, body.as_slice(), &bundle_state, gas_used)?;
         header_creation_latency += now.elapsed().as_micros();
         self.metrics
-            .header_creation_latency
-            .update(header_creation_latency as f64)
-            .unwrap();
+            .record(header_creation_latency, LatencyType::HeaderCreation);
 
         trace!(target: "consensus::auto", root=?new_header.state_root, ?body, "calculated root");
 
@@ -371,11 +336,8 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             .seal_slow(),
             senders,
         };
-        block_sealing_latency += now.elapsed().as_micros();
         self.metrics
-            .block_sealing_latency
-            .update(block_sealing_latency as f64)
-            .unwrap();
+            .record(now.elapsed().as_micros(), LatencyType::BlockSealing);
 
         let chain = Chain::new(vec![sealed_block.clone()], bundle_state.clone(), None);
         let _ = self.blockchain.tree.insert_chain(chain);
@@ -406,20 +368,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             _ => {}
         };
         self.metrics
-            .persistence_latency
-            .update(now.elapsed().as_micros() as f64)
-            .unwrap();
-
-        // let chain = Arc::new(Chain::new(
-        //     vec![sealed_block],
-        //     bundle_state,
-        //     None,
-        // ));
-        // // send block notification
-        // let _ = self
-        //     .blockchain
-        //     .canon_state_notification
-        //     .send(reth_provider::CanonStateNotification::Commit { new: chain });
+            .record(now.elapsed().as_micros(), LatencyType::Persistence);
 
         Ok(())
     }
@@ -509,5 +458,54 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
             self.blockchain.set_safe(safe.header.seal(safe_block_hash));
         }
         Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct ExecutionMetrics {
+    sender_recovery_latency: Stats,
+    header_creation_latency: Stats,
+    block_sealing_latency: Stats,
+    block_execution_latency: Stats,
+    persistence_latency: Stats,
+}
+
+pub enum LatencyType {
+    HeaderCreation,
+    BlockSealing,
+    BlockExecution,
+    Persistence,
+    SenderRecovery,
+}
+
+impl ExecutionMetrics {
+    pub fn report(&self) -> (f64, f64, f64, f64, f64) {
+        (
+            self.sender_recovery_latency.mean().unwrap_or_default(),
+            self.header_creation_latency.mean().unwrap_or_default(),
+            self.block_sealing_latency.mean().unwrap_or_default(),
+            self.block_execution_latency.mean().unwrap_or_default(),
+            self.persistence_latency.mean().unwrap_or_default(),
+        )
+    }
+
+    fn record(&mut self, latency: u128, latency_type: LatencyType) {
+        match latency_type {
+            LatencyType::HeaderCreation => {
+                self.header_creation_latency.update(latency as f64).unwrap();
+            }
+            LatencyType::BlockSealing => {
+                self.block_sealing_latency.update(latency as f64).unwrap();
+            }
+            LatencyType::BlockExecution => {
+                self.block_execution_latency.update(latency as f64).unwrap();
+            }
+            LatencyType::Persistence => {
+                self.persistence_latency.update(latency as f64).unwrap();
+            }
+            LatencyType::SenderRecovery => {
+                self.sender_recovery_latency.update(latency as f64).unwrap();
+            }
+        }
     }
 }
