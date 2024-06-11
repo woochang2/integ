@@ -301,11 +301,11 @@ def LAN(ctx, debug=False):
         'nodes': [4],
         'workers': 1,
         'collocate': True,
-        'rate': [20_000, 40_000, 60_000, 80_000, 100_000, 120_000, 150_000],
+        'rate': [20_000, 50_000, 80_000, 110_000, 140_000, 170_000, 200_000, 230_000, 260_000],
         'skewness': [0.0],
         'tx_size': 270,
         'duration': 60,
-        'runs': 1,
+        'runs': 2,
         'execution_model': [ExecutionModel.SERIAL],
     }
     node_params = {
@@ -409,7 +409,7 @@ def plot(ctx):
         'collocate': True,
         'execution_model': [ExecutionModel.SERIAL],
         'skewness': [0.0],
-        'rate': [20_000, 40_000, 60_000, 80_000, 100_000, 120_000, 150_000],
+        'rate': [20_000, 50_000, 80_000, 110_000, 140_000, 170_000, 200_000, 230_000, 260_000],
         'tx_size': 270,
         'max_latency': [1_000]
     }

@@ -104,8 +104,8 @@ class Result:
 
     @classmethod
     def from_str(cls, raw):
-        tps = int(search(r'Execution TPS: (\d+)', raw).group(1))
-        latency = int(search(r'Execution latency: (\d+)', raw).group(1))
+        tps = int(search(r'End-to-end TPS: (\d+)', raw).group(1))
+        latency = int(search(r'End-to-end latency: (\d+)', raw).group(1))
         batch_latency = int(search(r'Batch execution latency: (\d+)', raw).group(1))
         send_rate = int(search(r'Actual Sending Rate: (\d+)', raw).group(1))
         batch_size = int(search(r'Average Batch size: (\d+)', raw).group(1))
