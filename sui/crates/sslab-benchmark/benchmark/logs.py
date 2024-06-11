@@ -317,9 +317,13 @@ class LogParser:
 
 
     def _end_to_end_throughput(self):
+        '''
+            E2E traditionally means from the client to the finish of the tx, i.e., persisting the tx.
+            However, in our case, we are considering the time from proposal to persisting the tx for evaluation of consensus and execution layers. 
+        '''
         if not self.commits:
             return 0, 0, 0
-        start, end = min(self.start), max(self.commits.values())
+        start, end = min(self.proposals.values()), max(self.commits.values())
         duration = end - start
         bytes = sum(self.commit_sizes.values())
         bps = bytes / duration
@@ -327,14 +331,15 @@ class LogParser:
         return tps, bps, duration
 
     def _end_to_end_latency(self):
+        '''
+            E2E traditionally means from the client to the finish of the tx, i.e., persisting the tx.
+            However, in our case, we are considering the time from proposal to persisting the tx for evaluation of consensus and execution layers. 
+        '''
         latency = []
-        for sent, received in zip(self.sent_samples, self.received_samples):
-            for tx_id, batch_id in received.items():
-                if batch_id in self.commits:
-                    assert tx_id in sent.keys()  # We receive txs that we sent.
-                    start = sent[tx_id]
-                    end = self.commits[batch_id]
-                    latency += [end-start]
+        for batch_id, start in self.proposals.items():
+            if batch_id in self.commits:
+                end = self.commits[batch_id]
+                latency += [end-start]
         return mean(latency) if latency else 0
 
     def result(self):
