@@ -263,18 +263,23 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
 
                     let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
                     // let latency = tokio::time::Instant::now();
-                    let _ = self.execute_and_persist(transactions).await;
+                    match self.execute_and_persist(transactions).await {
+                        Ok(()) => {
+                            cfg_if::cfg_if! {
+                                if #[cfg(feature = "benchmark")] {
+                                    // NOTE: This log entry is used to compute performance.
+                                    _digests.iter().for_each(|batch_digest|
+                                        info!("Executed Batch -> {:?}", batch_digest)
+                                    );
+                                }
+                            }
+                        },
+                        Err(e) => tracing::error!("Error occures during execution: {e:?}")
+                    }
                     // self.metrics
                     //     .record(latency.elapsed().as_micros(), LatencyType::Total);
 
-                    cfg_if::cfg_if! {
-                        if #[cfg(feature = "benchmark")] {
-                            // NOTE: This log entry is used to compute performance.
-                            _digests.iter().for_each(|batch_digest|
-                                info!("Executed Batch -> {:?}", batch_digest)
-                            );
-                        }
-                    }
+
                 }
 
                 Ok(()) = rx_shutdown.receiver.recv() => {

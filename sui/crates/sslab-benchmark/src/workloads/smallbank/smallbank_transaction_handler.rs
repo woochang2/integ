@@ -1,28 +1,33 @@
-use std::{sync::Arc, str::FromStr};
+use std::{str::FromStr, sync::Arc};
 
 use ethers_core::{
-    types::{TransactionRequest, Signature, Address, H256, U256, transaction::eip2718::TypedTransaction, H160}, 
-    rand::{distributions::Uniform, self, prelude::Distribution, prelude::*}, 
-    utils::{rlp, hex}
+    rand::{self, distributions::Uniform, prelude::Distribution, prelude::*},
+    types::{
+        transaction::eip2718::TypedTransaction, Address, Signature, TransactionRequest, H160, H256,
+        U256,
+    },
+    utils::{hex, rlp},
 };
-use ethers_providers::{Provider, Http};
+use ethers_providers::{Http, Provider};
 use ethers_signers::{LocalWallet, Signer};
-use narwhal_types::{TransactionsClient, TransactionProto, Empty};
+use narwhal_types::{Empty, TransactionProto, TransactionsClient};
 use rand_distr::Zipf;
-use sha3::{Keccak256, Digest};
-use sui_network::tonic::{transport::Channel, self};
+use sha3::{Digest, Keccak256};
+use sui_network::tonic::{self, transport::Channel};
 use tracing::info;
 
 use crate::workloads::smallbank::contract::SmallBank;
 // use crate::SMALLBANK_BYTECODE;
 
-
 pub const CONTRACT_BYTECODE: &str = include_str!("../../contracts/SmallBank.bin");
-pub const ADMIN_SECRET_KEY: &[u8] = &[95 as u8, 126, 251, 131, 73, 90, 235, 201, 21, 22, 203, 137, 149, 240, 205, 60, 221, 27, 81, 53, 2, 200, 90, 185, 25, 240, 166, 21, 177, 41, 49, 254];
+pub const ADMIN_SECRET_KEY: &[u8] = &[
+    95 as u8, 126, 251, 131, 73, 90, 235, 201, 21, 22, 203, 137, 149, 240, 205, 60, 221, 27, 81,
+    53, 2, 200, 90, 185, 25, 240, 166, 21, 177, 41, 49, 254,
+];
 // pub const ADMIN_ADDRESS: &str = "0xe14de1592b52481b94b99df4e9653654e14fffb6";
 #[allow(dead_code)]
 pub const DEFAULT_CONTRACT_ADDRESS: &str = "0x1000000000000000000000000000000000000000";
-pub const DEFAULT_CHAIN_ID: u64 = 9;  // ISTANBUL 
+pub const DEFAULT_CHAIN_ID: u64 = 9; // ISTANBUL
 
 pub enum SmallBankTransactionType {
     AMALGAMATE,
@@ -32,7 +37,6 @@ pub enum SmallBankTransactionType {
     UpdateSaving,
     WriteCheck,
 }
-
 
 impl SmallBankTransactionType {
     pub fn from(value: u32) -> SmallBankTransactionType {
@@ -62,20 +66,33 @@ pub struct SmallBankTransactionHandler {
 }
 
 impl SmallBankTransactionHandler {
-    pub fn new(provider: Provider<Http>, narwhal_client: TransactionsClient<Channel>, chain_id: u64, skewness: f32) -> SmallBankTransactionHandler {
+    pub fn new(
+        provider: Provider<Http>,
+        narwhal_client: TransactionsClient<Channel>,
+        chain_id: u64,
+        skewness: f32,
+    ) -> SmallBankTransactionHandler {
         let nonce_gen = Uniform::new(u64::MIN, u64::MAX);
 
-        info!("contract address: {}", H160::from_str(DEFAULT_CONTRACT_ADDRESS).unwrap());
+        info!(
+            "contract address: {}",
+            H160::from_str(DEFAULT_CONTRACT_ADDRESS).unwrap()
+        );
         SmallBankTransactionHandler {
             op_gen: Uniform::new(0, 6),
             nonce_gen,
             zipfian_acc_gen: Zipf::new(100_000, skewness).unwrap(),
             uniform_bal_gen: Uniform::new(1, 10),
-            admin_wallet: LocalWallet::from_bytes(ADMIN_SECRET_KEY.try_into().unwrap()).unwrap().with_chain_id(chain_id),
+            admin_wallet: LocalWallet::from_bytes(ADMIN_SECRET_KEY.try_into().unwrap())
+                .unwrap()
+                .with_chain_id(chain_id),
             provider: provider.clone(),
             chain_id,
             narwhal_client,
-            contract: Some(SmallBank::new(H160::from_str(DEFAULT_CONTRACT_ADDRESS).unwrap(), Arc::new(provider))),
+            contract: Some(SmallBank::new(
+                H160::from_str(DEFAULT_CONTRACT_ADDRESS).unwrap(),
+                Arc::new(provider),
+            )),
         }
     }
 
@@ -83,22 +100,32 @@ impl SmallBankTransactionHandler {
     pub async fn init(&mut self) -> Result<tonic::Response<Empty>, tonic::Status> {
         info!("Init smallbank transaction handler");
         info!("admin address: {:?}", self.admin_wallet.address());
-        
+
         let nonce = self.register_admin_account().await;
-        self.contract = Some(SmallBank::new(self.create_contract_address(&nonce), Arc::new(self.provider.clone())));
+        self.contract = Some(SmallBank::new(
+            self.create_contract_address(&nonce),
+            Arc::new(self.provider.clone()),
+        ));
         self.deploy_contract().await
     }
 
     #[allow(dead_code)]
-    async fn submit_transaction(&mut self, tx_request: TransactionRequest) -> Result<tonic::Response<Empty>, tonic::Status> {
+    async fn submit_transaction(
+        &mut self,
+        tx_request: TransactionRequest,
+    ) -> Result<tonic::Response<Empty>, tonic::Status> {
         let tx: TypedTransaction = From::<TransactionRequest>::from(tx_request);
         let raw_tx = self.get_signed(tx);
-            
+
         // NOTE: This log entry is used to compute performance.
         let tx_id = u64::from_be_bytes(raw_tx[2..10].try_into().unwrap());
         info!("Sending sample transaction {tx_id}");
-        
-        self.narwhal_client.submit_transaction(TransactionProto { transaction: raw_tx }).await
+
+        self.narwhal_client
+            .submit_transaction(TransactionProto {
+                transaction: raw_tx,
+            })
+            .await
     }
 
     #[allow(dead_code)]
@@ -136,7 +163,9 @@ impl SmallBankTransactionHandler {
             .chain_id(self.chain_id)
             .nonce(nonce);
 
-        self.submit_transaction(tx_request).await.expect("failed to register admin account");
+        self.submit_transaction(tx_request)
+            .await
+            .expect("failed to register admin account");
 
         nonce.into()
     }
@@ -148,40 +177,50 @@ impl SmallBankTransactionHandler {
     fn create_request(&self, ops: SmallBankTransactionType) -> bytes::Bytes {
         let mut tx = match ops {
             SmallBankTransactionType::AMALGAMATE => {
-                self.contract.as_ref().unwrap().amalgamate(
-                    self.get_random_account_id(),
-                    self.get_random_account_id(),
-                ).tx
-            },
+                self.contract
+                    .as_ref()
+                    .unwrap()
+                    .amalgamate(self.get_random_account_id(), self.get_random_account_id())
+                    .tx
+            }
             SmallBankTransactionType::GetBalance => {
-                self.contract.as_ref().unwrap().get_balance(
-                    self.get_random_account_id(),
-                ).tx
-            },
+                self.contract
+                    .as_ref()
+                    .unwrap()
+                    .get_balance(self.get_random_account_id())
+                    .tx
+            }
             SmallBankTransactionType::SendPayment => {
-                self.contract.as_ref().unwrap().send_payment(
-                    self.get_random_account_id(),
-                    self.get_random_account_id(),
-                    self.get_random_balance()
-                ).tx
-            },
+                self.contract
+                    .as_ref()
+                    .unwrap()
+                    .send_payment(
+                        self.get_random_account_id(),
+                        self.get_random_account_id(),
+                        self.get_random_balance(),
+                    )
+                    .tx
+            }
             SmallBankTransactionType::UpdateBalance => {
-                self.contract.as_ref().unwrap().deposit_checking(
-                    self.get_random_account_id(),
-                    self.get_random_balance()
-                ).tx
-            },
+                self.contract
+                    .as_ref()
+                    .unwrap()
+                    .deposit_checking(self.get_random_account_id(), self.get_random_balance())
+                    .tx
+            }
             SmallBankTransactionType::UpdateSaving => {
-                self.contract.as_ref().unwrap().update_saving(
-                    self.get_random_account_id(),
-                    self.get_random_balance()
-                ).tx
-            },
+                self.contract
+                    .as_ref()
+                    .unwrap()
+                    .update_saving(self.get_random_account_id(), self.get_random_balance())
+                    .tx
+            }
             SmallBankTransactionType::WriteCheck => {
-                self.contract.as_ref().unwrap().write_check(
-                    self.get_random_account_id(),
-                    self.get_random_balance()
-                ).tx
+                self.contract
+                    .as_ref()
+                    .unwrap()
+                    .write_check(self.get_random_account_id(), self.get_random_balance())
+                    .tx
             }
         };
 
@@ -189,7 +228,7 @@ impl SmallBankTransactionHandler {
             .set_to(H160::from_str(DEFAULT_CONTRACT_ADDRESS).unwrap())
             .set_chain_id(self.chain_id)
             .set_nonce(self.get_random_nonce())
-            .set_gas(u64::MAX)
+            .set_gas(100_000u64)
             .set_gas_price(U256::zero());
 
         self.get_signed(tx)
@@ -212,9 +251,10 @@ impl SmallBankTransactionHandler {
     }
 
     fn get_signed(&self, tx: TypedTransaction) -> bytes::Bytes {
-        let signature: Signature = self.admin_wallet.sign_transaction_sync(&tx).expect("signature failed");
+        let signature: Signature = self
+            .admin_wallet
+            .sign_transaction_sync(&tx)
+            .expect("signature failed");
         tx.rlp_signed(&signature).0
     }
 }
-
-
