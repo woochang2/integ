@@ -4,7 +4,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use narwhal_types::{ConditionalBroadcastReceiver, PreSubscribedBroadcastSender};
+use narwhal_types::{BatchDigest, ConditionalBroadcastReceiver, PreSubscribedBroadcastSender};
 use reth::{
     primitives::{
         constants::ETHEREUM_BLOCK_GAS_LIMIT, proofs, Block, BlockNumber, BlockWithSenders,
@@ -190,7 +190,11 @@ pub struct Inner<ParallelExecutionModel> {
     executor: EVMProcessor<'static, ParallelExecutionModel>,
 
     /// The channel to send the sealed block to the post processor for persist.
-    tx_execution_output: Sender<(SealedBlockWithSenders, BundleStateWithReceipts)>,
+    tx_execution_output: Sender<(
+        SealedBlockWithSenders,
+        BundleStateWithReceipts,
+        Vec<BatchDigest>,
+    )>,
 
     /// The channel to receive the block number of the parent block finished persisting.
     wait_post_processing: Receiver<BlockNumber>,
@@ -207,7 +211,11 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         preloaded_state: Option<ThreadSafeCacheState>,
         latest_header: SealedHeader,
         rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
-        tx_execution_output: Sender<(SealedBlockWithSenders, BundleStateWithReceipts)>,
+        tx_execution_output: Sender<(
+            SealedBlockWithSenders,
+            BundleStateWithReceipts,
+            Vec<BatchDigest>,
+        )>,
         wait_post_processing: Receiver<BlockNumber>,
         // metrics: ExecutionMetrics,
         rx_shutdown: ConditionalBroadcastReceiver,
@@ -263,13 +271,13 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
 
                     let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
                     // let latency = tokio::time::Instant::now();
-                    match self.execute_and_persist(transactions).await {
+                    match self.execute_and_persist(transactions, _digests.clone()).await {
                         Ok(()) => {
                             cfg_if::cfg_if! {
                                 if #[cfg(feature = "benchmark")] {
                                     // NOTE: This log entry is used to compute performance.
                                     _digests.iter().for_each(|batch_digest|
-                                        info!("Executed Batch -> {:?}", batch_digest)
+                                        tracing::info!("Executed Batch -> {:?}", batch_digest)
                                     );
                                 }
                             }
@@ -278,8 +286,6 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
                     }
                     // self.metrics
                     //     .record(latency.elapsed().as_micros(), LatencyType::Total);
-
-
                 }
 
                 Ok(()) = rx_shutdown.receiver.recv() => {
@@ -425,6 +431,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
     pub async fn execute_and_persist(
         &mut self,
         transactions: Vec<TransactionSigned>,
+        _digests: Vec<BatchDigest>,
     ) -> RethResult<()> {
         // let now = tokio::time::Instant::now();
         let header = self.build_header_template();
@@ -496,7 +503,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         self.post_processing_request = Some(sealed_block.hash());
         let _ = self
             .tx_execution_output
-            .send((sealed_block, bundle_state))
+            .send((sealed_block, bundle_state, _digests))
             .await
             .unwrap();
 
@@ -512,7 +519,11 @@ pub struct PostProcessor {
 
 impl PostProcessor {
     pub fn spawn(
-        rx_execution_output: Receiver<(SealedBlockWithSenders, BundleStateWithReceipts)>,
+        rx_execution_output: Receiver<(
+            SealedBlockWithSenders,
+            BundleStateWithReceipts,
+            Vec<BatchDigest>,
+        )>,
         blockchain: BlockchainProviderMDBX,
         tx_latest_blocknum: Sender<BlockNumber>,
         // metrics: ExecutionMetrics,
@@ -532,11 +543,15 @@ impl PostProcessor {
     async fn run(
         &self,
         mut rx_shutdown: ConditionalBroadcastReceiver,
-        mut rx_execution_output: Receiver<(SealedBlockWithSenders, BundleStateWithReceipts)>,
+        mut rx_execution_output: Receiver<(
+            SealedBlockWithSenders,
+            BundleStateWithReceipts,
+            Vec<BatchDigest>,
+        )>,
     ) {
         loop {
             tokio::select! {
-                Some((sealed_block, bundle_state)) = rx_execution_output.recv() => {
+                Some((sealed_block, bundle_state, _digests)) = rx_execution_output.recv() => {
                     let chain = Chain::new(vec![sealed_block.clone()], bundle_state.clone(), None);
                     let _ = self.blockchain.tree.insert_chain(chain);
 
@@ -571,6 +586,15 @@ impl PostProcessor {
                     //     .record(now.elapsed().as_micros(), LatencyType::Persistence);
 
                     let _ = self.tx_latest_blocknum.send(sealed_block.number).await;
+
+                    cfg_if::cfg_if! {
+                        if #[cfg(feature = "benchmark")] {
+                            // NOTE: This log entry is used to compute performance.
+                            _digests.iter().for_each(|batch_digest|
+                                tracing::info!("Persisted Batch -> {:?}", batch_digest)
+                            );
+                        }
+                    }
                 }
 
                 _ = rx_shutdown.receiver.recv() => {

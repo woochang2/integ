@@ -77,8 +77,9 @@ class LogParser:
             chain(*request_vote_outbound_latencies))
         
         # execution metrics
-        commits, subdag_size, aborted, total, subscriber_receive, handler_receive, execution_receive = zip(*execution_results)
-        self.commits = self._merge_results([x.items() for x in commits])
+        persists, batch_executions, subdag_size, aborted, total, subscriber_receive, handler_receive, execution_receive = zip(*execution_results)
+        self.executions = self._merge_results([x.items() for x in batch_executions])
+        self.persists = self._merge_results([x.items() for x in persists])
         self.subdag_size = self._merge_results([x.items() for x in subdag_size])
         self.subscriber_receive = self._merge_results([x.items() for x in subscriber_receive])
         self.handler_receive = self._merge_results([x.items() for x in handler_receive])
@@ -100,14 +101,19 @@ class LogParser:
         self.total_sending_tx = sum(len(x) for x in self.sent_samples)
         self.total_received_tx = sum(len(x) for x in self.received_samples)
         self.total_ordered_tx = sum(self.tx_num[digest] for digest, _ in self.orders.items() if digest in self.tx_num)
-        self.total_committed_tx = sum(self.tx_num[digest] for digest, _ in self.commits.items() if digest in self.tx_num)
+        self.total_executed_tx = sum(self.tx_num[digest] for digest, _ in self.executions.items() if digest in self.tx_num)
+        self.total_persisted_tx = sum(self.tx_num[digest] for digest, _ in self.persists.items() if digest in self.tx_num)
 
         self.sizes = {
             k: v for x in sizes for k, v in x.items() if k in self.orders
         }
+        
+        self.execution_sizes = {
+            k: v for x in sizes for k, v in x.items() if k in self.executions
+        }
 
-        self.commit_sizes = {
-            k: v for x in sizes for k, v in x.items() if k in self.commits
+        self.persist_sizes = {
+            k: v for x in sizes for k, v in x.items() if k in self.persists
         }
 
         self.batch_creation_latencies = {
@@ -172,14 +178,18 @@ class LogParser:
 
         tmp = findall(r'(.*?) .* Executed Batch -> ([^ ]+=)', log)
         tmp = [(digest, self._to_posix(t)) for t, digest in tmp]
-        commits = self._merge_results([tmp])
+        batch_executions = self._merge_results([tmp])
+        
+        tmp = findall(r'(.*?) .* Persisted Batch -> ([^ ]+=)', log)
+        tmp = [(digest, self._to_posix(t)) for t, digest in tmp]
+        persists = self._merge_results([tmp])
         
         tmp = findall(r'Abort rate: \d+.\d+ \((\d+)/(\d+) aborted\)', log)
         
         aborted, total = zip(*tmp) if tmp else ([0], [0])
         
 
-        return commits, subdag_size, aborted, total, subsriber_receive, handler_receive, execution_receive
+        return persists, batch_executions, subdag_size, aborted, total, subsriber_receive, handler_receive, execution_receive
 
     def _parse_consensus(self, log):
         if search(r'(?:panicked)', log) is not None:
@@ -286,13 +296,13 @@ class LogParser:
         return mean(latency) if latency else 0
     
     def _execution_throughput(self):
-        if not self.commits:
+        if not self.persists:
             return 0, 0, 0
-        start, end = min(self.orders.values()), max(self.commits.values())
+        start, end = min(self.orders.values()), max(self.persists.values())
         duration = end - start
-        bytes = sum(self.commit_sizes.values())
+        bytes = sum(self.persist_sizes.values())
         bps = bytes / duration
-        tps = self.total_committed_tx / duration
+        tps = self.total_persisted_tx / duration
         return tps, bps, duration
     
     def _consensus_to_execution_latency(self):
@@ -308,33 +318,42 @@ class LogParser:
         return mean(latency) if latency else 0
     
     def _batch_execution_latency(self):
-        latency = [c - self.execution_receive[d] for d, c in self.commits.items()]
+        latency = [c - self.execution_receive[d] for d, c in self.executions.items()]
         return mean(latency) if latency else 0
     
-    def _execution_latency(self):
-        latency = [c - self.orders[d] for d, c in self.commits.items()]
+    def _persist_latency(self):
+        latency = [c - self.executions[d] for d, c in self.persists.items()]
+        return mean(latency) if latency else 0
+    
+    def _execution_layer_latency(self):
+        latency = [c - self.orders[d] for d, c in self.persists.items()]
         return mean(latency) if latency else 0
 
 
     def _end_to_end_throughput(self):
-        if not self.commits:
+        '''
+            E2E traditionally means from the client to the finish of the tx, i.e., persisting the tx.
+            However, in our case, we are considering the time from proposal to persisting the tx for evaluation of consensus and execution layers. 
+        '''
+        if not self.persists:
             return 0, 0, 0
-        start, end = min(self.start), max(self.commits.values())
+        start, end = min(self.proposals.values()), max(self.persists.values())
         duration = end - start
-        bytes = sum(self.commit_sizes.values())
+        bytes = sum(self.persist_sizes.values())
         bps = bytes / duration
-        tps = self.total_committed_tx / duration
+        tps = self.total_persisted_tx / duration
         return tps, bps, duration
 
     def _end_to_end_latency(self):
+        '''
+            E2E traditionally means from the client to the finish of the tx, i.e., persisting the tx.
+            However, in our case, we are considering the time from proposal to persisting the tx for evaluation of consensus and execution layers. 
+        '''
         latency = []
-        for sent, received in zip(self.sent_samples, self.received_samples):
-            for tx_id, batch_id in received.items():
-                if batch_id in self.commits:
-                    assert tx_id in sent.keys()  # We receive txs that we sent.
-                    start = sent[tx_id]
-                    end = self.commits[batch_id]
-                    latency += [end-start]
+        for batch_id, start in self.proposals.items():
+            if batch_id in self.persists:
+                end = self.persists[batch_id]
+                latency += [end-start]
         return mean(latency) if latency else 0
 
     def result(self):
@@ -355,7 +374,8 @@ class LogParser:
         subscriber_latency = self._subscriber_latency() * 1_000
         handler_latency = self._consensus_handler_latency() * 1_000
         batch_execution_latency = self._batch_execution_latency() * 1_000
-        execution_latency = self._execution_latency() * 1_000
+        persist_latency = self._persist_latency() * 1_000
+        execution_latency = self._execution_layer_latency() * 1_000
         execution_tps, execution_bps, excution_duration = self._execution_throughput()
         
         
@@ -422,7 +442,7 @@ class LogParser:
             f' \tTotal Sending Transactions: {self.total_sending_tx} tx\n'
             f' \tTotal Received Transactions: {self.total_received_tx} tx\n'
             f' \tTotal Ordered Transactions: {self.total_ordered_tx} tx\n'
-            f' \tTotal Committed Transactions: {self.total_committed_tx} tx\n'
+            f' \tTotal Committed Transactions: {self.total_persisted_tx} tx\n'
             f' Certificate commit avg latency: {round(cert_commit_latency):,} ms\n'
             f'\n'
             f' Consensus TPS: {round(consensus_tps):,} tx/s\n'
@@ -436,8 +456,9 @@ class LogParser:
             f' \tSubscriber latency: {round(subscriber_latency):,} ms\n'
             f' \tConsensus handler latency: {round(handler_latency):,} ms\n'
             f' \tBatch execution latency: {round(batch_execution_latency):,} ms\n'
-            f' \tAverage Abort Rate: {abort_rate:.2f} % \n'
-            f' \tEffective TPS: {round(effective_tps):,} tx/s\n'
+            f' \tPersist latency: {round(persist_latency):,} ms\n'
+            # f' \tAverage Abort Rate: {abort_rate:.2f} % \n'
+            # f' \tEffective TPS: {round(effective_tps):,} tx/s\n'
             '\n'
             f' End-to-end TPS: {round(end_to_end_tps):,} tx/s\n'
             f' End-to-end BPS: {round(end_to_end_bps):,} B/s\n'

@@ -301,11 +301,11 @@ def LAN(ctx, debug=False):
         'nodes': [4],
         'workers': 1,
         'collocate': True,
-        'rate': [10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000],
+        'rate': [10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000],
         'skewness': [0.0],
         'tx_size': 270,
         'duration': 60,
-        'runs': 1,
+        'runs': 3,
         'execution_model': [ExecutionModel.SERIAL],
     }
     node_params = {
@@ -407,9 +407,9 @@ def plot(ctx):
         'nodes': [4],
         'workers': [1],
         'collocate': True,
-        'execution_model': [ExecutionModel.SERIAL],
+        'execution_model': ["wo-pipeline", "pipeline"],
         'skewness': [0.0],
-        'rate': [10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000],
+        'rate': [10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000],
         'tx_size': 270,
         'max_latency': [1_000]
     }
@@ -432,6 +432,6 @@ def kill(ctx):
 def logs(ctx):
     ''' Print a summary of the logs '''
     try:
-        print(LogParser.process('./logs', ExecutionModel.NEZHA, faults='?', concurrency_level=10).result())
+        print(LogParser.process('./logs', ExecutionModel.SERIAL, faults='?').result())
     except ParseError as e:
         Print.error(BenchError('Failed to parse logs', e))
