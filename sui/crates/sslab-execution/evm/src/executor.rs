@@ -26,7 +26,7 @@ use reth_interfaces::{
 };
 
 use tokio::sync::mpsc::Receiver;
-use tracing::trace;
+use tracing::{info, trace};
 
 use crate::{
     blockchain_provider,
@@ -65,7 +65,12 @@ impl<ParallelExecutionModel: Executable + Send + 'static> SuiExecutionAdapter
             }
 
             let (_digests, transactions) = unpack_batches(consensus_output.take_data()).await;
-            let _ = self.inner.execute_and_persist(transactions).await;
+            match self.inner.execute_and_persist(transactions).await {
+                Ok(_) => {}
+                Err(e) => {
+                    tracing::error!("Error executing block: {:?}", e);
+                }
+            }
 
             cfg_if::cfg_if! {
                 if #[cfg(feature = "benchmark")] {
@@ -208,7 +213,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         &mut self,
         block: BlockWithSenders,
     ) -> Result<(BlockWithSenders, BundleStateWithReceipts, u64), BlockExecutionError> {
-        trace!(target: "consensus::auto", transactions=?&block.body, "executing transactions");
+        trace!(target: "ParallelExecutor::Inner", transactions=?&block.body, "executing transactions");
         // TODO: there isn't really a parent beacon block root here, so not sure whether or not to
         // call the 4788 beacon contract
         // let mut executor = self.executor.lock();
@@ -302,7 +307,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         self.metrics
             .record(now.elapsed().as_micros(), LatencyType::SenderRecovery);
 
-        trace!(target: "consensus::auto", transactions=?&block.body, "executing transactions");
+        tracing::debug!(target: "ParallelExecutor::Inner", block_number=?block.number, transactions=?block.body.len(), "executing transactions");
 
         // now execute the block
         let now = tokio::time::Instant::now();
@@ -313,7 +318,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         let BlockWithSenders { block, senders } = new_block;
         let Block { header, body, .. } = block;
 
-        trace!(target: "consensus::auto", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
+        tracing::debug!(target: "ParallelExecutor::Inner", block_number=?header.number, "executed block, calculating state root and completing header");
 
         // fill in the rest of the fields
         let now = tokio::time::Instant::now();
@@ -322,7 +327,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         self.metrics
             .record(header_creation_latency, LatencyType::HeaderCreation);
 
-        trace!(target: "consensus::auto", root=?new_header.state_root, ?body, "calculated root");
+        tracing::debug!(target: "ParallelExecutor::Inner", block_number=?new_header.number, root=?new_header.state_root, "calculated root");
 
         // seal the block
         let sealed_block = SealedBlockWithSenders {
@@ -348,6 +353,7 @@ impl<ParallelExecutionModel: Executable + 'static> Inner<ParallelExecutionModel>
         let now = tokio::time::Instant::now();
         match self.blockchain.make_canonical(&sealed_block.hash()) {
             Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::Committed { head }) => {
+                tracing::debug!(target: "ParallelExecutor::Inner", block_number=?head.number, header=?head.hash(), "block committed");
                 self.record_new_block(&head);
             }
             Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::AlreadyCanonical { header }) => {
