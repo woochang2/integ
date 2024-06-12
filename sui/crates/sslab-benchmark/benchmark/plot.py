@@ -181,7 +181,7 @@ class Ploter:
         
     @staticmethod
     def execution_model(data):
-        x = search(r'Execution Model: (\w+)', data).group(1)
+        x = search(r'Execution Model: ([a-zA-Z\-]+)', data).group(1)
         return f'{x}'
 
     @classmethod
@@ -233,8 +233,8 @@ class Ploter:
     #     ploter._plot(x_label, y_label, plot_ftn, z_axis, output_filename)
         
     @classmethod
-    def plot_skewness(cls, files, execution_model, tps=False, latency=False, batch_latency=False, abort_rate=False):
-        assert tps + latency + abort_rate + batch_latency == 1
+    def plot_skewness(cls, files, execution_model, tps=False, latency=False, batch_latency=False):
+        assert tps + latency + batch_latency == 1
         assert isinstance(files, list)
         assert all(isinstance(x, str) for x in files)
         z_axis = cls.send_rates
@@ -248,10 +248,10 @@ class Ploter:
             y_label = ['Latency (s)']
             output_filename = f"skewness-latency-{execution_model}"
             plot_ftn = ploter._latency
-        elif abort_rate:
-            y_label = ['Abort rate (%)']
-            output_filename = f"skewness-abort_rate-{execution_model}"
-            plot_ftn = ploter._abort_rate
+        # elif abort_rate:
+        #     y_label = ['Abort rate (%)']
+        #     output_filename = f"skewness-abort_rate-{execution_model}"
+        #     plot_ftn = ploter._abort_rate
         elif batch_latency:
             y_label = ['Batch latency (s)']
             output_filename = f"skewness-batch_latency-{execution_model}"
@@ -343,4 +343,4 @@ class Ploter:
                     cls.plot_skewness(skewness_files, execution_model, tps=True)
                     cls.plot_skewness(skewness_files, execution_model, latency=True)
                     cls.plot_skewness(skewness_files, execution_model, batch_latency=True)
-                    cls.plot_skewness(skewness_files, execution_model, abort_rate=True)
+                    # cls.plot_skewness(skewness_files, execution_model, abort_rate=True)
