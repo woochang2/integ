@@ -15,7 +15,7 @@ from benchmark.LAN import LANBench
 
 
 @task
-def local(ctx, debug=False):
+def local(ctx, debug=True):
     ''' Run benchmarks on localhost '''
     bench_params = {
         'faults': 0,
@@ -23,7 +23,7 @@ def local(ctx, debug=False):
         'workers': 1,
         'rate': 10_000,
         'skewness': 0.0,
-        'duration': 30,
+        'duration': 60,
         'execution_model': ExecutionModel.SERIAL,
     }
     node_params = {
@@ -432,6 +432,6 @@ def kill(ctx):
 def logs(ctx):
     ''' Print a summary of the logs '''
     try:
-        print(LogParser.process('./logs', ExecutionModel.SERIAL, faults='?').result())
+        print(LogParser.process('./logs', ExecutionModel.SERIAL, faults='?', reth_db=True).result())
     except ParseError as e:
         Print.error(BenchError('Failed to parse logs', e))

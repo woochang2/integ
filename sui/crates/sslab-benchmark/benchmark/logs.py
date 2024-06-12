@@ -10,8 +10,8 @@ from multiprocessing import Pool
 from os.path import join
 from re import findall, search
 from statistics import mean
-
-
+from typing import Tuple
+from benchmark.reth_db_logs import *
 from benchmark.utils import ExecutionModel, Print
 
 
@@ -20,13 +20,15 @@ class ParseError(Exception):
 
 
 class LogParser:
-    def __init__(self, clients, primaries, workers, execution_model, faults=0):
+    def __init__(self, clients, primaries, workers, execution_model, faults=0, reth_db=False):
         inputs = [clients, primaries, workers]
         assert all(isinstance(x, list) for x in inputs)
         assert all(isinstance(x, str) for y in inputs for x in y)
         assert all(x for x in inputs)
 
         self.execution_model = execution_model
+        
+        self.reth_db = reth_db
 
         self.faults = faults
         if isinstance(faults, int):
@@ -53,6 +55,8 @@ class LogParser:
             with Pool() as p:
                 results = p.map(self._parse_consensus, primaries)
                 execution_results = p.map(self._parse_executions, primaries)
+                if reth_db:
+                    persist_results = p.map(self._parse_persistence, primaries)
         except (ValueError, IndexError, AttributeError) as e:
             exception(e)
             raise ParseError(f'Failed to parse nodes\' logs: {e}')
@@ -86,6 +90,14 @@ class LogParser:
         self.execution_receive = self._merge_results([x.items() for x in execution_receive])
         self.aborted = sum([int(x) for single_list in aborted for x in single_list]) / self.committee_size
         self.total = sum([int(x) for single_list in total for x in single_list]) / self.committee_size
+        
+        # persistence metrics
+        if reth_db:
+            block_insertion_metrics, block_append_metrics, commit_metrics, canonical_metrics = zip(*persist_results)
+            self.db_insertion_metrics = BlockInsertionMetrics().extend(block_insertion_metrics)
+            self.db_append_metrics = BlockAppendMetrics().extend(block_append_metrics)
+            self.db_commit_metrics = CommitMetric().extend(commit_metrics)
+            self.db_canonical_metrics = CanonicalizationMetrics().extend(canonical_metrics)
 
         # Parse the workers logs.
         try:
@@ -190,6 +202,36 @@ class LogParser:
         
 
         return persists, batch_executions, subdag_size, aborted, total, subsriber_receive, handler_receive, execution_receive
+    
+    def _parse_persistence(self, log) -> Tuple[BlockInsertionMetrics, BlockAppendMetrics, CommitMetric, CanonicalizationMetrics]:
+        if search(r'(?:panicked)', log) is not None:
+            raise ParseError('Primary(s) panicked')
+        
+        block_insertion_metrics = BlockInsertionMetrics()
+        tmp = findall(r'Inserted block block_number=\d+ actions=\[\(InsertCanonicalHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaderNumbers, (\d+(?:\.\d+)?)([mnµs]+)\), \(GetParentTD, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaderTD, (\d+(?:\.\d+)?)([mnµs]+)\), \(GetNextTxNum, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTxSenders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTransactions, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTxHashNumbers, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertBlockBodyIndices, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTransactionBlock, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        for line in tmp:
+            block_insertion_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
+            block_insertion_metrics.update(*block_insertion_latencies)
+                
+        block_append_metrics = BlockAppendMetrics()
+        tmp = findall(r'Appended blocks range=\d+..=\d+ actions=\[\(InsertBlock, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertState, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHashes, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHistoryIndices, (\d+(?:\.\d+)?)([mnµs]+)\), \(UpdatePipelineStages, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        for line in tmp:
+            block_append_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
+            block_append_metrics.update(*block_append_latencies)
+        
+        commit_metrics = CommitMetric()
+        tmp = findall(r'Commit total_duration=(\d+(?:\.\d+)?)([mnµs]+)', log)
+        commit_latencies = (convert_to_micros(float(duration), unit) for duration, unit in tmp)
+        commit_metrics.bulk_update(*commit_latencies)
+        
+        canonical_metrics = CanonicalizationMetrics()
+        tmp = findall(r'Canonicalization finished actions=\[\(CloneOldBlocks, (\d+(?:\.\d+)?)([mnµs]+)\), \(FindCanonicalHeader, (\d+(?:\.\d+)?)([mnµs]+)\), \(SplitChain, (\d+(?:\.\d+)?)([mnµs]+)\), \(SplitChainForks, (\d+(?:\.\d+)?)([mnµs]+)\), \(MergeAllChains, (\d+(?:\.\d+)?)([mnµs]+)\), \(UpdateCanonicalIndex, (\d+(?:\.\d+)?)([mnµs]+)\), \(RetrieveStateTrieUpdates, (\d+(?:\.\d+)?)([mnµs]+)\), \(CommitCanonicalChainToDatabase, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        for line in tmp:
+            canonicalization_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
+            canonical_metrics.update(*canonicalization_latencies)
+            
+        return block_insertion_metrics, block_append_metrics, commit_metrics, canonical_metrics
+
 
     def _parse_consensus(self, log):
         if search(r'(?:panicked)', log) is not None:
@@ -355,6 +397,7 @@ class LogParser:
                 end = self.persists[batch_id]
                 latency += [end-start]
         return mean(latency) if latency else 0
+        
 
     def result(self):
         header_num_of_batches_threshold = self.configs[0]['header_num_of_batches_threshold']
@@ -400,6 +443,8 @@ class LogParser:
             self.cert_commit_latencies.values()) * 1000 if self.cert_commit_latencies else -1
         request_vote_outbound_latency = mean(
             self.request_vote_outbound_latencies) if self.request_vote_outbound_latencies else -1
+        
+        reth_db_metrics = self.db_canonical_metrics.report_with(self.db_commit_metrics, self.db_append_metrics, self.db_insertion_metrics) if self.reth_db else ''
 
         return (
             '\n'
@@ -464,6 +509,7 @@ class LogParser:
             f' End-to-end BPS: {round(end_to_end_bps):,} B/s\n'
             f' End-to-end latency: {round(end_to_end_latency):,} ms\n'
             '-----------------------------------------\n'
+            f'{reth_db_metrics}'
         )
 
     def print(self, filename):
@@ -472,7 +518,7 @@ class LogParser:
             f.write(self.result())
 
     @classmethod
-    def process(cls, directory, execution_model, faults=0):
+    def process(cls, directory, execution_model, faults=0, reth_db=False):
         assert isinstance(directory, str)
 
         clients = []
@@ -488,7 +534,7 @@ class LogParser:
             with open(filename, 'r') as f:
                 workers += [f.read()]
 
-        return cls(clients, primaries, workers, execution_model, faults=faults)
+        return cls(clients, primaries, workers, execution_model, faults=faults, reth_db=reth_db)
 
 
 class LogGrpcParser:
@@ -520,3 +566,4 @@ class LogGrpcParser:
                 primaries += [f.read()]
 
         return cls(primaries, faults=faults)
+ 
