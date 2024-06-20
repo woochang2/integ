@@ -134,7 +134,7 @@ class CommitMetric:
         return self
         
     def report(self) -> str:
-        return f' \t(Commit: {self.commit / self.n:.2f} µs)\n'
+        return f' \t  - Commit: {self.commit / self.n:.2f} µs\n'
     
     
 class CanonicalizationMetrics:
