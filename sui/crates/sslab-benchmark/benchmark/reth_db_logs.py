@@ -1,35 +1,49 @@
 
 class BlockInsertionMetrics:
+
+    BODY_INSERTION_LOG_PATTERN = r'Inserted block body block_number=\d+ actions=\[\(GetNextTxNum, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTxSenders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTransactions, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTxHashNumbers, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertBlockBodyIndices, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTransactionBlock, (\d+(?:\.\d+)?)([mnµs]+)\)\]\n.*? .* storage::db::mdbx: Commit total_duration=(\d+(?:\.\d+)?)([mnµs]+)'
+    HEADER_INSERTION_LOG_PATTERN = r'Inserted header block_number=\d+ actions=\[\(InsertCanonicalHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaderNumbers, (\d+(?:\.\d+)?)([mnµs]+)\), \(GetParentTD, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaderTD, (\d+(?:\.\d+)?)([mnµs]+)\)\]'
+    
     def __init__(self):
         self.n = 0
         
+        #header
         self.canonical_headers = 0.0
         self.headers = 0.0
         self.header_numbers = 0.0
         self.get_parent_td = 0.0
         self.header_td = 0.0
+        
+        #body
         self.get_next_tx_num = 0.0
         self.tx_senders = 0.0
         self.transactions = 0.0
         self.tx_hash_numbers = 0.0
         self.block_body_indices = 0.0
         self.transaction_block = 0.0
+        self.commit = 0.0
         
-    def update(self, *args):
-        assert len(args) == 11
+    def update_block_body(self, *args):
+        assert len(args) == 7
+        
+        self.get_next_tx_num += args[0]
+        self.tx_senders += args[1]
+        self.transactions += args[2]
+        self.tx_hash_numbers += args[3]
+        self.block_body_indices += args[4]
+        self.transaction_block += args[5]
+        self.commit += args[6]
+    
+    def update_block_header(self, *args):
+        assert len(args) == 5
+        
         self.n += 1
         self.canonical_headers += args[0]
         self.headers += args[1]
         self.header_numbers += args[2]
         self.get_parent_td += args[3]
         self.header_td += args[4]
-        self.get_next_tx_num += args[5]
-        self.tx_senders += args[6]
-        self.transactions += args[7]
-        self.tx_hash_numbers += args[8]
-        self.block_body_indices += args[9]
-        self.transaction_block += args[10]
-        
+    
     def add(self, other):
         assert isinstance(other, BlockInsertionMetrics)
         
@@ -45,33 +59,58 @@ class BlockInsertionMetrics:
         self.tx_hash_numbers += other.tx_hash_numbers
         self.block_body_indices += other.block_body_indices
         self.transaction_block += other.transaction_block
+        self.commit += other.commit
         
     def extend(self, others):
         for other in others:
             self.add(other)
         return self
         
-    def report(self) -> str:
+    def report_header(self) -> str:
         return (
             f' \t      - CanonicalHeaders: {self.canonical_headers / self.n:.2f} µs\n'
             f' \t      - Headers: {self.headers / self.n:.2f} µs\n'
             f' \t      - HeaderNumbers: {self.header_numbers / self.n:.2f} µs\n'
             f' \t      - GetParentTd: {self.get_parent_td / self.n:.2f} µs\n'
             f' \t      - HeaderTd: {self.header_td / self.n:.2f} µs\n'
-            f' \t      - GetNextTxNum: {self.get_next_tx_num / self.n:.2f} µs\n'
-            f' \t      - TxSenders: {self.tx_senders / self.n:.2f} µs\n'
-            f' \t      - Transactions: {self.transactions / self.n:.2f} µs\n'
-            f' \t      - TxHashNumbers: {self.tx_hash_numbers / self.n:.2f} µs\n'
-            f' \t      - BlockBodyIndices: {self.block_body_indices / self.n:.2f} µs\n'
-            f' \t      - TransactionBlock: {self.transaction_block / self.n:.2f} µs\n'
+            # f' \t      - GetNextTxNum: {self.get_next_tx_num / self.n:.2f} µs\n'
+            # f' \t      - TxSenders: {self.tx_senders / self.n:.2f} µs\n'
+            # f' \t      - Transactions: {self.transactions / self.n:.2f} µs\n'
+            # f' \t      - TxHashNumbers: {self.tx_hash_numbers / self.n:.2f} µs\n'
+            # f' \t      - BlockBodyIndices: {self.block_body_indices / self.n:.2f} µs\n'
+            # f' \t      - TransactionBlock: {self.transaction_block / self.n:.2f} µs\n'
+            # f' \t      - Commit (body): {self.commit / self.n:.2f} µs\n'
+        )
+        
+    def report_block(self) -> str:
+        block_body_latency = sum((
+            self.get_next_tx_num, 
+            self.tx_senders, 
+            self.transactions, 
+            self.tx_hash_numbers, 
+            self.block_body_indices, 
+            self.transaction_block, 
+            self.commit)) / self.n if self.n else 0.0
+        return (
+            f' BlockBodyInsertionMetrics: {block_body_latency:.2f} µs\n'
+            f' \t  - GetNextTxNum: {self.get_next_tx_num / self.n:.2f} µs\n'
+            f' \t  - TxSenders: {self.tx_senders / self.n:.2f} µs\n'
+            f' \t  - Transactions: {self.transactions / self.n:.2f} µs\n'
+            f' \t  - TxHashNumbers: {self.tx_hash_numbers / self.n:.2f} µs\n'
+            f' \t  - BlockBodyIndices: {self.block_body_indices / self.n:.2f} µs\n'
+            f' \t  - TransactionBlock: {self.transaction_block / self.n:.2f} µs\n'
+            f' \t  - Commit (body): {self.commit / self.n:.2f} µs\n'
         )
         
         
 class BlockAppendMetrics:
+    
+    LOG_PATTERN = r'Appended blocks range=\d+..=\d+ actions=\[\(InsertHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertState, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHashes, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHistoryIndices, (\d+(?:\.\d+)?)([mnµs]+)\), \(UpdatePipelineStages, (\d+(?:\.\d+)?)([mnµs]+)\)\]'
+    
     def __init__(self):
         self.n = 0
         
-        self.insert_block = 0.0  # equals to the BlockInsertion latency
+        self.insert_header = 0.0  # equals to the BlockInsertion latency
         self.insert_state = 0.0
         self.insert_hash = 0.0
         self.insert_history_indices = 0.0
@@ -80,7 +119,7 @@ class BlockAppendMetrics:
     def update(self, *args):
         assert len(args) == 5
         self.n += 1
-        self.insert_block += args[0]
+        self.insert_header += args[0]
         self.insert_state += args[1]
         self.insert_hash += args[2]
         self.insert_history_indices += args[3]
@@ -90,7 +129,7 @@ class BlockAppendMetrics:
         assert isinstance(other, BlockAppendMetrics)
         
         self.n += other.n
-        self.insert_block += other.insert_block
+        self.insert_header += other.insert_header
         self.insert_state += other.insert_state
         self.insert_hash += other.insert_hash
         self.insert_history_indices += other.insert_history_indices
@@ -100,11 +139,19 @@ class BlockAppendMetrics:
         for other in others:
             self.add(other)
         return self
+    
+    def total_latency(self) -> float:
+        return sum((
+            self.insert_header,
+            self.insert_state,
+            self.insert_hash,
+            self.insert_history_indices,
+            self.update_pipeline_stages)) / self.n if self.n else 0.0
         
     def report_with(self, insertion: BlockInsertionMetrics) -> str:
         return (
-            f' \t  - InsertBlock: {self.insert_block / self.n:.2f} µs\n'
-            f'{insertion.report()}'  # BlockInsertionMetrics
+            f' \t  - InsertHeader: {self.insert_header / self.n:.2f} µs\n'
+            f'{insertion.report_header()}'  # BlockInsertionMetrics
             f' \t  - InsertState: {self.insert_state / self.n:.2f} µs\n'
             f' \t  - InsertHash: {self.insert_hash / self.n:.2f} µs\n'
             f' \t  - InsertHistoryIndices: {self.insert_history_indices / self.n:.2f} µs\n'
@@ -113,6 +160,9 @@ class BlockAppendMetrics:
         
    
 class CommitMetric:
+    
+    LOG_PATTERN = r'Commit total_duration=(\d+(?:\.\d+)?)([mnµs]+)'
+    
     def __init__(self):
         self.n = 0
         
@@ -138,6 +188,9 @@ class CommitMetric:
     
     
 class CanonicalizationMetrics:
+    
+    LOG_PATTERN = r'Canonicalization finished actions=\[\(CloneOldBlocks, (\d+(?:\.\d+)?)([mnµs]+)\), \(FindCanonicalHeader, (\d+(?:\.\d+)?)([mnµs]+)\), \(SplitChain, (\d+(?:\.\d+)?)([mnµs]+)\), \(SplitChainForks, (\d+(?:\.\d+)?)([mnµs]+)\), \(MergeAllChains, (\d+(?:\.\d+)?)([mnµs]+)\), \(UpdateCanonicalIndex, (\d+(?:\.\d+)?)([mnµs]+)\), \(RetrieveStateTrieUpdates, (\d+(?:\.\d+)?)([mnµs]+)\), \(CommitCanonicalChainToDatabase, (\d+(?:\.\d+)?)([mnµs]+)\)\]'
+    
     def __init__(self):
         self.n = 0
         
@@ -180,7 +233,7 @@ class CanonicalizationMetrics:
             self.add(other)
         return self
         
-    def report_with(self, commit: CommitMetric, append: BlockAppendMetrics, insertion: BlockInsertionMetrics) -> str:
+    def report_with(self, append: BlockAppendMetrics, insertion: BlockInsertionMetrics) -> str:
         total_latency = sum((
                 self.clone_old_blocks,
                 self.find_canonical_header,
@@ -191,6 +244,7 @@ class CanonicalizationMetrics:
                 self.retrieve_state_trie_update,
                 self.commit_cononical_chain_to_database)) / self.n if self.n else 0.0
         return (
+            f'{insertion.report_block()}'
             f' CanonicalizationMetrics: {total_latency:.2f} µs\n'
             f' \tCloneOldBlocks: {self.clone_old_blocks / self.n:.2f} µs\n'
             f' \tFindCanonicalHeader: {self.find_canonical_header / self.n:.2f} µs\n'
@@ -201,7 +255,7 @@ class CanonicalizationMetrics:
             f' \tRetrieveStateTrieUpdate: {self.retrieve_state_trie_update / self.n:.2f} µs\n'
             f' \tCommitCanonicalChainToDatabase: {self.commit_cononical_chain_to_database / self.n:.2f} µs\n'
             f'{append.report_with(insertion)}'
-            f'{commit.report()}'
+            f' \t  - Other(e.g., commit): {self.commit_cononical_chain_to_database/self.n - append.total_latency() :.2f}'
         )
 
 

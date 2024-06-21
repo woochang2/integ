@@ -70,7 +70,7 @@ impl ParallelExecutor {
             .flatten()
             .unwrap_or_else(|| chain_spec.sealed_genesis_header());
 
-        let (tx_execution_output, rx_execution_output) = tokio::sync::mpsc::channel(1);
+        let (tx_execution_output, rx_execution_output) = tokio::sync::mpsc::channel(10);
         let (tx_latest_block_hash, rx_latest_block_hash) = tokio::sync::mpsc::channel(100);
 
         // let metrics = ExecutionMetrics::default();

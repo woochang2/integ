@@ -93,10 +93,9 @@ class LogParser:
         
         # persistence metrics
         if reth_db:
-            block_insertion_metrics, block_append_metrics, commit_metrics, canonical_metrics = zip(*persist_results)
+            block_insertion_metrics, block_append_metrics, canonical_metrics = zip(*persist_results)
             self.db_insertion_metrics = BlockInsertionMetrics().extend(block_insertion_metrics)
             self.db_append_metrics = BlockAppendMetrics().extend(block_append_metrics)
-            self.db_commit_metrics = CommitMetric().extend(commit_metrics)
             self.db_canonical_metrics = CanonicalizationMetrics().extend(canonical_metrics)
 
         # Parse the workers logs.
@@ -208,29 +207,29 @@ class LogParser:
             raise ParseError('Primary(s) panicked')
         
         block_insertion_metrics = BlockInsertionMetrics()
-        tmp = findall(r'Inserted block block_number=\d+ actions=\[\(InsertCanonicalHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaderNumbers, (\d+(?:\.\d+)?)([mnµs]+)\), \(GetParentTD, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaderTD, (\d+(?:\.\d+)?)([mnµs]+)\), \(GetNextTxNum, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTxSenders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTransactions, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTxHashNumbers, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertBlockBodyIndices, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTransactionBlock, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        tmp = findall(BlockInsertionMetrics.BODY_INSERTION_LOG_PATTERN, log)
         for line in tmp:
-            block_insertion_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
-            block_insertion_metrics.update(*block_insertion_latencies)
+            header_insertion_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
+            block_insertion_metrics.update_block_body(*header_insertion_latencies)
+            
+        tmp = findall(BlockInsertionMetrics.HEADER_INSERTION_LOG_PATTERN, log)
+        for line in tmp:
+            header_insertion_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
+            block_insertion_metrics.update_block_header(*header_insertion_latencies)
                 
         block_append_metrics = BlockAppendMetrics()
-        tmp = findall(r'Appended blocks range=\d+..=\d+ actions=\[\(InsertBlock, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertState, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHashes, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHistoryIndices, (\d+(?:\.\d+)?)([mnµs]+)\), \(UpdatePipelineStages, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        tmp = findall(BlockAppendMetrics.LOG_PATTERN, log)
         for line in tmp:
             block_append_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
             block_append_metrics.update(*block_append_latencies)
         
-        commit_metrics = CommitMetric()
-        tmp = findall(r'Commit total_duration=(\d+(?:\.\d+)?)([mnµs]+)', log)
-        commit_latencies = (convert_to_micros(float(duration), unit) for duration, unit in tmp)
-        commit_metrics.bulk_update(*commit_latencies)
-        
         canonical_metrics = CanonicalizationMetrics()
-        tmp = findall(r'Canonicalization finished actions=\[\(CloneOldBlocks, (\d+(?:\.\d+)?)([mnµs]+)\), \(FindCanonicalHeader, (\d+(?:\.\d+)?)([mnµs]+)\), \(SplitChain, (\d+(?:\.\d+)?)([mnµs]+)\), \(SplitChainForks, (\d+(?:\.\d+)?)([mnµs]+)\), \(MergeAllChains, (\d+(?:\.\d+)?)([mnµs]+)\), \(UpdateCanonicalIndex, (\d+(?:\.\d+)?)([mnµs]+)\), \(RetrieveStateTrieUpdates, (\d+(?:\.\d+)?)([mnµs]+)\), \(CommitCanonicalChainToDatabase, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        tmp = findall(CanonicalizationMetrics.LOG_PATTERN, log)
         for line in tmp:
             canonicalization_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
             canonical_metrics.update(*canonicalization_latencies)
             
-        return block_insertion_metrics, block_append_metrics, commit_metrics, canonical_metrics
+        return block_insertion_metrics, block_append_metrics, canonical_metrics
 
 
     def _parse_consensus(self, log):
@@ -444,7 +443,7 @@ class LogParser:
         request_vote_outbound_latency = mean(
             self.request_vote_outbound_latencies) if self.request_vote_outbound_latencies else -1
         
-        reth_db_metrics = self.db_canonical_metrics.report_with(self.db_commit_metrics, self.db_append_metrics, self.db_insertion_metrics) if self.reth_db else ''
+        reth_db_metrics = self.db_canonical_metrics.report_with(self.db_append_metrics, self.db_insertion_metrics) if self.reth_db else ''
 
         return (
             '\n'
