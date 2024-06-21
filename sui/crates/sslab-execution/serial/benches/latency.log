@@ -1,0 +1,18 @@
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+Serial with storage operations/latency/(zipfian: 0, #batch: 80)
+                        time:   [280.73 ms 282.12 ms 283.69 ms]
+                        thrpt:  [56.400 Kelem/s 56.713 Kelem/s 56.993 Kelem/s]
+                 change:
+                        time:   [+10.209% +11.194% +12.237%] (p = 0.00 < 0.05)
+                        thrpt:  [-10.903% -10.067% -9.2631%]
+                        Performance has regressed.
+Found 7 outliers among 100 measurements (7.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+Total: 282.2756, sender_recovery: 30.5488, header_creation: 26.8368, block_sealing: 0.0029, execution: 75.3815, persistence: 146.8993
+Ktps: 56.6822

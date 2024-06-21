@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use criterion::Throughput;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
-use parking_lot::RwLock;
 use reth::primitives::ChainSpec;
 use sslab_execution::executor::ParallelExecutor;
 use sslab_execution::traits::Executable;

@@ -207,11 +207,11 @@ typed-store-derive = { path = "crates/typed-store-derive" }
 
 
 # # Reth dependencies
-reth = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }               #branch = "release/v0.1.0-alpha.22" }
-reth-db = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }
-reth-interfaces = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }
-reth-trie = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }
-reth-node-ethereum = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }
+reth = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "34e8e4b207d99d13083620ac17ed04cd1d186248" }               #branch = "release/v0.1.0-alpha.22" }
+reth-db = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "34e8e4b207d99d13083620ac17ed04cd1d186248" }
+reth-interfaces = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "34e8e4b207d99d13083620ac17ed04cd1d186248" }
+reth-trie = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "34e8e4b207d99d13083620ac17ed04cd1d186248" }
+reth-node-ethereum = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "34e8e4b207d99d13083620ac17ed04cd1d186248" }
 
 
 # # Workspace members

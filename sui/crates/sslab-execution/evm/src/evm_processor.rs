@@ -262,6 +262,7 @@ where
     }
 
     /// Save receipts to the executor.
+    /// *The order of Reciepts MUST respect the order of input transactions.
     pub fn save_receipts(&mut self, receipts: Vec<Receipt>) -> Result<(), BlockExecutionError> {
         let receipts = Receipts {
             receipt_vec: vec![receipts.into_iter().map(Option::Some).collect()],

@@ -77,7 +77,7 @@ impl ParallelExecutor {
 
         let mut tx_shutdown_post_processor = PreSubscribedBroadcastSender::new(1);
 
-        let post_processor = PostProcessor::spawn(
+        let post_processor = PersistService::spawn(
             rx_execution_output,
             blockchain_provider,
             tx_latest_block_hash,
@@ -190,11 +190,7 @@ pub struct Inner<ParallelExecutionModel> {
     executor: EVMProcessor<'static, ParallelExecutionModel>,
 
     /// The channel to send the sealed block to the post processor for persist.
-    tx_execution_output: Sender<(
-        SealedBlockWithSenders,
-        BundleStateWithReceipts,
-        Vec<BatchDigest>,
-    )>,
+    tx_persist_request: Sender<PersistenceRequest>,
 
     /// The channel to receive the block number of the parent block finished persisting.
     wait_post_processing: Receiver<BlockNumber>,
@@ -211,11 +207,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         preloaded_state: Option<ThreadSafeCacheState>,
         latest_header: SealedHeader,
         rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
-        tx_execution_output: Sender<(
-            SealedBlockWithSenders,
-            BundleStateWithReceipts,
-            Vec<BatchDigest>,
-        )>,
+        tx_persist_request: Sender<PersistenceRequest>,
         wait_post_processing: Receiver<BlockNumber>,
         // metrics: ExecutionMetrics,
         rx_shutdown: ConditionalBroadcastReceiver,
@@ -236,7 +228,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
                 chain_spec,
                 db: factory,
                 executor,
-                tx_execution_output,
+                tx_persist_request,
                 wait_post_processing,
                 post_processing_request: None,
                 // metrics,
@@ -354,12 +346,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
 
         self.executor.set_first_block(block.number);
 
-        let (mut new_block, receipts, gas_used) = self.executor.execute_transactions(block)?;
-
-        if !new_block.body.is_empty() {
-            new_block.block.header.transactions_root =
-                proofs::calculate_transaction_root(new_block.body.as_slice());
-        }
+        let (new_block, receipts, gas_used) = self.executor.execute_transactions(block)?;
 
         // Save receipts.
         self.executor.save_receipts(receipts)?;
@@ -442,6 +429,12 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         // self.metrics
         //     .record(now.elapsed().as_micros(), LatencyType::SenderRecovery);
 
+        // persist block body only.
+        self.tx_persist_request
+            .send(PersistenceRequest::Body(block.clone()))
+            .await
+            .unwrap();
+
         trace!(target: "ParallelExecutor::Inner", transactions=?&block.body, "executing transactions");
 
         // now execute the block
@@ -455,7 +448,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
 
         trace!(target: "ParallelExecutor::Inner", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
 
-        // wait for the parent block to be persisted
+        // wait for the parent block header to be persisted
         if let Some(parent_hash) = self.post_processing_request {
             loop {
                 let block_no = self.wait_post_processing.recv().await.unwrap();
@@ -502,8 +495,12 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         // send the sealed block to the post processor
         self.post_processing_request = Some(sealed_block.hash());
         let _ = self
-            .tx_execution_output
-            .send((sealed_block, bundle_state, _digests))
+            .tx_persist_request
+            .send(PersistenceRequest::ExecutionOutput((
+                sealed_block,
+                bundle_state,
+                _digests,
+            )))
             .await
             .unwrap();
 
@@ -511,19 +508,26 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
     }
 }
 
-pub struct PostProcessor {
+pub enum PersistenceRequest {
+    Body(BlockWithSenders),
+    ExecutionOutput(
+        (
+            SealedBlockWithSenders,
+            BundleStateWithReceipts,
+            Vec<BatchDigest>,
+        ),
+    ),
+}
+
+pub struct PersistService {
     tx_latest_blocknum: Sender<BlockNumber>,
     blockchain: BlockchainProviderMDBX,
     // metrics: ExecutionMetrics,
 }
 
-impl PostProcessor {
+impl PersistService {
     pub fn spawn(
-        rx_execution_output: Receiver<(
-            SealedBlockWithSenders,
-            BundleStateWithReceipts,
-            Vec<BatchDigest>,
-        )>,
+        rx_execution_output: Receiver<PersistenceRequest>,
         blockchain: BlockchainProviderMDBX,
         tx_latest_blocknum: Sender<BlockNumber>,
         // metrics: ExecutionMetrics,
@@ -543,64 +547,84 @@ impl PostProcessor {
     async fn run(
         &self,
         mut rx_shutdown: ConditionalBroadcastReceiver,
-        mut rx_execution_output: Receiver<(
-            SealedBlockWithSenders,
-            BundleStateWithReceipts,
-            Vec<BatchDigest>,
-        )>,
+        mut rx_execution_output: Receiver<PersistenceRequest>,
     ) {
         loop {
             tokio::select! {
-                Some((sealed_block, bundle_state, _digests)) = rx_execution_output.recv() => {
-                    let chain = Chain::new(vec![sealed_block.clone()], bundle_state.clone(), None);
-                    let _ = self.blockchain.tree.insert_chain(chain);
-
-                    let state = ForkchoiceState {
-                        head_block_hash: sealed_block.hash(),
-                        finalized_block_hash: sealed_block.hash(),
-                        safe_block_hash: sealed_block.hash(),
-                    };
-
-                    // let now = tokio::time::Instant::now();
-                    match self.blockchain.make_canonical(&sealed_block.hash()) {
-                        Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::Committed { head }) => {
-                            trace!(target: "ParallelExecutor::PostProcesscor", ?head, "block committed")
-                        }
-                        Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::AlreadyCanonical {
-                            header,
-                        }) => {
-                            panic!("Block already canonical: {:?}", header);
-                        }
-                        Err(e) => {
-                            panic!("Error making block canonical: {:?}", e);
+                Some(request) = rx_execution_output.recv() => {
+                    match request {
+                        PersistenceRequest::ExecutionOutput((sealed_block, bundle_state, _digests)) => {
+                            self.process_execution(sealed_block, bundle_state, _digests).await;
+                        },
+                        PersistenceRequest::Body(block) => {
+                            self.process_block_body(block);
                         }
                     }
 
-                    match self.ensure_consistent_state(state).unwrap() {
-                        Some(false) => {
-                            panic!("Forkchoice state is inconsistent after block execution");
-                        }
-                        _ => {}
-                    };
-                    // self.metrics
-                    //     .record(now.elapsed().as_micros(), LatencyType::Persistence);
-
-                    let _ = self.tx_latest_blocknum.send(sealed_block.number).await;
-
-                    cfg_if::cfg_if! {
-                        if #[cfg(feature = "benchmark")] {
-                            // NOTE: This log entry is used to compute performance.
-                            _digests.iter().for_each(|batch_digest|
-                                tracing::info!("Persisted Batch -> {:?}", batch_digest)
-                            );
-                        }
-                    }
                 }
 
                 _ = rx_shutdown.receiver.recv() => {
                     println!("PostProcessor shutting down");
                     return;
                 }
+            }
+        }
+    }
+
+    fn process_block_body(&self, block: BlockWithSenders) {
+        match self.blockchain.tree.insert_block_body(block) {
+            Ok(_) => {}
+            Err(e) => {
+                panic!("Error inserting block body: {:?}", e);
+            }
+        }
+    }
+
+    async fn process_execution(
+        &self,
+        sealed_block: SealedBlockWithSenders,
+        bundle_state: BundleStateWithReceipts,
+        _digests: Vec<BatchDigest>,
+    ) {
+        let chain = Chain::new(vec![sealed_block.clone()], bundle_state.clone(), None);
+        let _ = self.blockchain.tree.insert_chain(chain);
+
+        let state = ForkchoiceState {
+            head_block_hash: sealed_block.hash(),
+            finalized_block_hash: sealed_block.hash(),
+            safe_block_hash: sealed_block.hash(),
+        };
+
+        // let now = tokio::time::Instant::now();
+        match self.blockchain.make_canonical(&sealed_block.hash()) {
+            Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::Committed { head }) => {
+                trace!(target: "ParallelExecutor::PostProcesscor", ?head, "block committed")
+            }
+            Ok(reth_interfaces::blockchain_tree::CanonicalOutcome::AlreadyCanonical { header }) => {
+                panic!("Block already canonical: {:?}", header);
+            }
+            Err(e) => {
+                panic!("Error making block canonical: {:?}", e);
+            }
+        }
+
+        match self.ensure_consistent_state(state).unwrap() {
+            Some(false) => {
+                panic!("Forkchoice state is inconsistent after block execution");
+            }
+            _ => {}
+        };
+        // self.metrics
+        //     .record(now.elapsed().as_micros(), LatencyType::Persistence);
+
+        let _ = self.tx_latest_blocknum.send(sealed_block.number).await;
+
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "benchmark")] {
+                // NOTE: This log entry is used to compute performance.
+                _digests.iter().for_each(|batch_digest|
+                    tracing::info!("Persisted Batch -> {:?}", batch_digest)
+                );
             }
         }
     }
