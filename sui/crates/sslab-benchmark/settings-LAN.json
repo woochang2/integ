@@ -17,7 +17,7 @@
     "repo": {
         "name": "integ",
         "url": "https://github.com/woochang2/integ",
-        "branch": "pipeline"
+        "branch": "execution"
     },
     "instances": {
         "type": "m5d.8xlarge",
