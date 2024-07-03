@@ -500,7 +500,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         }
         .seal_slow();
 
-        // can we avoid cloning here?
+        // TODO: can we avoid cloning here?
         let _ = self.broadcast_new_block.send(sealed_block.clone()).await;
 
         let sealed_block_with_senders = SealedBlockWithSenders {
