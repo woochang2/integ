@@ -135,6 +135,7 @@ class LocalBench:
                             PathMaker.workers_file(),
                             PathMaker.db_path(i),
                             PathMaker.parameters_file(),
+                            PathMaker.genesis_file(),
                             debug=debug
                         )
                         log_file = PathMaker.primary_log_file(i)

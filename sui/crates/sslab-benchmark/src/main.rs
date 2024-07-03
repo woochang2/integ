@@ -6,6 +6,7 @@ use std::sync::Arc;
 // SPDX-License-Identifier: Apache-2.0
 use crate::workloads::handlers::{SmallBankTransactionHandler, DEFAULT_CHAIN_ID};
 use clap::{crate_name, crate_version, App, AppSettings};
+use ethers::utils::Genesis;
 use ethers_providers::{Http, Provider, ProviderExt};
 use eyre::Context;
 use futures::{future::join_all, StreamExt};
@@ -109,6 +110,11 @@ impl MultipleClient {
     const MAX_RATE_PER_CLIENT: u64 = 10_000;
 
     pub fn new(target: Url, rate: u64, skewness: f32, nodes: Vec<Url>) -> MultipleClient {
+        let chain_id = serde_json::from_str::<Genesis>(include_str!("../genesis.json"))
+            .unwrap()
+            .config
+            .chain_id;
+
         let num_of_clients = std::cmp::max(
             (rate + Self::MAX_RATE_PER_CLIENT - 1) / Self::MAX_RATE_PER_CLIENT,
             1,
@@ -124,6 +130,7 @@ impl MultipleClient {
                 rate: rate / num_of_clients,
                 skewness,
                 nodes: nodes.clone(),
+                chain_id,
             };
             clients.push(Arc::new(client));
         }
@@ -163,6 +170,7 @@ struct Client {
     rate: u64,
     skewness: f32,
     nodes: Vec<Url>,
+    chain_id: u64,
 }
 
 impl Client {
@@ -199,7 +207,7 @@ impl Client {
         let handler = SmallBankTransactionHandler::new(
             provider,
             client.clone(),
-            DEFAULT_CHAIN_ID,
+            self.chain_id,
             self.skewness,
         );
         // if let Err(e) = handler.init().await {

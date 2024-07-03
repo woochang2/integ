@@ -38,6 +38,11 @@ impl TransactionValidator for EthereumTxValidator {
                     .collect::<Vec<Self::Error>>()
             })
         });
+
+        if !errors.is_empty() {
+            return Err(eyre::eyre!("Batch contains invalid transactions"));
+        }
+
         Ok(())
     }
 }

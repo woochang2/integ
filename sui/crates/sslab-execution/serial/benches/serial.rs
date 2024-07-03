@@ -2,11 +2,8 @@ use std::sync::Arc;
 
 use criterion::Throughput;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
-use parking_lot::RwLock;
-use reth::primitives::ChainSpec;
-use sslab_execution::executor::ParallelExecutor;
 use sslab_execution::traits::Executable;
-use sslab_execution::types::{ExecutableConsensusOutput, ExecutableEthereumBatch};
+use sslab_execution::types::ExecutableEthereumBatch;
 use sslab_execution::utils::smallbank_contract_benchmark::cache_state_with_smallbank_contract;
 use sslab_execution::utils::test_utils::default_chain_spec;
 use sslab_execution::utils::{
@@ -14,8 +11,6 @@ use sslab_execution::utils::{
 };
 use sslab_execution::{get_provider_factory, ProviderFactoryMDBX};
 use sslab_execution_serial::SerialExecutor;
-use tokio::task::JoinHandle;
-use types::PreSubscribedBroadcastSender;
 
 const DEFAULT_BATCH_SIZE: usize = 200;
 
@@ -35,26 +30,6 @@ fn _get_serial_executor(provider_factory: ProviderFactoryMDBX) -> SerialExecutor
     )
 }
 
-fn _get_serial_executor_with_evm_processor(
-    chain_spec: Arc<ChainSpec>,
-) -> (
-    Vec<JoinHandle<()>>,
-    tokio::sync::mpsc::Sender<ExecutableConsensusOutput>,
-    PreSubscribedBroadcastSender,
-) {
-    let mut tx_shutdown = PreSubscribedBroadcastSender::new(1);
-    let (tx_executable_consensus_output, rx_executable_consensus_output) =
-        tokio::sync::mpsc::channel(1000);
-    let handles = ParallelExecutor::spawn::<SerialExecutor>(
-        chain_spec,
-        Some(cache_state_with_smallbank_contract()),
-        rx_executable_consensus_output,
-        tx_shutdown.subscribe(),
-    );
-
-    (handles, tx_executable_consensus_output, tx_shutdown)
-}
-
 fn _create_random_smallbank_workload(
     skewness: f32,
     batch_size: usize,
@@ -70,7 +45,7 @@ fn serial(c: &mut Criterion) {
     let mut group = c.benchmark_group("Serial");
 
     let chain_spec = Arc::new(default_chain_spec());
-    let provider_factory = get_provider_factory(chain_spec.clone());
+    let provider_factory = get_provider_factory(chain_spec.clone(), None);
 
     for zipfian in s {
         for i in param.clone() {

@@ -13157,17 +13157,14 @@ dependencies = [
  "prost",
  "rand 0.8.5",
  "rayon",
+ "reth",
  "serde 1.0.202",
  "serde_json",
  "serde_with 2.1.0",
  "sslab-execution",
  "sslab-execution-serial",
- "sui-config",
- "sui-core",
+ "sslab-p2p",
  "sui-keys",
- "sui-macros",
- "sui-network",
- "sui-protocol-config",
  "sui-types",
  "telemetry-subscribers",
  "tokio",
@@ -13228,6 +13225,16 @@ dependencies = [
  "parking_lot 0.12.1",
  "reth",
  "sslab-execution",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "sslab-p2p"
+version = "0.1.0"
+dependencies = [
+ "reth",
+ "reth-eth-wire",
  "tokio",
  "tracing",
 ]
