@@ -6,6 +6,7 @@ members = [
     "crates/sslab-execution/serial",
     "crates/sslab-core",
     "crates/sslab-benchmark",
+    "crates/sslab-p2p",
 
     "crates/mysten-metrics",
     "crates/mysten-network",
@@ -212,7 +213,7 @@ reth-db = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc
 reth-interfaces = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }
 reth-trie = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }
 reth-node-ethereum = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }
-
+reth-eth-wire = { git = "https://github.com/Dong-Hyeon-Yu/reth.git", rev = "db94217dbc502dd353736e3e44954ee2c9b54ef0" }
 
 # # Workspace members
 sslab-core = { path = "crates/sslab-core" }
@@ -220,6 +221,7 @@ sslab-benchmark = { path = "crates/sslab-benchmark" }
 sslab-execution-serial = { path = "crates/sslab-execution/serial" }
 sslab-execution = { path = "crates/sslab-execution/evm" }
 # sslab-execution-optme = { path = "crates/sslab-execution/optme" }
+sslab-p2p = { path = "crates/sslab-p2p" }
 
 narwhal-types = { path = "narwhal/types" }
 narwhal-executor = { path = "narwhal/executor" }

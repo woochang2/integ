@@ -4,13 +4,15 @@ use async_trait::async_trait;
 use executor::ExecutionState;
 use fastcrypto::hash::Hash as _;
 use rayon::prelude::*;
+use reth::network::NetworkHandle;
 use sslab_execution::{
     db::ThreadSafeCacheState,
     executor::ParallelExecutor,
     traits::Executable,
     types::{ExecutableConsensusOutput, ExecutableEthereumBatch},
-    SslabChainSpec, TransactionSigned,
+    ProviderFactoryMDBX, SslabChainSpec, TransactionSigned,
 };
+use sslab_p2p::block_announcer::BlockAnnouncer;
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
 use tracing::{instrument, warn};
 use types::{ConsensusOutput, PreSubscribedBroadcastSender};
@@ -24,8 +26,10 @@ pub struct SimpleConsensusHandler {
 
 impl SimpleConsensusHandler {
     pub fn new<ExecutionModel>(
+        provider_factory: ProviderFactoryMDBX,
         chain_spec: Arc<SslabChainSpec>,
         preloaded_state: Option<ThreadSafeCacheState>,
+        devp2p_network_manager: NetworkHandle,
     ) -> Self
     where
         ExecutionModel: Executable + Send + 'static,
@@ -33,23 +37,18 @@ impl SimpleConsensusHandler {
         let (tx_executable_consensus_output, rx_executable_consensus_output) =
             tokio::sync::mpsc::channel(1000);
         let mut tx_shutdown = PreSubscribedBroadcastSender::new(1);
-        let handles = ParallelExecutor::spawn::<ExecutionModel>(
+        let (mut handles, subscribe_new_block) = ParallelExecutor::spawn::<ExecutionModel>(
+            provider_factory,
             chain_spec,
             preloaded_state,
             rx_executable_consensus_output,
             tx_shutdown.subscribe(),
         );
-        //handles.push(executor.real_execute(tx_transaction_confirmation));
-        // let mut client = NarwhalGatewayClient::connect("http://[::1]:50051");
-        // .await
-        // .unwrap();
 
-        // let sub_dag = Bytes::from("hello");
-        // let batches = Bytes::from("gateway");
-        // let request: tonic::Request<GatewayConsensusOutput> = tonic::Request::new(GatewayConsensusOutput { sub_dag, batches });
-
-        // let _response = client.deliver_consensus_output(request).await;
-        // info!("Successfully connected to Gateway!, tested by sending Request");
+        handles.push(BlockAnnouncer::spawn(
+            subscribe_new_block,
+            devp2p_network_manager,
+        ));
 
         Self {
             tx_executable_consensus_output,

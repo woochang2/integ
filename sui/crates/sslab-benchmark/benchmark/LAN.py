@@ -260,6 +260,7 @@ class LANBench:
                     c.put(PathMaker.worker_key_file(
                         i*bench_parameters.workers + j), '.')
                 c.put(PathMaker.parameters_file(), '.')
+                c.put(PathMaker.genesis_file(), '.')
 
         return (committee, worker_cache)
 
@@ -300,6 +301,7 @@ class LANBench:
                 PathMaker.workers_file(),
                 PathMaker.db_path(i),
                 PathMaker.parameters_file(),
+                PathMaker.genesis_file(),
                 debug=debug
             )
             log_file = PathMaker.primary_log_file(i)

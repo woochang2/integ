@@ -15,7 +15,7 @@ from benchmark.LAN import LANBench
 
 
 @task
-def local(ctx, debug=True):
+def local(ctx, debug=False):
     ''' Run benchmarks on localhost '''
     bench_params = {
         'faults': 0,
@@ -23,7 +23,7 @@ def local(ctx, debug=True):
         'workers': 1,
         'rate': 10_000,
         'skewness': 0.0,
-        'duration': 60,
+        'duration': 10,
         'execution_model': ExecutionModel.SERIAL,
     }
     node_params = {

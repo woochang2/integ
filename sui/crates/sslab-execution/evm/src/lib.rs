@@ -18,7 +18,7 @@ use reth::{
     providers::{providers::BlockchainProvider, ProviderFactory},
     revm::EvmProcessorFactory,
 };
-use reth_db::{init_db, DatabaseEnv};
+use reth_db::{init_db, mdbx::DatabaseArguments, DatabaseEnv};
 
 pub type ProviderFactoryMDBX = ProviderFactory<DatabaseEnv>;
 pub type BlockchainProviderMDBX = BlockchainProvider<
@@ -28,9 +28,17 @@ pub type BlockchainProviderMDBX = BlockchainProvider<
 // re-export
 pub type SslabChainSpec = ChainSpec;
 
-pub fn get_provider_factory(chain_spec: Arc<ChainSpec>) -> ProviderFactoryMDBX {
+pub fn init_ether_db(path: &str, env: DatabaseArguments) -> eyre::Result<DatabaseEnv> {
+    init_db(Path::new(path), env)
+}
+
+pub fn get_provider_factory(
+    chain_spec: Arc<ChainSpec>,
+    db_path: Option<String>,
+) -> ProviderFactoryMDBX {
     use reth_db::open_db_read_only;
-    let path = std::env::var("RETH_DB_PATH").unwrap_or_else(|_| "./.db/reth/test".to_string());
+
+    let path = db_path.unwrap_or(std::env::var("RETH_DB_PATH").unwrap_or_default());
 
     ProviderFactoryMDBX::new(
         open_db_read_only(Path::new(path.as_str()), Default::default()).unwrap(),
@@ -38,14 +46,17 @@ pub fn get_provider_factory(chain_spec: Arc<ChainSpec>) -> ProviderFactoryMDBX {
     )
 }
 
-pub fn get_provider_factory_rw(chain_spec: Arc<ChainSpec>) -> ProviderFactoryMDBX {
-    let path = std::env::var("RETH_DB_PATH").unwrap_or_else(|_| "./.db/reth/test".to_string());
+pub fn get_provider_factory_rw(
+    chain_spec: Arc<ChainSpec>,
+    db_path: Option<String>,
+) -> ProviderFactoryMDBX {
+    let path = db_path.unwrap_or(std::env::var("RETH_DB_PATH").unwrap_or_default());
     let db = init_db(path, Default::default()).unwrap();
     let _ = init_genesis(db.clone(), chain_spec.clone());
     ProviderFactoryMDBX::new(db, chain_spec)
 }
 
-pub(crate) fn blockchain_provider(factory: ProviderFactoryMDBX) -> BlockchainProviderMDBX {
+pub fn blockchain_provider(factory: ProviderFactoryMDBX) -> BlockchainProviderMDBX {
     let (sync_metrics_tx, _sync_metrics_rx) = tokio::sync::mpsc::unbounded_channel();
     let mut config = NodeConfig::default();
     config.dev.dev = true; // deactivate beacon consensus

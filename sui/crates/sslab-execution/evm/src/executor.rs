@@ -8,8 +8,8 @@ use narwhal_types::{BatchDigest, ConditionalBroadcastReceiver, PreSubscribedBroa
 use reth::{
     primitives::{
         constants::ETHEREUM_BLOCK_GAS_LIMIT, proofs, Block, BlockNumber, BlockWithSenders,
-        ChainSpec, Header, SealedBlockWithSenders, SealedHeader, TransactionSigned, B256,
-        EMPTY_OMMER_ROOT_HASH, U256,
+        ChainSpec, Header, SealedBlock, SealedBlockWithSenders, SealedHeader, TransactionSigned,
+        B256, EMPTY_OMMER_ROOT_HASH, U256,
     },
     providers::{
         BlockIdReader, BlockReader, BlockReaderIdExt, BlockSource, BundleStateWithReceipts,
@@ -35,7 +35,6 @@ use crate::{
     blockchain_provider,
     db::ThreadSafeCacheState,
     evm_processor::EVMProcessor,
-    get_provider_factory_rw,
     revm_utiles::{recover_senders, unpack_batches},
     traits::{Executable, ParallelBlockExecutor as _},
     types::ExecutableConsensusOutput,
@@ -54,16 +53,19 @@ pub struct ParallelExecutor {
 
 impl ParallelExecutor {
     pub fn spawn<ParallelExecutionModel>(
+        provider_factory: ProviderFactoryMDBX,
         chain_spec: Arc<ChainSpec>,
         preloaded_state: Option<ThreadSafeCacheState>,
         rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
         rx_shutdown: ConditionalBroadcastReceiver,
-    ) -> Vec<JoinHandle<()>>
+    ) -> (
+        Vec<JoinHandle<()>>,
+        tokio::sync::mpsc::Receiver<SealedBlock>,
+    )
     where
         ParallelExecutionModel: Executable + Send + 'static,
     {
-        let factory = get_provider_factory_rw(chain_spec.clone());
-        let blockchain_provider = blockchain_provider(factory.clone());
+        let blockchain_provider = blockchain_provider(provider_factory.clone());
         let latest_header = blockchain_provider
             .latest_header()
             .ok()
@@ -72,8 +74,7 @@ impl ParallelExecutor {
 
         let (tx_execution_output, rx_execution_output) = tokio::sync::mpsc::channel(1);
         let (tx_latest_block_hash, rx_latest_block_hash) = tokio::sync::mpsc::channel(100);
-
-        // let metrics = ExecutionMetrics::default();
+        let (notify_new_block, subscribe_new_block) = tokio::sync::mpsc::channel(100);
 
         let mut tx_shutdown_post_processor = PreSubscribedBroadcastSender::new(1);
 
@@ -86,7 +87,7 @@ impl ParallelExecutor {
         );
 
         let inner = Inner::<ParallelExecutionModel>::spawn(
-            factory,
+            provider_factory,
             chain_spec.clone(),
             preloaded_state,
             latest_header,
@@ -96,9 +97,10 @@ impl ParallelExecutor {
             // metrics,
             rx_shutdown,
             tx_shutdown_post_processor,
+            notify_new_block,
         );
 
-        Vec::from([inner, post_processor])
+        (Vec::from([inner, post_processor]), subscribe_new_block)
     }
 }
 
@@ -201,7 +203,11 @@ pub struct Inner<ParallelExecutionModel> {
 
     /// The block number sent to the post processor for persisting.
     post_processing_request: Option<B256>,
-    // pub metrics: ExecutionMetrics,
+
+    /// The channel to broadcast the new block to the devp2p network
+    /// so that other full nodes can sycn with the consensus network.
+    /// See [sslab_p2p::BlockAnnouncer] for more details.
+    broadcast_new_block: tokio::sync::mpsc::Sender<SealedBlock>,
 }
 
 impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutionModel> {
@@ -220,6 +226,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         // metrics: ExecutionMetrics,
         rx_shutdown: ConditionalBroadcastReceiver,
         tx_shutdown_post_processor: PreSubscribedBroadcastSender,
+        broadcast_new_block: tokio::sync::mpsc::Sender<SealedBlock>,
     ) -> JoinHandle<()> {
         tokio::spawn(async move {
             let (latest, latest_hash) = latest_header.split();
@@ -239,6 +246,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
                 tx_execution_output,
                 wait_post_processing,
                 post_processing_request: None,
+                broadcast_new_block,
                 // metrics,
             }
             .run(
@@ -484,26 +492,31 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
 
         // seal the block
         // let now = tokio::time::Instant::now();
-        let sealed_block = SealedBlockWithSenders {
-            block: Block {
-                header: new_header.clone(),
-                body,
-                ommers: vec![],
-                withdrawals: None,
-            }
-            .seal_slow(),
+        let sealed_block = Block {
+            header: new_header,
+            body,
+            ommers: vec![],
+            withdrawals: None,
+        }
+        .seal_slow();
+
+        // can we avoid cloning here?
+        let _ = self.broadcast_new_block.send(sealed_block.clone()).await;
+
+        let sealed_block_with_senders = SealedBlockWithSenders {
+            block: sealed_block,
             senders,
         };
         // self.metrics
         //     .record(now.elapsed().as_micros(), LatencyType::BlockSealing);
 
-        self.record_new_block(&sealed_block.header);
+        self.record_new_block(&sealed_block_with_senders.header);
 
         // send the sealed block to the post processor
-        self.post_processing_request = Some(sealed_block.hash());
+        self.post_processing_request = Some(sealed_block_with_senders.hash());
         let _ = self
             .tx_execution_output
-            .send((sealed_block, bundle_state, _digests))
+            .send((sealed_block_with_senders, bundle_state, _digests))
             .await
             .unwrap();
 

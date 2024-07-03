@@ -14,17 +14,23 @@ use config::{Committee, Import, Parameters, WorkerCache, WorkerId};
 use crypto::{KeyPair, NetworkKeyPair};
 use eyre::Context;
 use fastcrypto::traits::KeyPair as _;
+use itertools::Itertools;
 use mysten_metrics::RegistryService;
 use node::metrics::{primary_metrics_registry, start_prometheus_server, worker_metrics_registry};
 use node::{primary_node::PrimaryNode, worker_node::WorkerNode};
 use prometheus::Registry;
+use reth::core::init::init_genesis;
+use reth::network::config::rng_secret_key;
+use reth::network::{NetworkConfig, NetworkManager};
+use reth::primitives::{ChainSpec, Genesis};
 use sslab_core::consensus_handler::SimpleConsensusHandler;
+use sslab_execution::{blockchain_provider, init_ether_db, ProviderFactoryMDBX};
 use sslab_execution::{
     transaction_validator::EthereumTxValidator,
     utils::smallbank_contract_benchmark::cache_state_with_smallbank_contract,
-    utils::test_utils::default_chain_spec,
 };
 use sslab_execution_serial::SerialExecutor;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 use storage::NodeStorage;
 use sui_keys::keypair_file::{
@@ -39,6 +45,8 @@ use tracing::{info, warn};
 use tracing::subscriber::set_global_default;
 #[cfg(feature = "benchmark")]
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
+
+pub const DEFAULT_DISCOVERY_PORT: u16 = 30303;
 
 #[tokio::main]
 async fn main() -> Result<(), eyre::Report> {
@@ -74,6 +82,7 @@ async fn main() -> Result<(), eyre::Report> {
                 .subcommand(
                     SubCommand::with_name("primary")
                     .about("Run a single primary")
+                    .args_from_usage("--genesis=<FILE> 'The genesis.json file path'")
                     // .args_from_usage("--concurrency-level=<INT> 'The number of batches to execute in parallel, especially for NEZHA'")
                 )
                 .subcommand(
@@ -276,13 +285,10 @@ async fn run(
 
     let store = NodeStorage::reopen(store_path);
 
-    //TODO: Do we really need relay?
-    // let (tx_consensus_certificate, rx_consensus_certificate) = channel::<ConsensusOutput>(100);
-
     // Check whether to run a primary, a worker, or an entire authority.
     let (primary, worker) = match matches.subcommand() {
         // Spawn the primary and consensus core.
-        ("primary", _) => {
+        ("primary", submatches) => {
             let primary = PrimaryNode::new(
                 parameters.clone(),
                 !matches.is_present("consensus-disabled"),
@@ -313,7 +319,71 @@ async fn run(
             //     }
             // }
 
-            let chain_spec = Arc::new(default_chain_spec());
+            //* Load the genesis file.
+            let genesis_path = submatches.unwrap().value_of("genesis").unwrap();
+
+            info!("reading genesis from {:?}", genesis_path);
+
+            //* Build ChainSpec from genesis.json
+            let chain_spec = match serde_json::from_str::<Genesis>(
+                std::fs::read_to_string(genesis_path).unwrap().as_str(),
+            ) {
+                Ok(genesis) => {
+                    info!(
+                        "Loaded genesis.json : {:?}",
+                        serde_json::to_string_pretty(&genesis)?
+                    );
+                    Arc::new(ChainSpec::from(genesis))
+                }
+                Err(e) => {
+                    panic!("Failed to deserialize genesis.json: {e:?}");
+                }
+            };
+
+            //* init the database and genesis block
+            let db_path = String::from(store_path) + "-eth";
+            let db = init_ether_db(db_path.as_str(), Default::default())?;
+            let _ = init_genesis(db.clone(), chain_spec.clone())?;
+            let factory_provider = ProviderFactoryMDBX::new(db, chain_spec.clone());
+
+            let blockchain_provider = blockchain_provider(factory_provider.clone());
+
+            //* Configure the devp2p network
+            // set devp2p id as random because we don't have a deterministic way to generate it
+            // other peers will use the socket address to connect.
+            // we do not need to spawn eth api server since we delegate ethApis to other full nodes.
+            let config = NetworkConfig::builder(rng_secret_key())
+                .disable_tx_gossip(true)
+                .disable_discovery()
+                .network_mode(reth::network::config::NetworkMode::Work) // this is to propagate via NewBlockMsg over devp2p. we do not use ethereum consensus.
+                .build(blockchain_provider.clone()); // by default listening to 0.0.0.0:30303
+            let network = match NetworkManager::new(config).await {
+                Ok(network) => network,
+                Err(reth::network::error::NetworkError::AddressAlreadyInUse { .. }) => {
+                    // this is a hack to allow multiple nodes to run on the same machine for local testing
+                    // we increment the port by the (id+1)
+                    let id: u16 = store_path.split("-").collect_vec()[1]
+                        .to_string()
+                        .parse()
+                        .unwrap();
+                    let listener_addr = SocketAddr::V4(SocketAddrV4::new(
+                        Ipv4Addr::UNSPECIFIED,
+                        DEFAULT_DISCOVERY_PORT + id + 1u16,
+                    ));
+
+                    let config = NetworkConfig::builder(rng_secret_key())
+                        .disable_tx_gossip(true)
+                        .disable_discovery()
+                        .set_addrs(listener_addr)
+                        .network_mode(reth::network::config::NetworkMode::Work)
+                        .build(blockchain_provider);
+
+                    NetworkManager::new(config).await?
+                }
+                Err(e) => panic!("Failed to start eth p2p network: {:?}", e),
+            };
+            let devp2p_network_manager = network.handle().clone();
+            tokio::task::spawn(network);
 
             let preloaded_state = if cfg!(feature = "benchmark") {
                 info!("Using preloaded state for benchmarking");
@@ -322,8 +392,12 @@ async fn run(
                 None
             };
 
-            let consensus_handler =
-                SimpleConsensusHandler::new::<SerialExecutor>(chain_spec, preloaded_state);
+            let consensus_handler = SimpleConsensusHandler::new::<SerialExecutor>(
+                factory_provider,
+                chain_spec,
+                preloaded_state,
+                devp2p_network_manager,
+            );
 
             primary
                 .start(
@@ -377,12 +451,6 @@ async fn run(
     let _metrics_server_handle = start_prometheus_server(prom_address, &registry);
 
     if let Some(primary) = primary {
-        //TODO: Do we really need relay?
-        // relay the consensus' output.
-        // let execution_block_type = env::var("EXECUTION_BLOCK_TYPE")
-        //     .expect("Environment EXECUTION_BLOCK_TYPE variable not found");
-
-        // relay(rx_consensus_certificate, execution_block_type).await;
         primary.wait().await;
     } else if let Some(worker) = worker {
         worker.wait().await;
@@ -392,283 +460,283 @@ async fn run(
     Ok(())
 }
 
-use bytes::Bytes;
-use tokio::sync::mpsc::Receiver;
-use types::{NarwhalGatewayClient, OrderedBlocks};
-// use types::{EcBlock};
-use types::CommitNotifierClient;
-use types::{ConsensusOutput, GatewayConsensusOutput};
-// use types::{McHeader,McBlock};
+// use bytes::Bytes;
+// use tokio::sync::mpsc::Receiver;
+// use types::{NarwhalGatewayClient, OrderedBlocks};
+// // use types::{EcBlock};
+// use types::CommitNotifierClient;
+// use types::{ConsensusOutput, GatewayConsensusOutput};
+// // use types::{McHeader,McBlock};
 
-// use serde_json::Result;
-// Receives an ordered list of certificates and apply any application-specific logic.
+// // use serde_json::Result;
+// // Receives an ordered list of certificates and apply any application-specific logic.
 
-async fn _hello_msg(mut client: NarwhalGatewayClient<tonic::transport::Channel>) {
-    let hello_sub_dag = Bytes::from("hello");
-    let mut hello_batches: Vec<bytes::Bytes> = Vec::new();
-    hello_batches.push(Bytes::from("hello"));
-    hello_batches.push(Bytes::from("gateway"));
-    let hello_digest = Bytes::from("hello_digest");
-    // use types::CommittedSubDag;
+// async fn _hello_msg(mut client: NarwhalGatewayClient<tonic::transport::Channel>) {
+//     let hello_sub_dag = Bytes::from("hello");
+//     let mut hello_batches: Vec<bytes::Bytes> = Vec::new();
+//     hello_batches.push(Bytes::from("hello"));
+//     hello_batches.push(Bytes::from("gateway"));
+//     let hello_digest = Bytes::from("hello_digest");
+//     // use types::CommittedSubDag;
 
-    // let ser_sub_dag = Bytes::from(bincode::serialize(&consensus_output.sub_dag).unwrap());
-    // let ser_sub_dag = Bytes::from(bincode::serialize(&consensus_output.sub_dag).unwrap());
+//     // let ser_sub_dag = Bytes::from(bincode::serialize(&consensus_output.sub_dag).unwrap());
+//     // let ser_sub_dag = Bytes::from(bincode::serialize(&consensus_output.sub_dag).unwrap());
 
-    let request: tonic::Request<GatewayConsensusOutput> =
-        tonic::Request::new(GatewayConsensusOutput {
-            sub_dag: hello_sub_dag.clone(),
-            batches: hello_batches.clone(),
-            leader_header_digest: hello_digest,
-        });
+//     let request: tonic::Request<GatewayConsensusOutput> =
+//         tonic::Request::new(GatewayConsensusOutput {
+//             sub_dag: hello_sub_dag.clone(),
+//             batches: hello_batches.clone(),
+//             leader_header_digest: hello_digest,
+//         });
 
-    // Send Hello Message to Gateway for testing-purpose
-    let _response: Result<tonic::Response<types::DeliverConsensusOutputResponse>, tonic::Status> =
-        client.deliver_consensus_output(request).await;
-    info!("Successfully connected to Gateway!, tested by sending HelloRequest");
-}
+//     // Send Hello Message to Gateway for testing-purpose
+//     let _response: Result<tonic::Response<types::DeliverConsensusOutputResponse>, tonic::Status> =
+//         client.deliver_consensus_output(request).await;
+//     info!("Successfully connected to Gateway!, tested by sending HelloRequest");
+// }
 
-use prost::Message;
-use std::env;
-use std::future::Future;
-use std::pin::Pin;
-use types::Proposal;
+// use prost::Message;
+// use std::env;
+// use std::future::Future;
+// use std::pin::Pin;
+// use types::Proposal;
 
-// type HandleBlock = fn(&mut NarwhalGatewayClient<tonic::transport::Channel>, ConsensusOutput);
+// // type HandleBlock = fn(&mut NarwhalGatewayClient<tonic::transport::Channel>, ConsensusOutput);
 
-async fn handle_ethereum_block(
-    client: &mut NarwhalGatewayClient<tonic::transport::Channel>,
-    consensus_output: ConsensusOutput,
-) {
-    // NOTE: Notify the user that its transaction has been processed.
-    info!(
-        "Get ConsensusOutput #Seq:{} from Executor!",
-        &consensus_output.sub_dag.sub_dag_index
-    );
+// async fn handle_ethereum_block(
+//     client: &mut NarwhalGatewayClient<tonic::transport::Channel>,
+//     consensus_output: ConsensusOutput,
+// ) {
+//     // NOTE: Notify the user that its transaction has been processed.
+//     info!(
+//         "Get ConsensusOutput #Seq:{} from Executor!",
+//         &consensus_output.sub_dag.sub_dag_index
+//     );
 
-    // Make sure that ConsensusOutput is delivered to gateway server only when it's not empty!
-    if consensus_output.batches.len() == 0 {
-        info!("Executor skips Empty batches");
-        return;
-        // continue;
-    }
+//     // Make sure that ConsensusOutput is delivered to gateway server only when it's not empty!
+//     if consensus_output.batches.len() == 0 {
+//         info!("Executor skips Empty batches");
+//         return;
+//         // continue;
+//     }
 
-    // let batches = consensus_output.batches;
-    let mut header_batches: Vec<bytes::Bytes> = Vec::new();
-    for (_, batches) in consensus_output.batches {
-        for _batch in batches {
-            for _transaction in _batch.transactions.into_iter() {
-                // Assumes that _transactions are a Ethereum Block and Header
-                let data = Proposal::decode(_transaction.as_ref()).unwrap();
-                header_batches.push(bytes::Bytes::from(data.ethereum_header));
-            }
-        }
-    }
+//     // let batches = consensus_output.batches;
+//     let mut header_batches: Vec<bytes::Bytes> = Vec::new();
+//     for (_, batches) in consensus_output.batches {
+//         for _batch in batches {
+//             for _transaction in _batch.transactions.into_iter() {
+//                 // Assumes that _transactions are a Ethereum Block and Header
+//                 let data = Proposal::decode(_transaction.as_ref()).unwrap();
+//                 header_batches.push(bytes::Bytes::from(data.ethereum_header));
+//             }
+//         }
+//     }
 
-    // info!(
-    //     "Processed ConsensusOutput: out:{}, batch:{}, tx:{}, headers:{}",
-    //     cnt_out,
-    //     cnt_batch,
-    //     cnt_tx,
-    //     header_batches.len(),
-    // );
-    // let subdag_json = serde_json::to_string(&consensus_output.sub_dag).unwrap();
-    // info!("subdag_json: {}", subdag_json);
+//     // info!(
+//     //     "Processed ConsensusOutput: out:{}, batch:{}, tx:{}, headers:{}",
+//     //     cnt_out,
+//     //     cnt_batch,
+//     //     cnt_tx,
+//     //     header_batches.len(),
+//     // );
+//     // let subdag_json = serde_json::to_string(&consensus_output.sub_dag).unwrap();
+//     // info!("subdag_json: {}", subdag_json);
 
-    let ser_sub_dag = Bytes::from(bincode::serialize(&consensus_output.sub_dag).unwrap());
-    let ser_leader_digest =
-        Bytes::from(bincode::serialize(&consensus_output.sub_dag.leader.header.digest()).unwrap());
+//     let ser_sub_dag = Bytes::from(bincode::serialize(&consensus_output.sub_dag).unwrap());
+//     let ser_leader_digest =
+//         Bytes::from(bincode::serialize(&consensus_output.sub_dag.leader.header.digest()).unwrap());
 
-    let request: tonic::Request<GatewayConsensusOutput> =
-        tonic::Request::new(GatewayConsensusOutput {
-            sub_dag: ser_sub_dag.clone(),
-            // batches: consensus_output.batches,
-            batches: header_batches,
-            leader_header_digest: ser_leader_digest.clone(),
-        });
+//     let request: tonic::Request<GatewayConsensusOutput> =
+//         tonic::Request::new(GatewayConsensusOutput {
+//             sub_dag: ser_sub_dag.clone(),
+//             // batches: consensus_output.batches,
+//             batches: header_batches,
+//             leader_header_digest: ser_leader_digest.clone(),
+//         });
 
-    let _response: Result<tonic::Response<types::DeliverConsensusOutputResponse>, tonic::Status> =
-        client.deliver_consensus_output(request).await;
-    info!("Deliver ConsensusOutput to Gateway!");
-}
+//     let _response: Result<tonic::Response<types::DeliverConsensusOutputResponse>, tonic::Status> =
+//         client.deliver_consensus_output(request).await;
+//     info!("Deliver ConsensusOutput to Gateway!");
+// }
 
-async fn handle_fabric_block(
-    client: &mut CommitNotifierClient<tonic::transport::Channel>,
-    consensus_output: ConsensusOutput,
-) {
-    // ordered_blocks contains a list of EcBlocks, a transaction unit in narwhal.
-    let mut ordered_blocks: Vec<bytes::Bytes> = Vec::new();
-    // let mut ordered_blocks: Vec<bytes::Bytes> = Vec::with_capacity(consensus_ouput.);
+// async fn handle_fabric_block(
+//     client: &mut CommitNotifierClient<tonic::transport::Channel>,
+//     consensus_output: ConsensusOutput,
+// ) {
+//     // ordered_blocks contains a list of EcBlocks, a transaction unit in narwhal.
+//     let mut ordered_blocks: Vec<bytes::Bytes> = Vec::new();
+//     // let mut ordered_blocks: Vec<bytes::Bytes> = Vec::with_capacity(consensus_ouput.);
 
-    if consensus_output.batches.is_empty() {
-        warn!(
-            "handle_fabric_block is obviosuly invoked, but the consensus_output.batches is empty!"
-        );
-        return;
-    }
+//     if consensus_output.batches.is_empty() {
+//         warn!(
+//             "handle_fabric_block is obviosuly invoked, but the consensus_output.batches is empty!"
+//         );
+//         return;
+//     }
 
-    for (_, batches) in consensus_output.batches {
-        for _batch in batches {
-            for _transaction in _batch.transactions.into_iter() {
-                ordered_blocks.push(Bytes::from(_transaction));
-            }
-        }
-    }
-    if ordered_blocks.is_empty() {
-        warn!("handle_fabric_block is obviosuly invoked, but the ordered_blocks is empty WTF is that?!");
-        return;
-    }
+//     for (_, batches) in consensus_output.batches {
+//         for _batch in batches {
+//             for _transaction in _batch.transactions.into_iter() {
+//                 ordered_blocks.push(Bytes::from(_transaction));
+//             }
+//         }
+//     }
+//     if ordered_blocks.is_empty() {
+//         warn!("handle_fabric_block is obviosuly invoked, but the ordered_blocks is empty WTF is that?!");
+//         return;
+//     }
 
-    let req = OrderedBlocks {
-        sequence_number: consensus_output.sub_dag.sub_dag_index,
-        blocks: ordered_blocks,
-    };
+//     let req = OrderedBlocks {
+//         sequence_number: consensus_output.sub_dag.sub_dag_index,
+//         blocks: ordered_blocks,
+//     };
 
-    info!(
-        "Send ConsensusOutput[seq:{}, num_ecblocks:{}] to Executor!",
-        req.sequence_number,
-        req.blocks.len()
-    );
-    let _resp = client.process_ordered_blocks(req).await;
-    match _resp {
-        Ok(response) => {
-            info!("Received response: {:?}", response);
-        }
-        Err(e) => {
-            info!("An error occurred: {:?}", e);
-        }
-    }
-}
-use std::time::Duration;
-use tokio::time::sleep;
+//     info!(
+//         "Send ConsensusOutput[seq:{}, num_ecblocks:{}] to Executor!",
+//         req.sequence_number,
+//         req.blocks.len()
+//     );
+//     let _resp = client.process_ordered_blocks(req).await;
+//     match _resp {
+//         Ok(response) => {
+//             info!("Received response: {:?}", response);
+//         }
+//         Err(e) => {
+//             info!("An error occurred: {:?}", e);
+//         }
+//     }
+// }
+// use std::time::Duration;
+// use tokio::time::sleep;
 
-// Future와 Send 트레잇을 구현하는 동적 디스패치를 위한 타입 별칭
-type AsyncFnPointer = Pin<Box<dyn Future<Output = ()> + Send>>;
+// // Future와 Send 트레잇을 구현하는 동적 디스패치를 위한 타입 별칭
+// type AsyncFnPointer = Pin<Box<dyn Future<Output = ()> + Send>>;
 
-// 공통 인터페이스를 위한 트레잇 정의
-trait Relayer {
-    fn relay(&self, rx_output: Receiver<types::ConsensusOutput>) -> AsyncFnPointer;
-}
+// // 공통 인터페이스를 위한 트레잇 정의
+// trait Relayer {
+//     fn relay(&self, rx_output: Receiver<types::ConsensusOutput>) -> AsyncFnPointer;
+// }
 
-struct EthRelayer;
-struct FabRelayer;
-struct NoopRelayer;
+// struct EthRelayer;
+// struct FabRelayer;
+// struct NoopRelayer;
 
-impl Relayer for EthRelayer {
-    fn relay(&self, rx_output: Receiver<types::ConsensusOutput>) -> AsyncFnPointer {
-        Box::pin(relay_eth(rx_output))
-    }
-}
+// impl Relayer for EthRelayer {
+//     fn relay(&self, rx_output: Receiver<types::ConsensusOutput>) -> AsyncFnPointer {
+//         Box::pin(relay_eth(rx_output))
+//     }
+// }
 
-impl Relayer for FabRelayer {
-    fn relay(&self, rx_output: Receiver<types::ConsensusOutput>) -> AsyncFnPointer {
-        Box::pin(relay_fab(rx_output))
-    }
-}
+// impl Relayer for FabRelayer {
+//     fn relay(&self, rx_output: Receiver<types::ConsensusOutput>) -> AsyncFnPointer {
+//         Box::pin(relay_fab(rx_output))
+//     }
+// }
 
-impl Relayer for NoopRelayer {
-    fn relay(&self, rx_output: Receiver<types::ConsensusOutput>) -> AsyncFnPointer {
-        Box::pin(relay_noop(rx_output))
-    }
-}
+// impl Relayer for NoopRelayer {
+//     fn relay(&self, rx_output: Receiver<types::ConsensusOutput>) -> AsyncFnPointer {
+//         Box::pin(relay_noop(rx_output))
+//     }
+// }
 
-async fn relay(mut _rx_output: Receiver<types::ConsensusOutput>, execution_block_type: String) {
-    // Get appropriate relayer based on execution_block_type
-    let relayer: Box<dyn Relayer> = match execution_block_type.as_str() {
-        "ethereum" => Box::new(EthRelayer),
-        "hyperledger_fabric" => Box::new(FabRelayer),
-        _ => Box::new(NoopRelayer),
-    };
+// async fn relay(mut _rx_output: Receiver<types::ConsensusOutput>, execution_block_type: String) {
+//     // Get appropriate relayer based on execution_block_type
+//     let relayer: Box<dyn Relayer> = match execution_block_type.as_str() {
+//         "ethereum" => Box::new(EthRelayer),
+//         "hyperledger_fabric" => Box::new(FabRelayer),
+//         _ => Box::new(NoopRelayer),
+//     };
 
-    info!("execution_block_type: {}", execution_block_type);
+//     info!("execution_block_type: {}", execution_block_type);
 
-    // Start relaying depending on execution_block_type
-    relayer.relay(_rx_output).await;
+//     // Start relaying depending on execution_block_type
+//     relayer.relay(_rx_output).await;
 
-    // relay_eth(rx_output);
-    // relay_fab(rx_output).await;
-}
+//     // relay_eth(rx_output);
+//     // relay_fab(rx_output).await;
+// }
 
-async fn relay_eth(mut rx_output: Receiver<types::ConsensusOutput>) {
-    let gateway_url = "http://0.0.0.0:50051";
-    let mut client: NarwhalGatewayClient<tonic::transport::Channel> =
-        NarwhalGatewayClient::connect(gateway_url).await.unwrap();
-    // _hello_msg(client.clone()).await;
+// async fn relay_eth(mut rx_output: Receiver<types::ConsensusOutput>) {
+//     let gateway_url = "http://0.0.0.0:50051";
+//     let mut client: NarwhalGatewayClient<tonic::transport::Channel> =
+//         NarwhalGatewayClient::connect(gateway_url).await.unwrap();
+//     // _hello_msg(client.clone()).await;
 
-    while let Some(consensus_output) = rx_output.recv().await {
-        // Uncomment, below handle_ethereum_block, for demoing
-        handle_ethereum_block(&mut client, consensus_output).await;
-    }
-}
+//     while let Some(consensus_output) = rx_output.recv().await {
+//         // Uncomment, below handle_ethereum_block, for demoing
+//         handle_ethereum_block(&mut client, consensus_output).await;
+//     }
+// }
 
-async fn relay_noop(mut rx_output: Receiver<types::ConsensusOutput>) {
-    while let Some(_consensus_output) = rx_output.recv().await {}
-}
+// async fn relay_noop(mut rx_output: Receiver<types::ConsensusOutput>) {
+//     while let Some(_consensus_output) = rx_output.recv().await {}
+// }
 
-async fn relay_fab(mut rx_output: Receiver<types::ConsensusOutput>) {
-    // We infer corresponding shard index from validator #id from env, which #id is used as a shard index
-    let validator_id =
-        env::var("VALIDATOR_ID").expect("Environment VALIDATOR_ID variable not found");
-    // bsp0.executor.edgechain0:10000
-    // "/dns/worker_0/tcp/4001/http
-    // let deliver_address = format!("executor0.edgechain{}.com:10000", validator_id);
-    let deliver_address = format!("http://bsp0.executor.edgechain{}:10000", validator_id);
-    // "transactions": "/dns/worker_0/tcp/4001/http",
+// async fn relay_fab(mut rx_output: Receiver<types::ConsensusOutput>) {
+//     // We infer corresponding shard index from validator #id from env, which #id is used as a shard index
+//     let validator_id =
+//         env::var("VALIDATOR_ID").expect("Environment VALIDATOR_ID variable not found");
+//     // bsp0.executor.edgechain0:10000
+//     // "/dns/worker_0/tcp/4001/http
+//     // let deliver_address = format!("executor0.edgechain{}.com:10000", validator_id);
+//     let deliver_address = format!("http://bsp0.executor.edgechain{}:10000", validator_id);
+//     // "transactions": "/dns/worker_0/tcp/4001/http",
 
-    // let deliver_address = format!("/dns/bsp0.executor.edgechain{}/tcp/10000/http", validator_id);
-    // let deliver_address = format!("executor0.edgechain{}.com:10000", validator_id);
-    // let deliver_address = format!("executor0_edgechain{}_com:10000", validator_id);
-    info!(
-        "Connecting to BSP Executor[addr:{}, validator:{}]",
-        deliver_address, validator_id
-    );
+//     // let deliver_address = format!("/dns/bsp0.executor.edgechain{}/tcp/10000/http", validator_id);
+//     // let deliver_address = format!("executor0.edgechain{}.com:10000", validator_id);
+//     // let deliver_address = format!("executor0_edgechain{}_com:10000", validator_id);
+//     info!(
+//         "Connecting to BSP Executor[addr:{}, validator:{}]",
+//         deliver_address, validator_id
+//     );
 
-    // get fabric client (for bsp executor)
-    let mut client = get_fab_client(deliver_address).await.unwrap();
+//     // get fabric client (for bsp executor)
+//     let mut client = get_fab_client(deliver_address).await.unwrap();
 
-    while let Some(_consensus_output) = rx_output.recv().await {
-        info!("Received Fabric Block!");
-        handle_fabric_block(&mut client, _consensus_output).await;
-        info!("Handled Fabric Block22!");
-    }
-}
+//     while let Some(_consensus_output) = rx_output.recv().await {
+//         info!("Received Fabric Block!");
+//         handle_fabric_block(&mut client, _consensus_output).await;
+//         info!("Handled Fabric Block22!");
+//     }
+// }
 
-async fn get_fab_client(
-    deliver_address: String,
-) -> Result<CommitNotifierClient<tonic::transport::Channel>, Box<dyn std::error::Error>> {
-    const MAX_RETRIES: usize = 500; // 최대 시도 횟수
-    const RETRY_DELAY: Duration = Duration::from_secs(2); // 다음 재시도까지의 지연 시간
-    const TIMEOUT: Duration = Duration::from_secs(2); // 연결 시도 타임아웃
-                                                      // Narwhal Failed to connect to BSP Executor[addr:executor0_edgechain0_com:10000]. Retrying...
-    let mut retries = 0;
+// async fn get_fab_client(
+//     deliver_address: String,
+// ) -> Result<CommitNotifierClient<tonic::transport::Channel>, Box<dyn std::error::Error>> {
+//     const MAX_RETRIES: usize = 500; // 최대 시도 횟수
+//     const RETRY_DELAY: Duration = Duration::from_secs(2); // 다음 재시도까지의 지연 시간
+//     const TIMEOUT: Duration = Duration::from_secs(2); // 연결 시도 타임아웃
+//                                                       // Narwhal Failed to connect to BSP Executor[addr:executor0_edgechain0_com:10000]. Retrying...
+//     let mut retries = 0;
 
-    // This loop ensures client have connection to Executor
-    loop {
-        let result = tonic::transport::Channel::builder(deliver_address.parse()?)
-            .timeout(TIMEOUT)
-            .connect()
-            .await;
+//     // This loop ensures client have connection to Executor
+//     loop {
+//         let result = tonic::transport::Channel::builder(deliver_address.parse()?)
+//             .timeout(TIMEOUT)
+//             .connect()
+//             .await;
 
-        match result {
-            Ok(channel) => {
-                println!("Successfully connected to BSP Executor server.");
-                return Ok(CommitNotifierClient::new(channel));
-                // Ok(client)
-                // break;
-            }
-            Err(_e) => {
-                retries += 1;
-                if retries >= MAX_RETRIES {
-                    println!("Reached max retries. Exiting.");
-                    // return Err(Box::new(e));
-                } else {
-                    println!(
-                        "Narwhal Failed to connect to BSP Executor[addr:{}]. Retrying...",
-                        deliver_address
-                    );
-                    sleep(RETRY_DELAY).await;
-                }
-            }
-        }
-    }
-    // return client;
-}
+//         match result {
+//             Ok(channel) => {
+//                 println!("Successfully connected to BSP Executor server.");
+//                 return Ok(CommitNotifierClient::new(channel));
+//                 // Ok(client)
+//                 // break;
+//             }
+//             Err(_e) => {
+//                 retries += 1;
+//                 if retries >= MAX_RETRIES {
+//                     println!("Reached max retries. Exiting.");
+//                     // return Err(Box::new(e));
+//                 } else {
+//                     println!(
+//                         "Narwhal Failed to connect to BSP Executor[addr:{}]. Retrying...",
+//                         deliver_address
+//                     );
+//                     sleep(RETRY_DELAY).await;
+//                 }
+//             }
+//         }
+//     }
+//     // return client;
+// }

@@ -193,6 +193,7 @@ class Bench:
             c.put(PathMaker.worker_key_file(
                 i*workers + j), '.')
         c.put(PathMaker.parameters_file(), '.')
+        c.put(PathMaker.genesis_file(), '.')
 
     def _config(self, hosts, node_parameters, bench_parameters, include_execution=True):
         Print.info('Generating configuration files...')
@@ -328,6 +329,7 @@ class Bench:
                     PathMaker.workers_file(),
                     PathMaker.db_path(i),
                     PathMaker.parameters_file(),
+                    PathMaker.genesis_file(),
                     debug=debug
                 )
                 log_file = PathMaker.primary_log_file(i)

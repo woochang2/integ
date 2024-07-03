@@ -71,7 +71,10 @@ class PathMaker:
         assert (isinstance(j, int) and i >= 0) or j is None
         worker_id = f'-{j}' if j is not None else ''
         return f'.db-{i}{worker_id}'
-
+        
+    @staticmethod
+    def genesis_file():
+        return 'genesis.json'
 
     @staticmethod
     def logs_path():
