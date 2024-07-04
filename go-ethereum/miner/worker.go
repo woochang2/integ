@@ -33,7 +33,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/extadapter"
+
+	// "github.com/ethereum/go-ethereum/extadapter"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
@@ -738,14 +739,14 @@ func (w *worker) taskLoop() {
 func (w *worker) resultLoop() {
 	defer w.wg.Done()
 
-	var narwhalAdapter *extadapter.NarwhalAdapter
+	// var narwhalAdapter *extadapter.NarwhalAdapter
 
-	if extadapter.CheckSignerFlag() {
-		hostAddr := "0.0.0.0:60000"
-		gatewayAddr := "0.0.0.0:50051"
-		narwhalAdapter = extadapter.GetNarwhalAdapter(hostAddr, gatewayAddr)
-		log.Info("Detect SIGNER checked!")
-	}
+	// if extadapter.CheckSignerFlag() {
+	// 	hostAddr := "0.0.0.0:60000"
+	// 	gatewayAddr := "0.0.0.0:50051"
+	// 	narwhalAdapter = extadapter.GetNarwhalAdapter(hostAddr, gatewayAddr)
+	// 	log.Info("Detect SIGNER checked!")
+	// }
 
 	for {
 		select {
@@ -798,20 +799,20 @@ func (w *worker) resultLoop() {
 			log.Info("ExtraData", "len", len(block.Header().Extra), "data", hexutil.Encode(block.Header().Extra))
 			var err error
 
-			if extadapter.CheckSignerFlag() {
-				err := narwhalAdapter.Broadcast(block)
-				// Perform furthur narwhal operations only when
-				if err == nil {
-					log.Warn("Wait narwhal-commit from gateway")
-					consensusOutput := narwhalAdapter.WaitForCommit()
-					block, err = narwhalAdapter.RebuildHeaderWithNarwhalSig(block, consensusOutput)
-					if err != nil {
-						panic(err)
-					}
-				} else {
-					log.Warn("Skip narwhal ordering operations", "err", err.Error())
-				}
-			}
+			// if extadapter.CheckSignerFlag() {
+			// 	err := narwhalAdapter.Broadcast(block)
+			// 	// Perform furthur narwhal operations only when
+			// 	if err == nil {
+			// 		log.Warn("Wait narwhal-commit from gateway")
+			// 		consensusOutput := narwhalAdapter.WaitForCommit()
+			// 		block, err = narwhalAdapter.RebuildHeaderWithNarwhalSig(block, consensusOutput)
+			// 		if err != nil {
+			// 			panic(err)
+			// 		}
+			// 	} else {
+			// 		log.Warn("Skip narwhal ordering operations", "err", err.Error())
+			// 	}
+			// }
 
 			// Broadcast NewBlock to internal subscriber, leading to deliver to external p2p network
 			w.mux.Post(core.NewMinedBlockEvent{Block: block})

@@ -10,35 +10,11 @@ mod narwhal {
     include!(concat!(env!("OUT_DIR"), "/narwhal.WorkerToWorker.rs"));
 }
 
-mod narwhal_gateway {
-    #![allow(clippy::derive_partial_eq_without_eq)]
-    tonic::include_proto!("narwhal_gateway");
-}
-mod bsp_transaction {
-    #![allow(clippy::derive_partial_eq_without_eq)]
-    tonic::include_proto!("bsp_transaction");
-}
-
 use std::{array::TryFromSliceError, ops::Deref};
 
 use crate::{BlockError, BlockErrorKind, CertificateDigest, Transaction};
 use bytes::Bytes;
 use crypto::PublicKey;
-
-pub use narwhal_gateway::{
-    // narwhal_gateway_client::NarwhalGatewayClient, Proposal, ProposalResponse,
-    narwhal_gateway_client::*,
-    GatewayBatch,
-    GatewayCertificate,
-    GatewayCommittedSubDag,
-    GatewayConsensusOutput,
-    *,
-};
-pub use bsp_transaction::{
-    // narwhal_gateway_client::NarwhalGatewayClient, Proposal, ProposalResponse,
-    commit_notifier_client::*,
-    *,
-};
 
 pub use narwhal::{
     collection_error::CollectionErrorType,

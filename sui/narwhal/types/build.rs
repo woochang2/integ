@@ -18,12 +18,12 @@ fn main() -> Result<()> {
         PathBuf::from(env::var("OUT_DIR")?)
     };
 
-    let proto_files = &["proto/narwhal.proto", "proto/narwhal_gateway.proto", "proto/bsp_transaction.proto"];
+    let proto_files = &["proto/narwhal.proto"];
     // let proto_files = &["proto/narwhal.proto", "proto/narwhal_gateway.proto"];
     let dirs = &["proto"];
 
-    tonic_build::compile_protos("proto/narwhal_gateway.proto")?;
-    tonic_build::compile_protos("proto/bsp_transaction.proto")?;
+    // tonic_build::compile_protos("proto/narwhal_gateway.proto")?;
+    // tonic_build::compile_protos("proto/bsp_transaction.proto")?;
 
     // Use `Bytes` instead of `Vec<u8>` for bytes fields
     let mut config = prost_build::Config::new();
