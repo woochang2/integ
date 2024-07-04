@@ -23,6 +23,7 @@ use reth::core::init::init_genesis;
 use reth::network::config::rng_secret_key;
 use reth::network::{NetworkConfig, NetworkManager};
 use reth::primitives::{ChainSpec, Genesis};
+use reth::transaction_pool::noop::NoopTransactionPool;
 use sslab_core::consensus_handler::SimpleConsensusHandler;
 use sslab_execution::{blockchain_provider, init_ether_db, ProviderFactoryMDBX};
 use sslab_execution::{
@@ -357,8 +358,11 @@ async fn run(
                 .disable_discovery()
                 .network_mode(reth::network::config::NetworkMode::Work) // this is to propagate via NewBlockMsg over devp2p. we do not use ethereum consensus.
                 .build(blockchain_provider.clone()); // by default listening to 0.0.0.0:30303
-            let network = match NetworkManager::new(config).await {
-                Ok(network) => network,
+
+            let builder = match NetworkManager::builder(config).await {
+                Ok(builder) => builder
+                    .transactions(NoopTransactionPool::default(), Default::default())
+                    .request_handler(blockchain_provider),
                 Err(reth::network::error::NetworkError::AddressAlreadyInUse { .. }) => {
                     // this is a hack to allow multiple nodes to run on the same machine for local testing
                     // we increment the port by the (id+1)
@@ -376,14 +380,19 @@ async fn run(
                         .disable_discovery()
                         .set_addrs(listener_addr)
                         .network_mode(reth::network::config::NetworkMode::Work)
-                        .build(blockchain_provider);
+                        .build(blockchain_provider.clone());
 
-                    NetworkManager::new(config).await?
+                    NetworkManager::builder(config)
+                        .await
+                        .unwrap()
+                        .transactions(NoopTransactionPool::default(), Default::default())
+                        .request_handler(blockchain_provider)
                 }
                 Err(e) => panic!("Failed to start eth p2p network: {:?}", e),
             };
-            let devp2p_network_manager = network.handle().clone();
+            let (devp2p_network_manager, network, _, eth) = builder.split_with_handle();
             tokio::task::spawn(network);
+            tokio::task::spawn(eth);
 
             let preloaded_state = if cfg!(feature = "benchmark") {
                 info!("Using preloaded state for benchmarking");
