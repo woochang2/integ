@@ -59,6 +59,11 @@ class PathMaker:
     def primary_network_key_file(i):
         assert isinstance(i, int) and i >= 0
         return f'.primary-{i}-network-key.json'
+    
+    @staticmethod
+    def primary_enode_key_file(i):
+        assert isinstance(i, int) and i >= 0
+        return f'.primary-{i}-enode-key.json'
 
     @staticmethod
     def worker_key_file(i):
@@ -75,6 +80,10 @@ class PathMaker:
     @staticmethod
     def genesis_file():
         return 'genesis.json'
+    
+    @staticmethod
+    def static_nodes_file():
+        return ".static-nodes.json"
 
     @staticmethod
     def logs_path():

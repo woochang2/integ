@@ -25,6 +25,7 @@ use reth::network::{NetworkConfig, NetworkManager};
 use reth::primitives::{ChainSpec, Genesis};
 use reth::transaction_pool::noop::NoopTransactionPool;
 use sslab_core::consensus_handler::SimpleConsensusHandler;
+use sslab_core::enode_keys::{get_enode_id, read_enode_key_from_file, write_enode_key_to_file};
 use sslab_execution::{blockchain_provider, init_ether_db, ProviderFactoryMDBX};
 use sslab_execution::{
     transaction_validator::EthereumTxValidator,
@@ -71,6 +72,16 @@ async fn main() -> Result<(), eyre::Report> {
                 .args_from_usage("--filename=<FILE> 'The file where the keypair is stored'"),
         )
         .subcommand(
+            SubCommand::with_name("generate_enode_keys")
+                .about("Save the enode secp256k1 keypair (hex encoded 'secretKey') to file")
+                .args_from_usage("--filename=<FILE> 'The file where to save the keypair is stored'")
+        )
+        .subcommand(
+            SubCommand::with_name("get_enode_id")
+                .about("Generate enode id from the enode secp256k1 keypair file")
+                .args_from_usage("--filename=<FILE> 'The file where the keypair is stored'")
+        )
+        .subcommand(
             SubCommand::with_name("run")
                 .about("Run a node")
                 .args_from_usage("--primary-keys=<FILE> 'The file containing the node's primary keys'")
@@ -84,6 +95,8 @@ async fn main() -> Result<(), eyre::Report> {
                     SubCommand::with_name("primary")
                     .about("Run a single primary")
                     .args_from_usage("--genesis=<FILE> 'The genesis.json file path'")
+                    .args_from_usage("--enode-keys=<FILE> 'The file containing the enode key'")
+                    .args_from_usage("--eth-port=[INT] 'The port to listen on for devp2p (default 30303)'")
                     // .args_from_usage("--concurrency-level=<INT> 'The number of batches to execute in parallel, especially for NEZHA'")
                 )
                 .subcommand(
@@ -144,6 +157,19 @@ async fn main() -> Result<(), eyre::Report> {
                     }
                 }
             }
+        }
+        ("generate_enode_keys", Some(sub_matches)) => {
+            let _guard = setup_telemetry(tracing_level, network_tracing_level, None);
+            let enode_key_file = sub_matches.value_of("filename").unwrap();
+            let keypair =
+                secp256k1::KeyPair::from_secret_key(secp256k1::SECP256K1, &rng_secret_key());
+            write_enode_key_to_file(&keypair, enode_key_file).unwrap();
+        }
+        ("get_enode_id", Some(sub_matches)) => {
+            let _guard = setup_telemetry(tracing_level, network_tracing_level, None);
+            let enode_key_file = sub_matches.value_of("filename").unwrap();
+            let keypair = read_enode_key_from_file(enode_key_file).unwrap();
+            println!("{:?}", get_enode_id(&keypair));
         }
         ("run", Some(sub_matches)) => {
             let primary_key_file = sub_matches.value_of("primary-keys").unwrap();
@@ -353,9 +379,23 @@ async fn run(
             // set devp2p id as random because we don't have a deterministic way to generate it
             // other peers will use the socket address to connect.
             // we do not need to spawn eth api server since we delegate ethApis to other full nodes.
-            let config = NetworkConfig::builder(rng_secret_key())
+            let enode_key_file = submatches.unwrap().value_of("enode-keys").unwrap();
+            let enode_keypair = read_enode_key_from_file(enode_key_file).unwrap();
+            let eth_port: u16 = submatches
+                .unwrap()
+                .value_of("eth-port")
+                .unwrap_or("30303")
+                .parse()
+                .unwrap();
+            info!(
+                "Spawning devp2p at port {} with enode id: {}",
+                eth_port,
+                get_enode_id(&enode_keypair)
+            );
+            let config = NetworkConfig::builder(enode_keypair.secret_key())
                 .disable_tx_gossip(true)
                 .disable_discovery()
+                .listener_port(eth_port)
                 .network_mode(reth::network::config::NetworkMode::Work) // this is to propagate via NewBlockMsg over devp2p. we do not use ethereum consensus.
                 .build(blockchain_provider.clone()); // by default listening to 0.0.0.0:30303
 

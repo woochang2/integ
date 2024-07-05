@@ -12,5 +12,5 @@ plots/*.png
 .primary-*-key.json
 .worker-*-key.json
 .primary-*-network-key.json
-
+.static-nodes.json
 settings.json

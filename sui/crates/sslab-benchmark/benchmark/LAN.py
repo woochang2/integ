@@ -12,7 +12,7 @@ from math import ceil
 from copy import deepcopy
 import subprocess
 
-from benchmark.config import Committee, NodeParameters, WorkerCache, BenchParameters, ConfigError
+from benchmark.config import Committee, NodeParameters, WorkerCache, BenchParameters, ConfigError, StaticNodes
 from benchmark.utils import BenchError, ExecutionModel, Print, PathMaker, progress_bar
 from benchmark.commands import CommandMaker
 from benchmark.logs import LogParser, ParseError
@@ -211,6 +211,16 @@ class LANBench:
             )
         committee = Committee(addresses, self.settings.base_port)
         committee.print(PathMaker.committee_file())
+        
+        primary_enode_ids = []
+        primary_enode_key_files = [PathMaker.primary_enode_key_file(i) for i in range(len(hosts))]
+        for filename in primary_enode_key_files:
+            cmd = CommandMaker.generate_enode_key(filename).split()
+            subprocess.run(cmd, check=True)
+            cmd_enode_id = CommandMaker.get_enode_id(filename).split()
+            id = subprocess.check_output(cmd_enode_id, encoding='utf-8').strip()
+            primary_enode_ids += [id]
+        StaticNodes(primary_enode_ids, hosts, [30303]*len(hosts)).print(PathMaker.static_nodes_file())
 
         worker_names = []
         worker_key_files = [PathMaker.worker_key_file(
@@ -261,6 +271,7 @@ class LANBench:
                         i*bench_parameters.workers + j), '.')
                 c.put(PathMaker.parameters_file(), '.')
                 c.put(PathMaker.genesis_file(), '.')
+                c.put(PathMaker.primary_enode_key_file(i), '.')
 
         return (committee, worker_cache)
 
@@ -302,6 +313,7 @@ class LANBench:
                 PathMaker.db_path(i),
                 PathMaker.parameters_file(),
                 PathMaker.genesis_file(),
+                PathMaker.primary_enode_key_file(i),
                 debug=debug
             )
             log_file = PathMaker.primary_log_file(i)

@@ -13158,6 +13158,7 @@ dependencies = [
  "rand 0.8.5",
  "rayon",
  "reth",
+ "secp256k1 0.27.0",
  "serde 1.0.202",
  "serde_json",
  "serde_with 2.1.0",

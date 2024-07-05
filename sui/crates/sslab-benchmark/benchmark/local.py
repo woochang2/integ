@@ -7,7 +7,7 @@ from os.path import basename, splitext
 from time import sleep
 
 from benchmark.commands import CommandMaker
-from benchmark.config import LocalCommittee, NodeParameters, LocalWorkerCache, BenchParameters, ConfigError
+from benchmark.config import LocalCommittee, NodeParameters, LocalWorkerCache, BenchParameters, ConfigError, LocalStaticNodes
 from benchmark.logs import LogParser, ParseError
 from benchmark.utils import Print, BenchError, PathMaker
 
@@ -90,6 +90,17 @@ class LocalBench:
             committee = LocalCommittee(
                 primary_names, primary_network_names, self.BASE_PORT)
             committee.print(PathMaker.committee_file())
+            
+            primary_enode_ids = []
+            primary_enode_key_files = [PathMaker.primary_enode_key_file(i) for i in range(nodes)]
+            for filename in primary_enode_key_files:
+                cmd = CommandMaker.generate_enode_key(filename).split()
+                subprocess.run(cmd, check=True)
+                cmd_enode_id = CommandMaker.get_enode_id(filename).split()
+                id = subprocess.check_output(cmd_enode_id, encoding='utf-8').strip()
+                primary_enode_ids += [id]
+            LocalStaticNodes(primary_enode_ids).print(PathMaker.static_nodes_file())
+            
 
             worker_names = []
             worker_key_files = [PathMaker.worker_key_file(
@@ -136,6 +147,8 @@ class LocalBench:
                             PathMaker.db_path(i),
                             PathMaker.parameters_file(),
                             PathMaker.genesis_file(),
+                            PathMaker.primary_enode_key_file(i),
+                            eth_port=30303 + i,
                             debug=debug
                         )
                         log_file = PathMaker.primary_log_file(i)

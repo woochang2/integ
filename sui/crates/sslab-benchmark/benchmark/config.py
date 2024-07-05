@@ -244,7 +244,42 @@ class LocalCommittee(Committee):
         addresses = OrderedDict((name, (network_name, [
                                 '127.0.0.1'])) for name, network_name in zip(names, network_names))
         super().__init__(addresses, port)
+        
 
+class StaticNodes:
+    '''
+    The static nodes look as follows:
+    [
+        enode://{id}@{ip}:{port},
+        ...
+    ]
+    '''
+    def __init__(self, ids, ips, ports):
+        assert isinstance(ids, list)
+        assert all(isinstance(x, str) for x in ids)
+        assert isinstance(ips, list)
+        assert all(isinstance(x, str) for x in ips)
+        assert isinstance(ips, list)
+        assert all(isinstance(x, int) for x in ports)
+
+        self.json = []
+        for id, ip, port in zip(ids, ips, ports, strict=True):
+            self.json += [f'enode://{id}@{ip}:{port}']
+            
+    def print(self, filename):
+        assert isinstance(filename, str)
+        with open(filename, 'w') as f:
+            dump(self.json, f, indent=4, sort_keys=True)
+            
+            
+class LocalStaticNodes(StaticNodes):
+    def __init__(self, ids, base_port=30303):
+        assert isinstance(ids, list)
+        assert all(isinstance(x, str) for x in ids)
+        ports = [base_port + i for i in range(len(ids))]
+        ips = ['127.0.0.1' for _ in range(len(ids))]
+        
+        super().__init__(ids, ips, ports)
 
 class NodeParameters:
     def __init__(self, json):

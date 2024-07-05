@@ -55,9 +55,19 @@ class CommandMaker:
     def generate_network_key(filename):
         assert isinstance(filename, str)
         return f'./narwhal-node generate_network_keys --filename {filename}'
+    
+    @staticmethod
+    def generate_enode_key(filename):
+        assert isinstance(filename, str)
+        return f'./narwhal-node generate_enode_keys --filename {filename}'
+    
+    @staticmethod
+    def get_enode_id(filename):
+        assert isinstance(filename, str)
+        return f'./narwhal-node get_enode_id --filename {filename}'
      
     @staticmethod
-    def run_primary(primary_keys, primary_network_keys, worker_keys, committee, workers, store, parameters, genesis, debug=False):
+    def run_primary(primary_keys, primary_network_keys, worker_keys, committee, workers, store, parameters, genesis, enode_keys, eth_port=30303, debug=False):
         assert isinstance(primary_keys, str)
         assert isinstance(primary_network_keys, str)
         assert isinstance(worker_keys, str)
@@ -69,7 +79,7 @@ class CommandMaker:
         v = '-vvv' if debug else '-vv'
         return (f'./narwhal-node {v} run --primary-keys {primary_keys} --primary-network-keys {primary_network_keys} '
                 f'--worker-keys {worker_keys} --committee {committee} --workers {workers} --store {store} '
-                f'--parameters {parameters} primary --genesis {genesis}')
+                f'--parameters {parameters} primary --genesis {genesis} --eth-port {eth_port} --enode-keys {enode_keys}')
 
     @staticmethod
     def run_worker(primary_keys, primary_network_keys, worker_keys, committee, workers, store, parameters, id, debug=False):

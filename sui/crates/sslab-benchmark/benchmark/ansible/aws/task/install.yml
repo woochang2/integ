@@ -56,6 +56,7 @@
     proto: tcp
   with_items:
     - 5000:6000 # sui node
+    - '30303'  # ethereum devp2p network (EthAPI)
     - '9090' # prometheous
     - '22' # ssh
   become: yes
@@ -67,6 +68,7 @@
     proto: udp
   with_items:
     - 5000:6000 # sui node
+    - '30303'  # ethereum devp2p network (EthAPI)
   become: yes
 
 - name: enable UFW

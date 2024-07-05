@@ -64,6 +64,7 @@
       proto: tcp
     with_items:
       - 5000:6000 # sui node
+      - '30303'  # ethereum devp2p network (EthAPI)
       - '9090' # prometheous
     become: yes
 
@@ -74,14 +75,15 @@
       proto: udp
     with_items:
       - 5000:6000 # sui node
+      - '30303'  # ethereum devp2p network (EthAPI)
     become: yes
 
-  - name: Clone a github repository
-    git:
-      repo: https://github.com/woochang2/integ
-      dest: /home/nezha/integ
-      clone: yes
-      update: yes
+  # - name: Clone a github repository
+  #   git:
+  #     repo: https://github.com/woochang2/integ
+  #     dest: /home/nezha/integ
+  #     clone: yes
+  #     update: yes
 
   roles:
     - name: prometheus.prometheus.prometheus
