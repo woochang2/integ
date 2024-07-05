@@ -37,7 +37,7 @@ class LocalBench:
         except subprocess.SubprocessError as e:
             raise BenchError('Failed to kill testbed', e)
 
-    def run(self, debug=False, failpoints=False, release=True):
+    def run(self, debug=False, failpoints=False, release=True, reuse_config=False):
         assert isinstance(debug, bool)
         Print.heading('Starting local benchmark')
 
@@ -48,10 +48,15 @@ class LocalBench:
             Print.info('Setting up testbed...')
             nodes, rate = self.nodes[0], self.rate[0]
         
-            # Cleanup all files.
-            cmd = f'{CommandMaker.clean_logs()} ; {CommandMaker.cleanup()}'
-            subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
-            sleep(0.5)  # Removing the store may take time.
+            if not reuse_config:
+                # Cleanup all files.
+                cmd = f'{CommandMaker.clean_logs()} ; {CommandMaker.cleanup()}'
+                subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
+                sleep(0.5)  # Removing the store may take time.
+            else:
+                cmd = f'{CommandMaker.clean_logs()} ; {CommandMaker.clean_db()}'
+                subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
+                sleep(0.5)  # Removing the store may take time.
 
             # Recompile the latest narwhal-node code.
             cmd = CommandMaker.compile(failpoints=failpoints, release=release, execution_model=self.execution_model)
@@ -67,13 +72,15 @@ class LocalBench:
             cmd = CommandMaker.alias_binaries(PathMaker.binary_path(release))
             subprocess.run([cmd], shell=True)
 
+            
             # Generate configuration files.
             primary_names = []
             primary_key_files = [
                 PathMaker.primary_key_file(i) for i in range(nodes)]
             for filename in primary_key_files:
-                cmd = CommandMaker.generate_key(filename).split()
-                subprocess.run(cmd, check=True)
+                if not reuse_config:
+                    cmd = CommandMaker.generate_key(filename).split()
+                    subprocess.run(cmd, check=True)
                 cmd_pk = CommandMaker.get_pub_key(filename).split()
                 pk = subprocess.check_output(cmd_pk, encoding='utf-8').strip()
                 primary_names += [pk]
@@ -82,24 +89,26 @@ class LocalBench:
             primary_network_key_files = [
                 PathMaker.primary_network_key_file(i) for i in range(nodes)]
             for filename in primary_network_key_files:
-                cmd = CommandMaker.generate_network_key(filename).split()
-                subprocess.run(cmd, check=True)
+                if not reuse_config:
+                    cmd = CommandMaker.generate_network_key(filename).split()
+                    subprocess.run(cmd, check=True)
                 cmd_pk = CommandMaker.get_pub_key(filename).split()
                 pk = subprocess.check_output(cmd_pk, encoding='utf-8').strip()
                 primary_network_names += [pk]
             committee = LocalCommittee(
-                primary_names, primary_network_names, self.BASE_PORT)
+                    primary_names, primary_network_names, self.BASE_PORT)
             committee.print(PathMaker.committee_file())
             
             primary_enode_ids = []
             primary_enode_key_files = [PathMaker.primary_enode_key_file(i) for i in range(nodes)]
             for filename in primary_enode_key_files:
-                cmd = CommandMaker.generate_enode_key(filename).split()
-                subprocess.run(cmd, check=True)
+                if not reuse_config:
+                    cmd = CommandMaker.generate_enode_key(filename).split()
+                    subprocess.run(cmd, check=True)
                 cmd_enode_id = CommandMaker.get_enode_id(filename).split()
                 id = subprocess.check_output(cmd_enode_id, encoding='utf-8').strip()
                 primary_enode_ids += [id]
-            LocalStaticNodes(primary_enode_ids).print(PathMaker.static_nodes_file())
+            LocalStaticNodes(primary_enode_ids).print(PathMaker.boot_nodes_file())
             
 
             worker_names = []
@@ -148,6 +157,7 @@ class LocalBench:
                             PathMaker.parameters_file(),
                             PathMaker.genesis_file(),
                             PathMaker.primary_enode_key_file(i),
+                            PathMaker.boot_nodes_file(),
                             eth_port=30303 + i,
                             debug=debug
                         )

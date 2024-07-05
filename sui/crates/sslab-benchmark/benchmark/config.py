@@ -264,7 +264,7 @@ class StaticNodes:
 
         self.json = []
         for id, ip, port in zip(ids, ips, ports, strict=True):
-            self.json += [f'enode://{id}@{ip}:{port}']
+            self.json += [f'enode://{id[2:]}@{ip}:{port}']
             
     def print(self, filename):
         assert isinstance(filename, str)

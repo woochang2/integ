@@ -70,14 +70,19 @@ GraphQLVirtualHosts = ["localhost"]
 
 [Node.P2P]
 MaxPeers = 50
-NoDiscovery = false     # set to true to disable discovery
-BootstrapNodes = []
+NoDiscovery = false # set to true to disable discovery
+BootstrapNodes = [
+    "enode://4d0de5ca011ac031c4570aa27346d7acd77e7ac1044487f2e8654b43a2a4a4bee9e76c7ae2aeb064f427a8732b80776a86dc5c2ce36ac36517a028b14c45e639@127.0.0.1:30304",
+]
 BootstrapNodesV5 = []
-StaticNodes = []        # enode URLs of static-nodes.json are added here 
-TrustedNodes = []
-ListenAddr = ":30300"   # default port is 30303
-DiscAddr = ""
-EnableMsgEvents = false
+# enode URLs of static-nodes.json are added here 
+StaticNodes = []
+TrustedNodes = [
+    "enode://4d0de5ca011ac031c4570aa27346d7acd77e7ac1044487f2e8654b43a2a4a4bee9e76c7ae2aeb064f427a8732b80776a86dc5c2ce36ac36517a028b14c45e639@127.0.0.1:30304",
+]
+ListenAddr = ":30300" # default port is 30303
+DiscAddr = ":30300"
+EnableMsgEvents = true
 
 [Node.HTTPTimeouts]
 ReadTimeout = 30000000000

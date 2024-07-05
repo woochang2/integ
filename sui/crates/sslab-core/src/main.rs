@@ -14,7 +14,6 @@ use config::{Committee, Import, Parameters, WorkerCache, WorkerId};
 use crypto::{KeyPair, NetworkKeyPair};
 use eyre::Context;
 use fastcrypto::traits::KeyPair as _;
-use itertools::Itertools;
 use mysten_metrics::RegistryService;
 use node::metrics::{primary_metrics_registry, start_prometheus_server, worker_metrics_registry};
 use node::{primary_node::PrimaryNode, worker_node::WorkerNode};
@@ -22,7 +21,7 @@ use prometheus::Registry;
 use reth::core::init::init_genesis;
 use reth::network::config::rng_secret_key;
 use reth::network::{NetworkConfig, NetworkManager};
-use reth::primitives::{ChainSpec, Genesis};
+use reth::primitives::{ChainSpec, Genesis, NodeRecord};
 use reth::transaction_pool::noop::NoopTransactionPool;
 use sslab_core::consensus_handler::SimpleConsensusHandler;
 use sslab_core::enode_keys::{get_enode_id, read_enode_key_from_file, write_enode_key_to_file};
@@ -33,6 +32,7 @@ use sslab_execution::{
 };
 use sslab_execution_serial::SerialExecutor;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::str::FromStr;
 use std::sync::Arc;
 use storage::NodeStorage;
 use sui_keys::keypair_file::{
@@ -97,6 +97,7 @@ async fn main() -> Result<(), eyre::Report> {
                     .args_from_usage("--genesis=<FILE> 'The genesis.json file path'")
                     .args_from_usage("--enode-keys=<FILE> 'The file containing the enode key'")
                     .args_from_usage("--eth-port=[INT] 'The port to listen on for devp2p (default 30303)'")
+                    .args_from_usage("--boot-nodes=[FILE] 'The file containing the enode urls of boot nodes'")
                     // .args_from_usage("--concurrency-level=<INT> 'The number of batches to execute in parallel, especially for NEZHA'")
                 )
                 .subcommand(
@@ -346,93 +347,85 @@ async fn run(
             //     }
             // }
 
-            //* Load the genesis file.
-            let genesis_path = submatches.unwrap().value_of("genesis").unwrap();
+            // generate ethereum-related components
+            let chain_spec;
+            let factory_provider;
+            let devp2p_network_manager;
+            {
+                //* Load the genesis file.
+                let genesis_path = submatches.unwrap().value_of("genesis").unwrap();
 
-            info!("reading genesis from {:?}", genesis_path);
+                info!("reading genesis from {:?}", genesis_path);
 
-            //* Build ChainSpec from genesis.json
-            let chain_spec = match serde_json::from_str::<Genesis>(
-                std::fs::read_to_string(genesis_path).unwrap().as_str(),
-            ) {
-                Ok(genesis) => {
-                    info!(
-                        "Loaded genesis.json : {:?}",
-                        serde_json::to_string_pretty(&genesis)?
-                    );
-                    Arc::new(ChainSpec::from(genesis))
-                }
-                Err(e) => {
-                    panic!("Failed to deserialize genesis.json: {e:?}");
-                }
-            };
+                //* Build ChainSpec from genesis.json
+                chain_spec = match serde_json::from_str::<Genesis>(
+                    std::fs::read_to_string(genesis_path).unwrap().as_str(),
+                ) {
+                    Ok(genesis) => {
+                        info!(
+                            "Loaded genesis.json : {:?}",
+                            serde_json::to_string_pretty(&genesis)?
+                        );
+                        Arc::new(ChainSpec::from(genesis))
+                    }
+                    Err(e) => {
+                        panic!("Failed to deserialize genesis.json: {e:?}");
+                    }
+                };
 
-            //* init the database and genesis block
-            let db_path = String::from(store_path) + "-eth";
-            let db = init_ether_db(db_path.as_str(), Default::default())?;
-            let _ = init_genesis(db.clone(), chain_spec.clone())?;
-            let factory_provider = ProviderFactoryMDBX::new(db, chain_spec.clone());
+                //* init the database and genesis block
+                let db_path = String::from(store_path) + "-eth";
+                let db = init_ether_db(db_path.as_str(), Default::default())?;
+                let _ = init_genesis(db.clone(), chain_spec.clone())?;
+                factory_provider = ProviderFactoryMDBX::new(db, chain_spec.clone());
 
-            let blockchain_provider = blockchain_provider(factory_provider.clone());
+                let blockchain_provider = blockchain_provider(factory_provider.clone());
 
-            //* Configure the devp2p network
-            // set devp2p id as random because we don't have a deterministic way to generate it
-            // other peers will use the socket address to connect.
-            // we do not need to spawn eth api server since we delegate ethApis to other full nodes.
-            let enode_key_file = submatches.unwrap().value_of("enode-keys").unwrap();
-            let enode_keypair = read_enode_key_from_file(enode_key_file).unwrap();
-            let eth_port: u16 = submatches
-                .unwrap()
-                .value_of("eth-port")
-                .unwrap_or("30303")
-                .parse()
-                .unwrap();
-            info!(
-                "Spawning devp2p at port {} with enode id: {}",
-                eth_port,
-                get_enode_id(&enode_keypair)
-            );
-            let config = NetworkConfig::builder(enode_keypair.secret_key())
-                .disable_tx_gossip(true)
-                .disable_discovery()
-                .listener_port(eth_port)
-                .network_mode(reth::network::config::NetworkMode::Work) // this is to propagate via NewBlockMsg over devp2p. we do not use ethereum consensus.
-                .build(blockchain_provider.clone()); // by default listening to 0.0.0.0:30303
+                //* Configure the devp2p network
+                // set devp2p id as random because we don't have a deterministic way to generate it
+                // other peers will use the socket address to connect.
+                // we do not need to spawn eth api server since we delegate ethApis to other full nodes.
+                let enode_key_file = submatches.unwrap().value_of("enode-keys").unwrap();
+                let enode_keypair = read_enode_key_from_file(enode_key_file).unwrap();
+                let eth_port: u16 = submatches
+                    .unwrap()
+                    .value_of("eth-port")
+                    .unwrap_or("30303")
+                    .parse()
+                    .unwrap();
 
-            let builder = match NetworkManager::builder(config).await {
-                Ok(builder) => builder
+                let boot_nodes_file = submatches.unwrap().value_of("boot-nodes").unwrap();
+                let urls = Vec::<String>::import(boot_nodes_file).unwrap();
+                let boot_nodes = urls.iter().map(|url| NodeRecord::from_str(url).unwrap());
+
+                let listen_addr =
+                    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, eth_port));
+
+                let network_config = NetworkConfig::builder(enode_keypair.secret_key())
+                    .disable_tx_gossip(true)
+                    .set_addrs(listen_addr)
+                    .boot_nodes(boot_nodes)
+                    .network_mode(reth::network::config::NetworkMode::Work) // this is to propagate via NewBlockMsg over devp2p. we do not use ethereum consensus.
+                    .build(blockchain_provider.clone());
+
+                let (network_manager, network, _, eth) = NetworkManager::builder(network_config)
+                    .await
+                    .unwrap()
                     .transactions(NoopTransactionPool::default(), Default::default())
-                    .request_handler(blockchain_provider),
-                Err(reth::network::error::NetworkError::AddressAlreadyInUse { .. }) => {
-                    // this is a hack to allow multiple nodes to run on the same machine for local testing
-                    // we increment the port by the (id+1)
-                    let id: u16 = store_path.split("-").collect_vec()[1]
-                        .to_string()
-                        .parse()
-                        .unwrap();
-                    let listener_addr = SocketAddr::V4(SocketAddrV4::new(
-                        Ipv4Addr::UNSPECIFIED,
-                        DEFAULT_DISCOVERY_PORT + id + 1u16,
-                    ));
+                    .request_handler(blockchain_provider)
+                    .split_with_handle();
 
-                    let config = NetworkConfig::builder(rng_secret_key())
-                        .disable_tx_gossip(true)
-                        .disable_discovery()
-                        .set_addrs(listener_addr)
-                        .network_mode(reth::network::config::NetworkMode::Work)
-                        .build(blockchain_provider.clone());
+                info!(
+                    "Spawning devp2p at {} with enode id: {}",
+                    network.local_addr(),
+                    network.peer_id()
+                );
 
-                    NetworkManager::builder(config)
-                        .await
-                        .unwrap()
-                        .transactions(NoopTransactionPool::default(), Default::default())
-                        .request_handler(blockchain_provider)
-                }
-                Err(e) => panic!("Failed to start eth p2p network: {:?}", e),
-            };
-            let (devp2p_network_manager, network, _, eth) = builder.split_with_handle();
-            tokio::task::spawn(network);
-            tokio::task::spawn(eth);
+                tokio::task::spawn(network);
+                tokio::task::spawn(eth);
+
+                devp2p_network_manager = network_manager;
+            }
 
             let preloaded_state = if cfg!(feature = "benchmark") {
                 info!("Using preloaded state for benchmarking");

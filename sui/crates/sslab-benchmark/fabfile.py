@@ -58,7 +58,7 @@ def local(ctx, debug=False):
         },
     }
     try:
-        ret = LocalBench(bench_params, node_params).run(debug)
+        ret = LocalBench(bench_params, node_params).run(debug, reuse_config=True)
         print(ret.result())
     except BenchError as e:
         Print.error(e)
@@ -301,11 +301,11 @@ def LAN(ctx, debug=False):
         'nodes': [4],
         'workers': 1,
         'collocate': True,
-        'rate': [10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000],
+        'rate': [10_000], #[10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000],
         'skewness': [0.0],
         'tx_size': 270,
-        'duration': 60,
-        'runs': 3,
+        'duration': 10,
+        'runs': 1,
         'execution_model': [ExecutionModel.SERIAL],
     }
     node_params = {
@@ -340,7 +340,7 @@ def LAN(ctx, debug=False):
         },
     }
     try:
-        LANBench(ctx).run(bench_params, node_params, debug, True)
+        LANBench(ctx).run(bench_params, node_params, debug, reuse_config=True)
     except BenchError as e:
         Print.error(e)
 

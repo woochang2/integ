@@ -82,8 +82,8 @@ class PathMaker:
         return 'genesis.json'
     
     @staticmethod
-    def static_nodes_file():
-        return ".static-nodes.json"
+    def boot_nodes_file():
+        return ".boot-nodes.json"
 
     @staticmethod
     def logs_path():

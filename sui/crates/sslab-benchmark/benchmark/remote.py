@@ -278,7 +278,7 @@ class Bench:
             cmd_enode_id = CommandMaker.get_enode_id(filename).split()
             id = subprocess.check_output(cmd_enode_id, encoding='utf-8').strip()
             primary_enode_ids += [id]
-        StaticNodes(primary_enode_ids, hosts, [30303]*len(hosts)).print(PathMaker.static_nodes_file())
+        StaticNodes(primary_enode_ids, hosts, [30303]*len(hosts)).print(PathMaker.boot_nodes_file())
         
         # 2 ports used per authority so add 2 * num authorities to base port
         worker_cache = WorkerCache(
@@ -342,6 +342,7 @@ class Bench:
                     PathMaker.parameters_file(),
                     PathMaker.genesis_file(),
                     PathMaker.primary_enode_key_file(i),
+                    PathMaker.boot_nodes_file(),
                     debug=debug
                 )
                 log_file = PathMaker.primary_log_file(i)

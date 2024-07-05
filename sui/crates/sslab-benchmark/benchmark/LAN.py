@@ -168,19 +168,25 @@ class LANBench:
         g = Group(*ips, user=self.settings.user, connect_kwargs=self.connect)
         g.run(' && '.join(cmd), hide=True)
 
-    def _config(self, hosts, node_parameters, bench_parameters, include_execution=True):
+    def _config(self, hosts, node_parameters, bench_parameters, include_execution=True, reuse_config=False):
         Print.info('Generating configuration files...')
 
         # Cleanup all local configuration files.
-        cmd = CommandMaker.cleanup()
-        subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
-        sleep(0.5)  # Removing the store may take time.
+        if not reuse_config:
+            cmd = CommandMaker.cleanup()
+            subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
+            sleep(0.5)  # Removing the store may take time.
+        else:
+            cmd = CommandMaker.clean_db()
+            subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
+            sleep(0.5)  # Removing the store may take time.
 
         # Create alias for the client and nodes binary.
         cmd = CommandMaker.alias_binaries(PathMaker.binary_path(), include_execution)
         subprocess.run([cmd], shell=True)
 
         # Generate configuration files.
+
         primary_names = []
         primary_key_files = [PathMaker.primary_key_file(
             i) for i in range(len(hosts))]
@@ -211,16 +217,17 @@ class LANBench:
             )
         committee = Committee(addresses, self.settings.base_port)
         committee.print(PathMaker.committee_file())
-        
+    
         primary_enode_ids = []
         primary_enode_key_files = [PathMaker.primary_enode_key_file(i) for i in range(len(hosts))]
         for filename in primary_enode_key_files:
-            cmd = CommandMaker.generate_enode_key(filename).split()
-            subprocess.run(cmd, check=True)
+            if not reuse_config:
+                cmd = CommandMaker.generate_enode_key(filename).split()
+                subprocess.run(cmd, check=True)
             cmd_enode_id = CommandMaker.get_enode_id(filename).split()
             id = subprocess.check_output(cmd_enode_id, encoding='utf-8').strip()
             primary_enode_ids += [id]
-        StaticNodes(primary_enode_ids, hosts, [30303]*len(hosts)).print(PathMaker.static_nodes_file())
+        StaticNodes(primary_enode_ids, hosts, [30303]*len(hosts)).print(PathMaker.boot_nodes_file())
 
         worker_names = []
         worker_key_files = [PathMaker.worker_key_file(
@@ -236,15 +243,15 @@ class LANBench:
             workers = OrderedDict(
                 (x, OrderedDict(
                     (worker_names[i*bench_parameters.workers + y],
-                     [h] * (bench_parameters.workers))
+                    [h] * (bench_parameters.workers))
                     for y in range(bench_parameters.workers))
-                 ) for i, (x, h) in enumerate(zip(primary_names, hosts))
+                ) for i, (x, h) in enumerate(zip(primary_names, hosts))
             )
         else:
             workers = OrderedDict(
                 (x, OrderedDict(
                     (worker_names[i*bench_parameters.workers + y], h) for y in range(workers))
-                 ) for i, (x, h) in enumerate(zip(primary_names, hosts))
+                ) for i, (x, h) in enumerate(zip(primary_names, hosts))
             )
 
         # 2 ports used per authority so add 2 * num authorities to base port
@@ -314,6 +321,7 @@ class LANBench:
                 PathMaker.parameters_file(),
                 PathMaker.genesis_file(),
                 PathMaker.primary_enode_key_file(i),
+                PathMaker.boot_nodes_file(),
                 debug=debug
             )
             log_file = PathMaker.primary_log_file(i)
@@ -382,7 +390,7 @@ class LANBench:
         Print.info('Parsing logs and computing performance...')
         return LogParser.process(PathMaker.logs_path(), execution_model, faults=faults, reth_db=True)
 
-    def run(self, bench_parameters_dict, node_parameters_dict, debug=False, include_execution=True):
+    def run(self, bench_parameters_dict, node_parameters_dict, debug=False, include_execution=True, reuse_config=False):
         assert isinstance(debug, bool)
         Print.heading('Starting remote benchmark')
         try:
@@ -409,7 +417,7 @@ class LANBench:
             # Upload all configuration files.
             try:
                 committee, worker_cache = self._config(
-                    selected_hosts, node_parameters, bench_parameters
+                    selected_hosts, node_parameters, bench_parameters, reuse_config=reuse_config
                 )
             except (subprocess.SubprocessError, GroupException) as e:
                 e = FabricError(e) if isinstance(e, GroupException) else e
