@@ -3,13 +3,16 @@ package extadapter
 
 import (
 	"context"
+	"os"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	pb "github.com/ethereum/go-ethereum/extadapter/proto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -25,13 +28,19 @@ const (
 	// Urls = [...]string{"http://141.223.121.54:8080"}
 	// Urls                      = [...]string{"http://141.223.121.45:40001"}
 	// proposalMethodName string = "auditchain_proposal"
-	ValidatorUrl = "http://" //+ os.Getenv("VALIDATOR_URL")
+	ENV_VALIDATOR_URL = "VALIDATOR_URL"
 )
 
 type NarwhalAdapter struct {}
 
 func (na *NarwhalAdapter) SendTransaction(ctx context.Context, transignedTx *types.Transaction) error {
-	grpcConn, err := grpc.NewClient(ValidatorUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	validatorUrl, isSet := os.LookupEnv(ENV_VALIDATOR_URL)
+	if !isSet {
+		log.Error("Failed to get Narwhal Validator URL. Please set the environment variable VALIDATOR_URL.")
+		return status.Error(codes.NotFound, "grpc: Failed to get Narwhal Validator URL. Please set the environment variable VALIDATOR_URL.")
+	}
+
+	grpcConn, err := grpc.NewClient(validatorUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Error("Failed to connect to Narwhal Validator")
 		return err
