@@ -1,8 +1,5 @@
 use core::panic;
-use std::{
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::sync::Arc;
 
 use narwhal_types::{BatchDigest, ConditionalBroadcastReceiver, PreSubscribedBroadcastSender};
 use reth::{
@@ -314,10 +311,12 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
     /// Fills in pre-execution header fields based on the current best block and given
     /// transactions.
     pub(crate) fn build_header_template(&self) -> Header {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs(); //TODO: this is not appropriate for OX-like architecture
+        //* Hack: the actual timestamp is not appropriate for OX-like architecture
+        let timestamp = std::time::Duration::from_secs(self.latest.number).as_secs();
+        // let timestamp = SystemTime::now()
+        //     .duration_since(UNIX_EPOCH)
+        //     .unwrap_or_default()
+        //     .as_secs();
 
         // check previous block for base fee
         let base_fee_per_gas = self

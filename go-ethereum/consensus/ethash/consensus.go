@@ -222,21 +222,21 @@ func (ethash *Ethash) verifyHeader(chain consensus.ChainHeaderReader, header, pa
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
 	}
-	// Verify the header's timestamp
-	if !uncle {
-		if header.Time > uint64(unixNow+allowedFutureBlockTimeSeconds) {
-			return consensus.ErrFutureBlock
-		}
-	}
-	if header.Time <= parent.Time {
-		return errOlderBlockTime
-	}
-	// Verify the block's difficulty based on its timestamp and parent's difficulty
-	expected := ethash.CalcDifficulty(chain, header.Time, parent)
+	// // Verify the header's timestamp
+	// if !uncle {
+	// 	if header.Time > uint64(unixNow+allowedFutureBlockTimeSeconds) {
+	// 		return consensus.ErrFutureBlock
+	// 	}
+	// }
+	// if header.Time <= parent.Time {
+	// 	return errOlderBlockTime
+	// }
+	// // Verify the block's difficulty based on its timestamp and parent's difficulty
+	// expected := ethash.CalcDifficulty(chain, header.Time, parent)
 
-	if expected.Cmp(header.Difficulty) != 0 {
-		return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
-	}
+	// if expected.Cmp(header.Difficulty) != 0 {
+	// 	return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
+	// }
 	// Verify that the gas limit is <= 2^63-1
 	if header.GasLimit > params.MaxGasLimit {
 		return fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, params.MaxGasLimit)
