@@ -5,7 +5,7 @@ use executor::ExecutionState;
 use fastcrypto::hash::Hash as _;
 use itertools::Itertools;
 use rayon::prelude::*;
-use reth::{network::NetworkHandle, primitives::TxHash, revm::primitives::HashMap};
+use reth::network::NetworkHandle;
 use sslab_execution::{
     db::ThreadSafeCacheState,
     executor::ParallelExecutor,
@@ -146,13 +146,13 @@ pub async fn decode_batch(raw_batch: Vec<Vec<u8>>) -> Vec<TransactionSigned> {
         let batch = raw_batch
             .into_par_iter() //TODO: prioritized less than execution threads
             .map(|raw_tx| {
-                let tx = TransactionSigned::decode_enveloped(&mut raw_tx.as_slice()).expect(
+                TransactionSigned::decode_enveloped(&mut raw_tx.as_slice()).expect(
                     "No error occurs since every Tx has been validated in RPC server and workers",
-                );
-                (tx.hash, tx)
+                )
             })
-            .collect::<HashMap<TxHash, TransactionSigned>>() // remove redundant transactions
-            .into_values()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .unique_by(|tx| tx.hash)
             .collect_vec();
 
         let _ = send.send(batch).unwrap();
