@@ -386,6 +386,13 @@ async fn run(
                 // we do not need to spawn eth api server since we delegate ethApis to other full nodes.
                 let enode_key_file = submatches.unwrap().value_of("enode-keys").unwrap();
                 let enode_keypair = read_enode_key_from_file(enode_key_file).unwrap();
+                info!(
+                    "ECDSA address: 0x{}",
+                    &reth::primitives::keccak256(
+                        &enode_keypair.public_key().serialize_uncompressed()[1..]
+                    )
+                    .to_string()[24..]
+                );
                 let eth_port: u16 = submatches
                     .unwrap()
                     .value_of("eth-port")

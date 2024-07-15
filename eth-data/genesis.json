@@ -12,7 +12,16 @@
         "berlinBlock": 0,
         "clique": {
             "signers": {
-                "0xDB7FA80ecB142D1985b7A79d5F627E0BD62002D6": {
+                "0x176e27f0f569a6b5d24f82c1c38ef57e3827c782a4": {
+                    "balance": "0xffffffffffffffff"
+                },
+                "0xc4257a8169d2431b97e3befcc38a33dbae17653f17": {
+                    "balance": "0xffffffffffffffff"
+                },
+                "0x853cec0d65ff4fb4a2df29dedc2556df1e36e4583d": {
+                    "balance": "0xffffffffffffffff"
+                },
+                "0x1028424d95ef3439771e6b681f2305ce2321a00ce8": {
                     "balance": "0xffffffffffffffff"
                 }
             },
