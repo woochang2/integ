@@ -17,6 +17,7 @@ build = "build.rs"
 bytes = "1.4.0"
 cfg-if.workspace = true
 clap = "2.34"
+dashmap = "6.0.1"
 eyre.workspace = true
 futures.workspace = true
 rust-crypto = "0.2"

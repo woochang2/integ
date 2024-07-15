@@ -4,7 +4,7 @@ use std::sync::Arc;
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-use crate::workloads::handlers::{SmallBankTransactionHandler, DEFAULT_CHAIN_ID};
+use crate::workloads::handlers::SmallBankTransactionHandler;
 use clap::{crate_name, crate_version, App, AppSettings};
 use ethers::utils::Genesis;
 use ethers_providers::{Http, Provider, ProviderExt};
@@ -204,16 +204,17 @@ impl Client {
         tokio::pin!(interval);
 
         let provider = Provider::<Http>::connect(self.target.as_str()).await;
-        let handler = SmallBankTransactionHandler::new(
+        let mut handler = SmallBankTransactionHandler::new(
             provider,
             client.clone(),
             self.chain_id,
             self.skewness,
         );
-        // if let Err(e) = handler.init().await {
-        //     warn!("Failed to initialize workload handler: {e}");
-        //     return Err(e.into());
-        // }
+
+        if let Err(e) = handler.init().await {
+            warn!("Failed to initialize workload handler: {e}");
+            return Err(e.into());
+        }
         let handler = Arc::new(handler);
 
         // NOTE: This log entry is used to compute performance.

@@ -438,7 +438,7 @@ dependencies = [
  "anemo-tower",
  "bytes",
  "clap 4.1.4",
- "dashmap",
+ "dashmap 5.5.3",
  "rand 0.8.5",
  "tokio",
  "tower",
@@ -452,7 +452,7 @@ source = "git+https://github.com/mystenlabs/anemo.git?rev=d4017b6cefad7ebc5e84b5
 dependencies = [
  "anemo",
  "bytes",
- "dashmap",
+ "dashmap 5.5.3",
  "futures",
  "governor",
  "nonzero_ext",
@@ -1543,7 +1543,7 @@ dependencies = [
  "boa_parser",
  "boa_profiler",
  "chrono",
- "dashmap",
+ "dashmap 5.5.3",
  "fast-float",
  "icu_normalizer",
  "indexmap 2.2.6",
@@ -2991,6 +2991,20 @@ dependencies = [
  "once_cell",
  "parking_lot_core 0.9.10",
  "rayon",
+]
+
+[[package]]
+name = "dashmap"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "804c8821570c3f8b70230c2ba75ffa5c0f9a4189b9a432b6656c536712acae28"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
+ "hashbrown 0.14.5",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core 0.9.10",
 ]
 
 [[package]]
@@ -4987,7 +5001,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c390a940a5d157878dd057c78680a33ce3415bcd05b4799509ea44210914b4d5"
 dependencies = [
  "cfg-if",
- "dashmap",
+ "dashmap 5.5.3",
  "futures",
  "futures-timer",
  "no-std-compat",
@@ -5882,7 +5896,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ab388864246d58a276e60e7569a833d9cc4cd75c66e5ca77c177dad38e59996"
 dependencies = [
  "ahash 0.7.6",
- "dashmap",
+ "dashmap 5.5.3",
  "hashbrown 0.12.3",
  "once_cell",
  "parking_lot 0.12.1",
@@ -7818,7 +7832,7 @@ checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 name = "mysten-metrics"
 version = "0.7.0"
 dependencies = [
- "dashmap",
+ "dashmap 5.5.3",
  "futures",
  "once_cell",
  "parking_lot 0.12.1",
@@ -7987,7 +8001,7 @@ name = "narwhal-dag"
 version = "0.1.0"
 dependencies = [
  "arc-swap",
- "dashmap",
+ "dashmap 5.5.3",
  "either",
  "fastcrypto",
  "itertools 0.10.5",
@@ -8071,7 +8085,7 @@ dependencies = [
  "backoff",
  "bincode",
  "bytes",
- "dashmap",
+ "dashmap 5.5.3",
  "eyre",
  "fail 0.5.1",
  "fastcrypto",
@@ -8162,7 +8176,7 @@ dependencies = [
  "base64 0.13.1",
  "bincode",
  "bytes",
- "dashmap",
+ "dashmap 5.5.3",
  "derive_builder 0.12.0",
  "fail 0.5.1",
  "fastcrypto",
@@ -8210,7 +8224,7 @@ dependencies = [
 name = "narwhal-storage"
 version = "0.1.0"
 dependencies = [
- "dashmap",
+ "dashmap 5.5.3",
  "fail 0.5.1",
  "fastcrypto",
  "futures",
@@ -8282,7 +8296,7 @@ dependencies = [
  "bincode",
  "bytes",
  "criterion",
- "dashmap",
+ "dashmap 5.5.3",
  "derive_builder 0.12.0",
  "fastcrypto",
  "futures",
@@ -8331,7 +8345,7 @@ dependencies = [
  "bincode",
  "byteorder",
  "bytes",
- "dashmap",
+ "dashmap 5.5.3",
  "eyre",
  "fastcrypto",
  "futures",
@@ -10895,7 +10909,7 @@ source = "git+https://github.com/Dong-Hyeon-Yu/reth.git?rev=db94217dbc502dd35373
 dependencies = [
  "bitflags 2.5.0",
  "byteorder",
- "dashmap",
+ "dashmap 5.5.3",
  "derive_more",
  "indexmap 2.2.6",
  "libc",
@@ -11265,7 +11279,7 @@ source = "git+https://github.com/Dong-Hyeon-Yu/reth.git?rev=db94217dbc502dd35373
 dependencies = [
  "alloy-rlp",
  "auto_impl",
- "dashmap",
+ "dashmap 5.5.3",
  "itertools 0.12.1",
  "metrics",
  "parking_lot 0.12.1",
@@ -11340,7 +11354,7 @@ dependencies = [
  "hyper",
  "jsonrpsee 0.20.3",
  "jsonwebtoken",
- "lazy_static 0.2.11",
+ "lazy_static 1.4.0",
  "metrics",
  "pin-project",
  "rand 0.8.5",
@@ -13094,6 +13108,7 @@ dependencies = [
  "cfg-if",
  "clap 2.34.0",
  "convert_case 0.6.0",
+ "dashmap 6.0.1",
  "enumn",
  "ethers",
  "ethers-core",
@@ -13136,7 +13151,7 @@ dependencies = [
  "chrono",
  "clap 2.34.0",
  "criterion",
- "dashmap",
+ "dashmap 5.5.3",
  "ethers-core",
  "ethers-providers",
  "eyre",
@@ -13183,7 +13198,7 @@ dependencies = [
  "bytes",
  "cfg-if",
  "criterion",
- "dashmap",
+ "dashmap 5.5.3",
  "ethers",
  "ethers-core",
  "ethers-providers",
@@ -13714,7 +13729,7 @@ dependencies = [
  "bytes",
  "chrono",
  "clap 3.2.23",
- "dashmap",
+ "dashmap 5.5.3",
  "either",
  "expect-test",
  "eyre",
@@ -14159,7 +14174,7 @@ dependencies = [
  "chrono",
  "clap 3.2.23",
  "const-str",
- "dashmap",
+ "dashmap 5.5.3",
  "fastcrypto",
  "futures",
  "git-version",
@@ -16951,7 +16966,7 @@ dependencies = [
  "darling 0.14.2",
  "darling_core 0.14.2",
  "darling_macro 0.14.2",
- "dashmap",
+ "dashmap 5.5.3",
  "data-encoding",
  "data-encoding-macro",
  "data-encoding-macro-internal",
