@@ -265,21 +265,22 @@ func (c *Clique) verifyHeader(chain consensus.ChainHeaderReader, header *types.H
 	if checkpoint && !bytes.Equal(header.Nonce[:], nonceDropVote) {
 		return errInvalidCheckpointVote
 	}
-	// Check that the extra-data contains both the vanity and signature
-	if len(header.Extra) < extraVanity {
-		return errMissingVanity
-	}
-	if len(header.Extra) < extraVanity+extraSeal {
-		return errMissingSignature
-	}
+	/// Header does not contain any signatures because every validator creates the same block
+	// // Check that the extra-data contains both the vanity and signature
+	// if len(header.Extra) < extraVanity {
+	// 	return errMissingVanity
+	// }
+	// if len(header.Extra) < extraVanity+extraSeal {
+	// 	return errMissingSignature
+	// }
 	// Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
-	signersBytes := len(header.Extra) - extraVanity - extraSeal
-	if !checkpoint && signersBytes != 0 {
-		return errExtraSigners
-	}
-	if checkpoint && signersBytes%common.AddressLength != 0 {
-		return errInvalidCheckpointSigners
-	}
+	// signersBytes := len(header.Extra) - extraVanity - extraSeal
+	// if !checkpoint && signersBytes != 0 {
+	// 	return errExtraSigners
+	// }
+	// if checkpoint && signersBytes%common.AddressLength != 0 {
+	// 	return errInvalidCheckpointSigners
+	// }
 	// Ensure that the mix digest is zero as we don't have fork protection currently
 	if header.MixDigest != (common.Hash{}) {
 		return errInvalidMixDigest
@@ -364,7 +365,8 @@ func (c *Clique) verifyCascadingFields(chain consensus.ChainHeaderReader, header
 		}
 	}
 	// All basic checks passed, verify the seal and return
-	return c.verifySeal(snap, header, parents)
+	// return c.verifySeal(snap, header, parents)
+	return nil
 }
 
 // snapshot retrieves the authorization snapshot at a given point in time.

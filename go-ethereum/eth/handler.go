@@ -467,13 +467,13 @@ func (h *handler) Start(maxPeers int) {
 	h.wg.Add(1)
 	h.txsCh = make(chan core.NewTxsEvent, txChanSize)
 	h.txsSub = h.txpool.SubscribeNewTxsEvent(h.txsCh)
-	log.Info("TxBroadcast 루프 시작했어요")
+
 	go h.txBroadcastLoop()
 
 	// broadcast mined blocks
 	h.wg.Add(1)
 	h.minedBlockSub = h.eventMux.Subscribe(core.NewMinedBlockEvent{})
-	log.Info("minedBroadcast 루프 시작했어요")
+
 	go h.minedBroadcastLoop()
 
 	// start sync handlers
