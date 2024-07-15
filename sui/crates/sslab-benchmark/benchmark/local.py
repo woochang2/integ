@@ -51,12 +51,10 @@ class LocalBench:
             if not reuse_config:
                 # Cleanup all files.
                 cmd = f'{CommandMaker.clean_logs()} ; {CommandMaker.cleanup()}'
-                subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
-                sleep(0.5)  # Removing the store may take time.
             else:
                 cmd = f'{CommandMaker.clean_logs()} ; {CommandMaker.clean_db()}'
-                subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
-                sleep(0.5)  # Removing the store may take time.
+            subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
+            sleep(0.5)  # Removing the store may take time.
 
             # Recompile the latest narwhal-node code.
             cmd = CommandMaker.compile(failpoints=failpoints, release=release, execution_model=self.execution_model)
@@ -131,19 +129,20 @@ class LocalBench:
             self.node_parameters.print(PathMaker.parameters_file())
 
             for skewness in self.skewness:
-                    # Run the clients (they will wait for the nodes to be ready).
-                    workers_addresses = worker_cache.workers_addresses(self.faults)
-                    rate_share = ceil(rate / worker_cache.workers())
-                    for i, addresses in enumerate(workers_addresses):
-                        for (id, address) in addresses:
-                            cmd = CommandMaker.run_client(
-                                address,
-                                rate_share,
-                                skewness,
-                                [x for y in workers_addresses for _, x in y]
-                            )
-                            log_file = PathMaker.client_log_file(i, id)
-                            self._background_run(cmd, log_file)
+                    if self.duration >= 0:
+                        # Run the clients (they will wait for the nodes to be ready).
+                        workers_addresses = worker_cache.workers_addresses(self.faults)
+                        rate_share = ceil(rate / worker_cache.workers())
+                        for i, addresses in enumerate(workers_addresses):
+                            for (id, address) in addresses:
+                                cmd = CommandMaker.run_client(
+                                    address,
+                                    rate_share,
+                                    skewness,
+                                    [x for y in workers_addresses for _, x in y]
+                                )
+                                log_file = PathMaker.client_log_file(i, id)
+                                self._background_run(cmd, log_file)
 
                     # Run the primaries (except the faulty ones).
                     for i, address in enumerate(committee.primary_addresses(self.faults)):
@@ -182,13 +181,16 @@ class LocalBench:
                             self._background_run(cmd, log_file)
 
                     # Wait for all transactions to be processed.
-                    Print.info(f'Running benchmark ({self.duration} sec)...')
-                    sleep(self.duration)
-                    self._kill_nodes()
-
-                    # Parse logs and return the parser.
-                    Print.info('Parsing logs...')
-                    return LogParser.process(PathMaker.logs_path(), self.execution_model, faults=self.faults)
+                    if self.duration >= 0:
+                        Print.info(f'Running benchmark ({self.duration} sec)...')
+                        sleep(self.duration)
+                        self._kill_nodes()
+                        
+                        # Parse logs and return the parser.
+                        Print.info('Parsing logs...')
+                        return LogParser.process(PathMaker.logs_path(), self.execution_model, faults=self.faults)
+                    else:
+                        return 'Running benchmark forever. You must explicitly kill the local benchmark by calling "kill tmux-server"...'  
 
         except (subprocess.SubprocessError, ParseError) as e:
             self._kill_nodes()

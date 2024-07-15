@@ -279,6 +279,7 @@ class LANBench:
                 c.put(PathMaker.parameters_file(), '.')
                 c.put(PathMaker.genesis_file(), '.')
                 c.put(PathMaker.primary_enode_key_file(i), '.')
+                c.put(PathMaker.boot_nodes_file(), '.')
 
         return (committee, worker_cache)
 
