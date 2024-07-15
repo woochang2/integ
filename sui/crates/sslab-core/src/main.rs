@@ -14,22 +14,20 @@ use config::{Committee, Import, Parameters, WorkerCache, WorkerId};
 use crypto::{KeyPair, NetworkKeyPair};
 use eyre::Context;
 use fastcrypto::traits::KeyPair as _;
+use futures::StreamExt as _;
 use mysten_metrics::RegistryService;
 use node::metrics::{primary_metrics_registry, start_prometheus_server, worker_metrics_registry};
 use node::{primary_node::PrimaryNode, worker_node::WorkerNode};
 use prometheus::Registry;
 use reth::core::init::init_genesis;
 use reth::network::config::rng_secret_key;
-use reth::network::{NetworkConfig, NetworkManager};
+use reth::network::{NetworkConfig, NetworkEvents as _, NetworkManager};
 use reth::primitives::{ChainSpec, Genesis, NodeRecord};
 use reth::transaction_pool::noop::NoopTransactionPool;
 use sslab_core::consensus_handler::SimpleConsensusHandler;
 use sslab_core::enode_keys::{get_enode_id, read_enode_key_from_file, write_enode_key_to_file};
+use sslab_execution::transaction_validator::EthereumTxValidator;
 use sslab_execution::{blockchain_provider, init_ether_db, ProviderFactoryMDBX};
-use sslab_execution::{
-    transaction_validator::EthereumTxValidator,
-    utils::smallbank_contract_benchmark::cache_state_with_smallbank_contract,
-};
 use sslab_execution_serial::SerialExecutor;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::str::FromStr;
@@ -363,7 +361,7 @@ async fn run(
                 ) {
                     Ok(genesis) => {
                         info!(
-                            "Loaded genesis.json : {:?}",
+                            "Loaded genesis.json : {}",
                             serde_json::to_string_pretty(&genesis)?
                         );
                         Arc::new(ChainSpec::from(genesis))
@@ -376,7 +374,8 @@ async fn run(
                 //* init the database and genesis block
                 let db_path = String::from(store_path) + "-eth";
                 let db = init_ether_db(db_path.as_str(), Default::default())?;
-                let _ = init_genesis(db.clone(), chain_spec.clone())?;
+                let gen_hash = init_genesis(db.clone(), chain_spec.clone())?;
+                info!("Genesis block hash: {:?}", gen_hash);
                 factory_provider = ProviderFactoryMDBX::new(db, chain_spec.clone());
 
                 let blockchain_provider = blockchain_provider(factory_provider.clone());
@@ -402,8 +401,10 @@ async fn run(
                     SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, eth_port));
 
                 let network_config = NetworkConfig::builder(enode_keypair.secret_key())
+                    .chain_spec(chain_spec.clone())
                     .disable_tx_gossip(true)
                     .set_addrs(listen_addr)
+                    .discovery(Default::default())
                     .boot_nodes(boot_nodes)
                     .network_mode(reth::network::config::NetworkMode::Work) // this is to propagate via NewBlockMsg over devp2p. we do not use ethereum consensus.
                     .build(blockchain_provider.clone());
@@ -415,6 +416,13 @@ async fn run(
                     .request_handler(blockchain_provider)
                     .split_with_handle();
 
+                // logging network events
+                let mut events = network_manager.event_listener();
+                tokio::task::spawn(async move {
+                    while let Some(event) = events.next().await {
+                        info!("Received event: {:?}", event);
+                    }
+                });
                 info!(
                     "Spawning devp2p at {} with enode id: {}",
                     network.local_addr(),
@@ -427,17 +435,17 @@ async fn run(
                 devp2p_network_manager = network_manager;
             }
 
-            let preloaded_state = if cfg!(feature = "benchmark") {
-                info!("Using preloaded state for benchmarking");
-                Some(cache_state_with_smallbank_contract())
-            } else {
-                None
-            };
+            // let preloaded_state = if cfg!(feature = "benchmark") {
+            //     info!("Using preloaded state for benchmarking");
+            //     Some(cache_state_with_smallbank_contract())
+            // } else {
+            //     None
+            // };
 
             let consensus_handler = SimpleConsensusHandler::new::<SerialExecutor>(
                 factory_provider,
                 chain_spec,
-                preloaded_state,
+                None,
                 devp2p_network_manager,
             );
 
