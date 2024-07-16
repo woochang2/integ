@@ -1,11 +1,19 @@
 use async_trait::async_trait;
-use reth::primitives::{BlockWithSenders, ChainSpec, Receipt};
+use reth::{
+    primitives::{BlockWithSenders, ChainSpec, Receipt},
+    providers::ProviderError,
+    revm::db::BundleState,
+};
 use std::sync::Arc;
 use tokio::sync::mpsc::Receiver;
 
 use reth_interfaces::executor::BlockExecutionError;
 
-use crate::{db::ThreadSafeCacheState, types::ExecutableConsensusOutput, ProviderFactoryMDBX};
+use crate::{
+    db::{SharableStateDBBox, ThreadSafeCacheState},
+    types::ExecutableConsensusOutput,
+    ProviderFactoryMDBX,
+};
 
 pub trait Executable {
     /// This takes a block and returns new [BlockWithSenders] since some execution algorithm reorders transactions.
@@ -19,6 +27,13 @@ pub trait Executable {
         cached_state: Option<ThreadSafeCacheState>,
         chain_spec: Arc<ChainSpec>,
     ) -> Self;
+
+    fn take_bundle(&self) -> BundleState;
+
+    fn state_helper<T, F: FnOnce(&SharableStateDBBox<ProviderError>) -> Result<T, ProviderError>>(
+        &self,
+        state_helper_function: F,
+    ) -> Result<T, ProviderError>;
 }
 
 /// An abstraction for an executor in a sui PrimaryNode.

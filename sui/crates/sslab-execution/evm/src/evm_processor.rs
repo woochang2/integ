@@ -5,7 +5,6 @@ use reth::{
     },
     providers::{BlockExecutorStats, BundleStateWithReceipts, ProviderError},
     revm::{
-        database::StateProviderDatabase,
         eth_dao_fork::{DAO_HARDFORK_BENEFICIARY, DAO_HARDKFORK_ACCOUNTS},
         state_change::post_block_balance_increments,
     },
@@ -18,11 +17,13 @@ use std::{sync::Arc, time::Instant};
 #[cfg(not(feature = "optimism"))]
 use tracing::debug;
 
-use crate::traits::{Executable, ParallelBlockExecutor};
-use crate::types::NOT_SUPPORT;
 use crate::{
-    db::{SharableState, SharableStateDBBox, ThreadSafeCacheState},
+    db::{SharableStateDBBox, ThreadSafeCacheState},
     ProviderFactoryMDBX,
+};
+use crate::{
+    traits::{Executable, ParallelBlockExecutor},
+    types::NOT_SUPPORT,
 };
 
 /// EVMProcessor is a block executor that uses revm to execute blocks or multiple blocks.
@@ -41,12 +42,12 @@ use crate::{
 /// InspectorStack are used for optional inspecting execution. And it contains
 /// various duration of parts of execution.
 #[allow(missing_debug_implementations)]
-pub struct EVMProcessor<'a, ParallelExecutionModel> {
+pub struct EVMProcessor<ParallelExecutionModel> {
     /// The configured chain-spec
     pub(crate) chain_spec: Arc<ChainSpec>,
 
-    /// state for parallel execution with multiple EVM instances.
-    pub(crate) state: SharableStateDBBox<'a, ProviderError>,
+    // /// state for parallel execution with multiple EVM instances.
+    // pub(crate) state: SharableStateDBBox<'a, ProviderError>,
 
     // pub(crate) state: StateDBBox<'a, ProviderError>,
     pub(crate) execution_model: ParallelExecutionModel,
@@ -68,7 +69,7 @@ pub struct EVMProcessor<'a, ParallelExecutionModel> {
     _evm_config: EthEvmConfig,
 }
 
-impl<'a, ParallelExecutionModel> EVMProcessor<'a, ParallelExecutionModel>
+impl<ParallelExecutionModel> EVMProcessor<ParallelExecutionModel>
 where
     ParallelExecutionModel: Executable,
 {
@@ -84,13 +85,13 @@ where
         preloaded_state: Option<ThreadSafeCacheState>,
     ) -> Self {
         let cached_state = preloaded_state.unwrap_or_default();
-        let state = SharableState::builder()
-            .with_database_boxed(Box::new(StateProviderDatabase::new(
-                provider_factory.latest().unwrap(),
-            )))
-            .with_cached_prestate(cached_state.clone())
-            .with_bundle_update()
-            .build();
+        // let state = SharableState::builder()
+        //     .with_database_boxed(Box::new(StateProviderDatabase::new(
+        //         provider_factory.latest().unwrap(),
+        //     )))
+        //     .with_cached_prestate(cached_state.clone())
+        //     .with_bundle_update()
+        //     .build();
 
         EVMProcessor {
             execution_model: ParallelExecutionModel::new_with_db(
@@ -99,7 +100,7 @@ where
                 chain_spec.clone(),
             ),
             chain_spec,
-            state,
+            // state,
             receipts: Receipts::new(),
             first_block: None,
             stats: BlockExecutorStats::default(),
@@ -160,11 +161,13 @@ where
         self.first_block = Some(num);
     }
 
-    /// Returns a reference to the database
-    // pub fn db_mut(&mut self) -> &'a mut SharableStateDBBox<ProviderError> {
-    //     // &mut self.evm.context.evm.db
-    //     &mut self.state
-    // }
+    pub fn state<T, F: FnOnce(&SharableStateDBBox<ProviderError>) -> Result<T, ProviderError>>(
+        &self,
+        state_helper_function: F,
+    ) -> Result<T, ProviderError> {
+        // &mut self.evm.context.evm.db
+        self.execution_model.state_helper(state_helper_function)
+    }
 
     /// Execute the block, verify gas usage and apply post-block state changes.
     pub(crate) fn execute_inner(
@@ -241,8 +244,7 @@ where
         {
             // drain balances from hardcoded addresses.
             let drained_balance: u128 = self
-                .state
-                .drain_balances(DAO_HARDKFORK_ACCOUNTS)
+                .state(|state| state.drain_balances(DAO_HARDKFORK_ACCOUNTS))
                 .map_err(|_| BlockValidationError::IncrementBalanceFailed)?
                 .into_iter()
                 .sum();
@@ -254,8 +256,7 @@ where
         }
         // increment balances
 
-        self.state
-            .increment_balances(balance_increments)
+        self.state(move |state| state.increment_balances(balance_increments))
             .map_err(|_| BlockValidationError::IncrementBalanceFailed)?;
 
         Ok(())
@@ -263,9 +264,7 @@ where
 
     /// Save receipts to the executor.
     pub fn save_receipts(&mut self, receipts: Vec<Receipt>) -> Result<(), BlockExecutionError> {
-        let receipts = Receipts {
-            receipt_vec: vec![receipts.into_iter().map(Option::Some).collect()],
-        };
+        let receipts = Receipts::from_block_receipt(receipts);
         // // Prune receipts if necessary.
         // self.prune_receipts(&mut receipts)?;
         // Save receipts.
@@ -274,20 +273,20 @@ where
         Ok(())
     }
 
-    pub fn take_output_state(&mut self) -> BundleStateWithReceipts {
+    pub fn take_output_state(&mut self, receipts: Vec<Receipt>) -> BundleStateWithReceipts {
         self.stats.log_debug();
-        let receipts = std::mem::take(&mut self.receipts);
+        let bundle_state = self.execution_model.take_bundle();
 
         BundleStateWithReceipts::new(
-            self.state.take_bundle(),
-            receipts,
+            bundle_state,
+            Receipts::from_block_receipt(receipts),
             self.first_block.unwrap_or_default(),
         )
     }
 }
 
 /// Default Ethereum implementation of the [ParallelBlockExecutor] trait for the [EVMProcessor].
-impl<'a, ParallelExecutionModel> ParallelBlockExecutor for EVMProcessor<'a, ParallelExecutionModel>
+impl<ParallelExecutionModel> ParallelBlockExecutor for EVMProcessor<ParallelExecutionModel>
 where
     ParallelExecutionModel: Executable,
 {

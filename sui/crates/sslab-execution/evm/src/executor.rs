@@ -11,7 +11,6 @@ use reth::{
         BlockIdReader, BlockReader, BlockReaderIdExt, BlockSource, BundleStateWithReceipts,
         CanonChainTracker, Chain, ProviderError,
     },
-    revm::db::states::bundle_state::BundleRetention,
 };
 
 use reth_interfaces::{
@@ -111,7 +110,7 @@ pub struct Inner<ParallelExecutionModel> {
 
     db: ProviderFactoryMDBX,
 
-    executor: EVMProcessor<'static, ParallelExecutionModel>,
+    executor: EVMProcessor<ParallelExecutionModel>,
 
     /// The channel to send the sealed block to the post processor for persist.
     tx_execution_output: Sender<(Chain, Vec<BatchDigest>)>,
@@ -285,21 +284,18 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
                 proofs::calculate_transaction_root(new_block.body.as_slice());
         }
 
-        // Save receipts.
-        self.executor.save_receipts(receipts)?;
-
         // add post execution state change
         // Withdrawals, rewards etc.
-        //* No mining reward or withdrawals in OX architecture!
-        // self.executor.apply_post_execution_state_change(block)?;
-
-        // merge transitions
-        self.executor
-            .state
-            .merge_transitions(BundleRetention::Reverts);
+        //* No mining reward or withdrawals in PoA
+        // self.executor
+        //     .apply_post_execution_state_change(&new_block.block)?;
 
         // apply post block changes
-        Ok((new_block, self.executor.take_output_state(), gas_used))
+        Ok((
+            new_block,
+            self.executor.take_output_state(receipts),
+            gas_used,
+        ))
     }
 
     /// Fills in the post-execution header fields based on the given BundleState and gas used.
@@ -364,7 +360,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         let (new_block, bundle_state, gas_used) = self.execute_inner(block).await?;
         let BlockWithSenders { block, senders } = new_block;
         let Block { header, body, .. } = block;
-        info!("Bundle state: {:?}", bundle_state.state());
+
         trace!(target: "ParallelExecutor::Inner", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
 
         // wait for the parent block to be persisted

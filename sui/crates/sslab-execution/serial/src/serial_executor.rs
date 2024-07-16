@@ -10,6 +10,7 @@ use reth::{
     providers::ProviderError,
     revm::{
         database::StateProviderDatabase,
+        db::BundleState,
         inspector_handle_register,
         interpreter::Host,
         primitives::{CfgEnvWithHandlerCfg, HandlerCfg, ResultAndState, SpecId},
@@ -18,7 +19,7 @@ use reth::{
     },
 };
 use sslab_execution::{
-    db::{SharableState, ThreadSafeCacheState},
+    db::{SharableState, SharableStateDBBox, ThreadSafeCacheState},
     traits::Executable,
     BlockExecutionError, BlockValidationError, EthEvmConfig, ProviderFactoryMDBX,
 };
@@ -69,6 +70,26 @@ impl Executable for SerialExecutor {
             )),
             chain_spec,
         }
+    }
+
+    fn take_bundle(&self) -> BundleState {
+        self.evm
+            .read()
+            .context
+            .evm
+            .db
+            .merge_transitions(reth::revm::db::states::bundle_state::BundleRetention::Reverts);
+        self.evm.write().context.evm.db.take_bundle()
+    }
+
+    fn state_helper<
+        R,
+        F: FnOnce(&SharableStateDBBox<ProviderError>) -> Result<R, ProviderError>,
+    >(
+        &self,
+        state_helper_function: F,
+    ) -> Result<R, ProviderError> {
+        state_helper_function(&self.evm.read().context.evm.db)
     }
 }
 
