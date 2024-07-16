@@ -623,6 +623,7 @@ func (api *BlockChainAPI) ChainId() *hexutil.Big {
 // BlockNumber returns the block number of the chain head.
 func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
 	header, _ := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available
+	// log.Debug("BlockNumber", "number", hexutil.Uint64(header.Number.Uint64()))
 	return hexutil.Uint64(header.Number.Uint64())
 }
 
@@ -630,6 +631,10 @@ func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
 // given block number. The rpc.LatestBlockNumber and rpc.PendingBlockNumber meta
 // block numbers are also allowed.
 func (s *BlockChainAPI) GetBalance(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
+	blockNumber, isNum := blockNrOrHash.Number()
+	blockHash, _ := blockNrOrHash.Hash()
+	log.Debug("GetBalance", "address", address, "is_num?",isNum, "number", blockNumber, "hash", blockHash)
+
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
 		return nil, err
@@ -1222,7 +1227,7 @@ func (s *BlockChainAPI) EstimateGas(ctx context.Context, args TransactionArgs, b
 	// if blockNrOrHash != nil {
 	// 	bNrOrHash = *blockNrOrHash
 	// }
-	return hexutil.Uint64(80000), nil
+	return hexutil.Uint64(10000000), nil
 }
 
 // RPCMarshalHeader converts the given header to the RPC output .
