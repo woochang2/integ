@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. ./env
+rm -rf $TRUFFLE_BUILD_DIR
+cd $DAPP_DIR && truffle migrate  --reset  --network auditchain --config $TRUFFLE_CONFIG_FILE

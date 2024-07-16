@@ -1,0 +1,19 @@
+#!/bin/bash
+
+. ./env
+
+
+export VALIDATOR_URL=$VALIDATOR_URL
+echo "Starting geth with validator url: $VALIDATOR_URL"
+
+rm -rf $GETH_DATA_DIR
+
+echo "Building geth..."
+cd $GETH_BUILD_DIR && make geth
+
+echo "Initializing geth with genesis file...($GETH_GENESIS_FILE)"
+geth --datadir $GETH_CONFIG_DIR init $GETH_GENESIS_FILE
+
+echo "\n\nStarting geth... You MUST migrate contracts via migrate_contracts script after geth is fully started."
+geth --config $GETH_CONFIG_DIR/$GETH_CONFIG_FILE console
+

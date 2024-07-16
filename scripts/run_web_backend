@@ -1,0 +1,6 @@
+#!/bin/bash
+
+. ./env
+
+cd $BACKEND_DIR && NODE_OPTIONS=--openssl-legacy-provider npm run start 
+

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+. ./env
+
+echo "starting validators..."
+echo "edit validtors' configuration in $VALIDATOR_PATH/fabfile.py"
+echo "enter the commancd 'tmux kill-server' to kill all validators"
+cd VALIDATOR_PATH && fab local-demo

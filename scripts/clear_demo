@@ -1,0 +1,7 @@
+#!/bin/bash
+
+. ./env
+
+rm -rf $GETH_DATA_DIR
+rm -rf $TRUFFLE_BUILD_DIR
+git restore $BACKEND_DIR  # only remove newly created data
