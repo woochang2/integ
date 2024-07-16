@@ -5,6 +5,7 @@ from fabric import task
 
 from benchmark.seed import SeedData
 from benchmark.local import LocalBench
+from benchmark.local_demo import LocalDemoBench
 from benchmark.full_demo import Demo
 from benchmark.logs import ParseError, LogParser
 from benchmark.utils import ExecutionModel, Print
@@ -60,6 +61,59 @@ def local(ctx, debug=False):
     try:
         ret = LocalBench(bench_params, node_params).run(debug, reuse_config=True)
         print(ret.result())
+    except BenchError as e:
+        Print.error(e)
+        
+@task
+def local_demo(ctx, debug=False):
+    ''' Run primary and worker on localhost 
+        if duration of benchparam is set less than 0, it will run indefinitely for the convinience of demo.
+        If you want to kill background workers and primaries, enter the command "tmux kill-server".
+    '''
+    
+    bench_params = {
+        'faults': 0,
+        'nodes': 4,
+        'workers': 1,
+        'rate': 10_000,
+        'skewness': 0.0,
+        'duration': -1, 
+        'execution_model': ExecutionModel.SERIAL,
+    }
+    node_params = {
+        'header_num_of_batches_threshold': 32,
+        'max_header_num_of_batches': 1000,
+        'max_header_delay': '2000ms',  # ms
+        'gc_depth': 50,  # rounds
+        'sync_retry_delay': '10_000ms',  # ms
+        'sync_retry_nodes': 3,  # number of nodes
+        'batch_size': 500_000,  # bytes
+        'max_batch_delay': '200ms',  # ms,
+        'block_synchronizer': {
+            'range_synchronize_timeout': '30_000ms',
+            'certificates_synchronize_timeout': '2_000ms',
+            'payload_synchronize_timeout': '2_000ms',
+            'payload_availability_timeout': '2_000ms',
+            'handler_certificate_deliver_timeout': '2_000ms'
+        },
+        "consensus_api_grpc": {
+            "socket_addr": "/ip4/127.0.0.1/tcp/0/http",
+            "get_collections_timeout": "5_000ms",
+            "remove_collections_timeout": "5_000ms"
+        },
+        'max_concurrent_requests': 500_000,
+        'prometheus_metrics': {
+            "socket_addr": "/ip4/127.0.0.1/tcp/0/http"
+        },
+        "network_admin_server": {
+            # Use a random available local port.
+            "primary_network_admin_server_port": 0,
+            "worker_network_admin_server_base_port": 0
+        },
+    }
+    try:
+        ret = LocalDemoBench(bench_params, node_params).run(debug, reuse_config=True)
+        print(ret)
     except BenchError as e:
         Print.error(e)
 
