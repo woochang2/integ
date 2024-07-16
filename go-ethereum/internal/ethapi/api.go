@@ -1115,6 +1115,7 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 			return 0, err
 		}
 		if block == nil {
+			log.Warn("Block not found", "number or hash", blockNrOrHash)
 			return 0, errors.New("block not found")
 		}
 		hi = block.GasLimit()
@@ -1217,11 +1218,11 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 // EstimateGas returns an estimate of the amount of gas needed to execute the
 // given transaction against the current pending block.
 func (s *BlockChainAPI) EstimateGas(ctx context.Context, args TransactionArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
-	bNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-	if blockNrOrHash != nil {
-		bNrOrHash = *blockNrOrHash
-	}
-	return DoEstimateGas(ctx, s.b, args, bNrOrHash, s.b.RPCGasCap())
+	// bNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+	// if blockNrOrHash != nil {
+	// 	bNrOrHash = *blockNrOrHash
+	// }
+	return hexutil.Uint64(80000), nil
 }
 
 // RPCMarshalHeader converts the given header to the RPC output .
