@@ -217,6 +217,9 @@ impl SerialExecutor {
 
             cumulative_gas_used += result.gas_used();
 
+            debug!("Tx details {:?}", tx);
+            debug!("Tx result {:?}", result);
+
             let receipt = match result {
                 reth::revm::primitives::ExecutionResult::Success { logs, .. } => {
                     self.evm.read().context.evm.db.commit(state);
