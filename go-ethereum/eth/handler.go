@@ -538,6 +538,7 @@ func (h *handler) BroadcastBlock(block *types.Block, propagate bool) {
 	// Otherwise if the block is indeed in out own chain, announce it
 	if h.chain.HasBlock(hash, block.NumberU64()) {
 		for _, peer := range peers {
+			log.Debug("point 3", "(announcing ", block.Number(), "): ", peer.ID())
 			peer.AsyncSendNewBlockHash(block)
 		}
 		log.Info("Announced block", "number", block.Number(), "hash", hash, "recipients", len(peers), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))

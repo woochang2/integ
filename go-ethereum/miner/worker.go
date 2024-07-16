@@ -326,11 +326,12 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	}
 	worker.newpayloadTimeout = newpayloadTimeout
 
-	worker.wg.Add(4)
+	worker.wg.Add(1)
 	go worker.mainLoop()
-	go worker.newWorkLoop(recommit)
-	go worker.resultLoop()
-	go worker.taskLoop()
+	//* AuditChain client does not participate in any consensus. (Clique is even not used in AuditChain)
+	// go worker.newWorkLoop(recommit) 
+	// go worker.resultLoop()
+	// go worker.taskLoop()
 
 	// Submit first work to initialize pending state.
 	if init {
