@@ -12,12 +12,14 @@ module.exports = {
       provider: () => new HDWalletProvider(privateKey, "http://localhost:40000"),
       from: "0x11Ce04fB4A94727987D4F5750E271e63A84F8418",
       network_id: "*",
+      gas: 100000000,
+      gasPrice: 1,
     },
   },
 
   compilers: {
     solc: {
-      version: "^0.8.0",
+      version: "0.8.19",
     }
   },
 

@@ -64,7 +64,7 @@
       proto: tcp
     with_items:
       - 5000:6000 # sui node
-      - '30303'  # ethereum devp2p network (EthAPI)
+      - 30303:30306  # ethereum devp2p network (EthAPI)
       - '9090' # prometheous
     become: yes
 
@@ -75,6 +75,8 @@
       proto: udp
     with_items:
       - 5000:6000 # sui node
+      - 30303:30306 # ethereum devp2p network (EthAPI)
+      - 50000:65535 # ethereum devp2p network (EthAPI)
       - '30303'  # ethereum devp2p network (EthAPI)
     become: yes
 
