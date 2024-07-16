@@ -38,7 +38,7 @@
     "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "timestamp": "0x00",
     "alloc": {
-        "0000000000000000000000000000000000000000": { "balance": "0xffffffff" },
+        "11Ce04fB4A94727987D4F5750E271e63A84F8418": { "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" },
         "e14de1592b52481b94b99df4e9653654e14fffb6": { "balance": "0xffffffffffffffff" }
     }
 }
