@@ -208,27 +208,29 @@ class LogParser:
             raise ParseError('Primary(s) panicked')
         
         block_insertion_metrics = BlockInsertionMetrics()
-        tmp = findall(r'Inserted block block_number=\d+ actions=\[\(InsertCanonicalHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaderNumbers, (\d+(?:\.\d+)?)([mnµs]+)\), \(GetParentTD, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHeaderTD, (\d+(?:\.\d+)?)([mnµs]+)\), \(GetNextTxNum, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTxSenders, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTransactions, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTxHashNumbers, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertBlockBodyIndices, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertTransactionBlock, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        tmp = findall(BlockInsertionMetrics.PATTERN, log)
         for line in tmp:
             block_insertion_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
             block_insertion_metrics.update(*block_insertion_latencies)
                 
         block_append_metrics = BlockAppendMetrics()
-        tmp = findall(r'Appended blocks range=\d+..=\d+ actions=\[\(InsertBlock, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertState, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHashes, (\d+(?:\.\d+)?)([mnµs]+)\), \(InsertHistoryIndices, (\d+(?:\.\d+)?)([mnµs]+)\), \(UpdatePipelineStages, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        tmp = findall(BlockAppendMetrics.PATTERN, log)
         for line in tmp:
             block_append_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
             block_append_metrics.update(*block_append_latencies)
         
         commit_metrics = CommitMetric()
-        tmp = findall(r'Commit total_duration=(\d+(?:\.\d+)?)([mnµs]+)', log)
+        tmp = findall(CommitMetric.PATTERN, log)
         commit_latencies = (convert_to_micros(float(duration), unit) for duration, unit in tmp)
         commit_metrics.bulk_update(*commit_latencies)
         
         canonical_metrics = CanonicalizationMetrics()
-        tmp = findall(r'Canonicalization finished actions=\[\(CloneOldBlocks, (\d+(?:\.\d+)?)([mnµs]+)\), \(FindCanonicalHeader, (\d+(?:\.\d+)?)([mnµs]+)\), \(SplitChain, (\d+(?:\.\d+)?)([mnµs]+)\), \(SplitChainForks, (\d+(?:\.\d+)?)([mnµs]+)\), \(MergeAllChains, (\d+(?:\.\d+)?)([mnµs]+)\), \(UpdateCanonicalIndex, (\d+(?:\.\d+)?)([mnµs]+)\), \(RetrieveStateTrieUpdates, (\d+(?:\.\d+)?)([mnµs]+)\), \(CommitCanonicalChainToDatabase, (\d+(?:\.\d+)?)([mnµs]+)\)\]', log)
+        tmp = findall(CanonicalizationMetrics.PATTERN, log)
         for line in tmp:
-            canonicalization_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(line))
-            canonical_metrics.update(*canonicalization_latencies)
+            it_line = iter(line)
+            block_no = int(next(it_line))
+            canonicalization_latencies = (convert_to_micros(float(duration), unit) for duration, unit in pairwise(it_line))
+            canonical_metrics.update(block_no, *canonicalization_latencies)
             
         return block_insertion_metrics, block_append_metrics, commit_metrics, canonical_metrics
 
@@ -445,6 +447,7 @@ class LogParser:
             self.request_vote_outbound_latencies) if self.request_vote_outbound_latencies else -1
         
         reth_db_metrics = self.db_canonical_metrics.report_with(self.db_commit_metrics, self.db_append_metrics, self.db_insertion_metrics) if self.reth_db else ''
+        reth_db_metrics_all = self.db_canonical_metrics.report_all_according_to_block_number() if self.reth_db else ''
 
         return (
             '\n'
@@ -510,11 +513,13 @@ class LogParser:
             f' End-to-end latency: {round(end_to_end_latency):,} ms\n'
             '-----------------------------------------\n'
             f'{reth_db_metrics}'
+            '-----------------------------------------\n'
+            f'{reth_db_metrics_all}'
         )
 
     def print(self, filename):
         assert isinstance(filename, str)
-        with open(filename, 'a') as f:
+        with open(filename, 'a+') as f:
             f.write(self.result())
 
     @classmethod

@@ -168,7 +168,7 @@ class LANBench:
         g = Group(*ips, user=self.settings.user, connect_kwargs=self.connect)
         g.run(' && '.join(cmd), hide=True)
 
-    def _config(self, hosts, node_parameters, bench_parameters, include_execution=True, reuse_config=False):
+    def _config(self, hosts, node_parameters, bench_parameters, execution_model, include_execution=True, reuse_config=False):
         Print.info('Generating configuration files...')
 
         # Cleanup all local configuration files.
@@ -180,6 +180,16 @@ class LANBench:
             cmd = CommandMaker.clean_db()
             subprocess.run([cmd], shell=True, stderr=subprocess.DEVNULL)
             sleep(0.5)  # Removing the store may take time.
+
+        # Recompile the latest narwhal-node code.
+        cmd = CommandMaker.compile(execution_model=execution_model)
+        Print.info(f"About to run {cmd} at {PathMaker.node_crate_path()}...")
+        subprocess.run(cmd, check=True, cwd=PathMaker.node_crate_path())
+
+        # Recompile the latest client code.
+        cmd = CommandMaker.compile()
+        Print.info(f"About to run {cmd} at {PathMaker.client_crate_path()}...")
+        subprocess.run(cmd, check=True, cwd=PathMaker.client_crate_path())
 
         # Create alias for the client and nodes binary.
         cmd = CommandMaker.alias_binaries(PathMaker.binary_path(), include_execution)
@@ -418,7 +428,7 @@ class LANBench:
             # Upload all configuration files.
             try:
                 committee, worker_cache = self._config(
-                    selected_hosts, node_parameters, bench_parameters, reuse_config=reuse_config
+                    selected_hosts, node_parameters, bench_parameters, execution_model=execution_model, reuse_config=reuse_config
                 )
             except (subprocess.SubprocessError, GroupException) as e:
                 e = FabricError(e) if isinstance(e, GroupException) else e
