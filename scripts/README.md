@@ -64,16 +64,16 @@ tmux kill-server
 
 
 ### 2) run AuditChain gateway (geth client)
-The `start_geth` script (1) removes geth-produced data, (2) builds geth binary, and (3) run geth.  
+The `run_gateway` script (1) removes geth-produced data, (2) builds geth binary, and (3) run geth.  
 Note that user transactions will be forwarded to auditchain via GRPC call.
 You MUST set `VALIDATOR_URL` for the GRPC to forward user transactions correctly.  
-  - `VALIDATOR_URL` can be one of the urls of listening servers on worker's mempool  
+  - `VALIDATOR_URL` can be one of the urls of listening servers on auditor worker's mempool (i.e., narwhal worker mempool)
   - Please, modify the `VALIDATOR_URL` correctly in the `env` file.  
 
 ```bash
  # geth run in console-mode
  # if some ports are already in use, modify corresponding ports in `eth-data/geth-config.toml`
- ./start_geth 
+ ./run_gateway 
 ```
 
 
