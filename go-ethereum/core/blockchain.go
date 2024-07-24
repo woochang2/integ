@@ -1804,7 +1804,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 		snapshotCommitTimer.Update(statedb.SnapshotCommits) // Snapshot commits are complete, we can mark them
 		triedbCommitTimer.Update(statedb.TrieDBCommits)     // Trie database commits are complete, we can mark them
 
-		blockWriteTimer.Update(time.Since(wstart) - statedb.AccountCommits - statedb.StorageCommits - statedb.SnapshotCommits - statedb.TrieDBCommits)
+		blockBodyCommit := time.Since(wstart) - statedb.AccountCommits - statedb.StorageCommits - statedb.SnapshotCommits - statedb.TrieDBCommits
+		blockWriteTimer.Update(blockBodyCommit)
 		blockInsertTimer.UpdateSince(start)
 
 		// Report the import stats before returning the various results
@@ -1823,10 +1824,20 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 		}
 		switch status {
 		case CanonStatTy:
+			blockInsertion := time.Since(start)
 			log.Debug("Inserted new block", "number", block.Number(), "hash", block.Hash(),
 				"uncles", len(block.Uncles()), "txs", len(block.Transactions()), "gas", block.GasUsed(),
-				"elapsed", common.PrettyDuration(time.Since(start)),
+				"elapsed", common.PrettyDuration(blockInsertion),
 				"root", block.Root())
+
+			log.Info("Block insertion metrics", "number", block.Number(), 
+				"total", common.PrettyDuration(blockInsertion),
+				"Execution", common.PrettyDuration(ptime),  // the time spent on EVM processing + tries read during block execution
+				"TrieUpdate", common.PrettyDuration(triehash + trieUpdate),  // (tries hashing + tries update) during block validation
+				"Validation", common.PrettyDuration(vtime - (triehash + trieUpdate)),  // the time spent on Block Validation 
+				"BlockWrite", common.PrettyDuration(blockBodyCommit),
+				"OtherCommit", common.PrettyDuration(statedb.AccountCommits + statedb.StorageCommits + statedb.SnapshotCommits + statedb.TrieDBCommits),
+			)
 
 			lastCanon = block
 

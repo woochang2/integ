@@ -1,0 +1,79 @@
+#!/bin/bash
+
+. ./env
+
+VERBOSITY=3
+
+function init() {
+    rm -rf $GETH_DATA_DIR
+
+    echo "Building AuditChain gateway..."
+    cd $GETH_BUILD_DIR && make geth
+
+    echo "Initializing AuditChain gateway with genesis file...($GETH_GENESIS_FILE)"
+    geth --datadir $GETH_CONFIG_DIR init $GETH_GENESIS_FILE
+}
+
+function exec() {
+    shift
+    while getopts ":v:" opt ;
+    do
+        case "$opt" in
+            v) 
+                let VERBOSITY=$OPTARG
+                echo "verbosity: $VERBOSITY"
+                ;;
+            # c)
+            #     CONSOLE_MODE="console"
+            #     echo "console mode is enabled"
+            #     ;;
+            # p) 
+            #     PPROF="--pprof"
+            #     echo "pprof is enabled"
+            #     ;;
+            # m)
+            #     METRICS="--metrics"
+            #     echo "metrics is enabled"
+            #     ;;
+            ?)
+                break
+                ;;
+            *)
+                echo "Invalid option: $opt"
+                exit 0
+                ;;
+        esac
+    done
+    shift $((OPTIND-1))    # remove the processed options 
+    echo "Remaining arguments: $@"
+
+    export VALIDATOR_URL=$VALIDATOR_URL
+    echo "Starting AuditChain gateway with validator url: $VALIDATOR_URL"
+
+    echo "Starting AuditChain gateway... You MUST migrate contracts via migrate_contracts script after geth is fully started."
+    echo "geth --config $GETH_CONFIG_DIR/$GETH_CONFIG_FILE --verbosity $VERBOSITY $@"
+    geth --config $GETH_CONFIG_DIR/$GETH_CONFIG_FILE --verbosity $VERBOSITY $@
+}
+
+
+### Main ###
+
+CLI_VAR="$#"
+
+if [[ $CLI_VAR -gt 0 ]];
+then
+    if [[ $1 == "run" ]]; then
+        init
+        exec $@
+    elif [[ $1 == "init" ]]; then
+        init
+    elif [[ $1 == "exec" ]]; then
+        exec $@
+    else
+        echo "Invalid command: $1"
+        exit 0
+    fi
+else
+    echo "Usage: $0 [run|init|exec]"
+    exit 0
+fi
