@@ -21,7 +21,7 @@ Example:
   "hash": "0xd9eba16ed0ecae432b71fe008c98cc872bb4cc214d3220a36f365326cf807d68",
   "meta": {
     "remote": "localhost:9999",
-    "local": "localhost:40000",
+    "local": "localhost:8545",
     "scheme": "http",
     "User-Agent": "Firefox 3.2",
     "Origin": "www.malicious.ru"
@@ -75,12 +75,12 @@ Example:
     },
     {
       "type": "Info",
-      "message": "User should see this aswell"
+      "message": "User should see this as well"
     }
   ],
   "meta": {
     "remote": "localhost:9999",
-    "local": "localhost:40000",
+    "local": "localhost:8545",
     "scheme": "http",
     "User-Agent": "Firefox 3.2",
     "Origin": "www.malicious.ru"
@@ -196,7 +196,7 @@ Example:
   ],
   "meta": {
     "remote": "localhost:9999",
-    "local": "localhost:40000",
+    "local": "localhost:8545",
     "scheme": "http",
     "User-Agent": "Firefox 3.2",
     "Origin": "www.malicious.ru"

@@ -17,6 +17,7 @@
 package discover
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/ethereum/go-ethereum/metrics"
@@ -32,9 +33,16 @@ const (
 )
 
 var (
+	bucketsCounter      []metrics.Counter
 	ingressTrafficMeter = metrics.NewRegisteredMeter(ingressMeterName, nil)
 	egressTrafficMeter  = metrics.NewRegisteredMeter(egressMeterName, nil)
 )
+
+func init() {
+	for i := 0; i < nBuckets; i++ {
+		bucketsCounter = append(bucketsCounter, metrics.NewRegisteredCounter(fmt.Sprintf("%s/bucket/%d/count", moduleName, i), nil))
+	}
+}
 
 // meteredConn is a wrapper around a net.UDPConn that meters both the
 // inbound and outbound network traffic.
@@ -50,7 +58,7 @@ func newMeteredConn(conn UDPConn) UDPConn {
 	return &meteredUdpConn{UDPConn: conn}
 }
 
-// Read delegates a network read to the underlying connection, bumping the udp ingress traffic meter along the way.
+// ReadFromUDP delegates a network read to the underlying connection, bumping the udp ingress traffic meter along the way.
 func (c *meteredUdpConn) ReadFromUDP(b []byte) (n int, addr *net.UDPAddr, err error) {
 	n, addr, err = c.UDPConn.ReadFromUDP(b)
 	ingressTrafficMeter.Mark(int64(n))

@@ -6,8 +6,9 @@
 
 GOBIN = ./build/bin
 GO ?= latest
-GORUN = env GO111MODULE=on go run
+GORUN = go run
 
+#? geth: Build geth
 geth:
 	$(GORUN) build/ci.go install ./cmd/geth
 	@echo "Done building."
@@ -15,22 +16,27 @@ geth:
 	@echo "cp build/bin/geth to $(HOME)/go/bin/geth"
 	sudo cp ./build/bin/geth /usr/local/go/bin/geth
 
+#? all: Build all packages and executables
 all:
 	$(GORUN) build/ci.go install
 
+#? test: Run the tests
 test: all
 	$(GORUN) build/ci.go test
 
+#? lint: Run certain pre-selected linters
 lint: ## Run linters.
 	$(GORUN) build/ci.go lint
 
+#? clean: Clean go cache, built executables, and the auto generated folder
 clean:
-	env GO111MODULE=on go clean -cache
+	go clean -cache
 	rm -fr build/_workspace/pkg/ $(GOBIN)/*
 
 # The devtools target installs tools required for 'go generate'.
 # You need to put $GOBIN (or $GOPATH/bin) in your PATH to use 'go generate'.
 
+#? devtools: Install recommended developer tools
 devtools:
 	env GOBIN= go install golang.org/x/tools/cmd/stringer@latest
 	env GOBIN= go install github.com/fjl/gencodec@latest
@@ -38,3 +44,9 @@ devtools:
 	env GOBIN= go install ./cmd/abigen
 	@type "solc" 2> /dev/null || echo 'Please install solc'
 	@type "protoc" 2> /dev/null || echo 'Please install protoc'
+
+#? help: Get more info on make commands.
+help: Makefile
+	@echo " Choose a command run in go-ethereum:"
+	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
+.PHONY: help

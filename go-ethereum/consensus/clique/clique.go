@@ -33,6 +33,7 @@ import (
 	lru "github.com/ethereum/go-ethereum/common/lru"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
+	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -265,8 +266,7 @@ func (c *Clique) verifyHeader(chain consensus.ChainHeaderReader, header *types.H
 	if checkpoint && !bytes.Equal(header.Nonce[:], nonceDropVote) {
 		return errInvalidCheckpointVote
 	}
-	/// Header does not contain any signatures because every validator creates the same block
-	// // Check that the extra-data contains both the vanity and signature
+	// Check that the extra-data contains both the vanity and signature
 	// if len(header.Extra) < extraVanity {
 	// 	return errMissingVanity
 	// }
@@ -299,11 +299,24 @@ func (c *Clique) verifyHeader(chain consensus.ChainHeaderReader, header *types.H
 	if header.GasLimit > params.MaxGasLimit {
 		return fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, params.MaxGasLimit)
 	}
-	if chain.Config().IsShanghai(header.Time) {
-		return fmt.Errorf("clique does not support shanghai fork")
+	if chain.Config().IsShanghai(header.Number, header.Time) {
+		return errors.New("clique does not support shanghai fork")
 	}
-	if chain.Config().IsCancun(header.Time) {
-		return fmt.Errorf("clique does not support cancun fork")
+	// Verify the non-existence of withdrawalsHash.
+	if header.WithdrawalsHash != nil {
+		return fmt.Errorf("invalid withdrawalsHash: have %x, expected nil", header.WithdrawalsHash)
+	}
+	if chain.Config().IsCancun(header.Number, header.Time) {
+		return errors.New("clique does not support cancun fork")
+	}
+	// Verify the non-existence of cancun-specific header fields
+	switch {
+	case header.ExcessBlobGas != nil:
+		return fmt.Errorf("invalid excessBlobGas: have %d, expected nil", header.ExcessBlobGas)
+	case header.BlobGasUsed != nil:
+		return fmt.Errorf("invalid blobGasUsed: have %d, expected nil", header.BlobGasUsed)
+	case header.ParentBeaconRoot != nil:
+		return fmt.Errorf("invalid parentBeaconRoot, have %#x, expected nil", header.ParentBeaconRoot)
 	}
 	// All basic checks passed, verify cascading fields
 	return c.verifyCascadingFields(chain, header, parents)
@@ -344,7 +357,7 @@ func (c *Clique) verifyCascadingFields(chain consensus.ChainHeaderReader, header
 		if err := misc.VerifyGaslimit(parent.GasLimit, header.GasLimit); err != nil {
 			return err
 		}
-	} else if err := misc.VerifyEip1559Header(chain.Config(), parent, header); err != nil {
+	} else if err := eip1559.VerifyEIP1559Header(chain.Config(), parent, header); err != nil {
 		// Verify the header's EIP-1559 attributes.
 		return err
 	}
@@ -570,7 +583,6 @@ func (c *Clique) Prepare(chain consensus.ChainHeaderReader, header *types.Header
 // consensus rules in clique, do nothing here.
 func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, withdrawals []*types.Withdrawal) {
 	// No block rewards in PoA, so the state remains as is
-	log.Info("No block rewards in PoA, so the state remains as is")
 }
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
@@ -586,7 +598,6 @@ func (c *Clique) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 
 	// Assemble and return the final block for sealing.
-	log.Info("Assemble and return the final block for sealing.")
 	return types.NewBlock(header, txs, nil, receipts, trie.NewStackTrie(nil)), nil
 }
 
@@ -662,7 +673,6 @@ func (c *Clique) Seal(chain consensus.ChainHeaderReader, block *types.Block, res
 
 		select {
 		case results <- block.WithSeal(header):
-			log.Info("[Clique.Seal] Send Sealing Block to resultLoop")
 		default:
 			log.Warn("Sealing result is not read by miner", "sealhash", SealHash(header))
 		}
@@ -756,6 +766,15 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 	}
 	if header.WithdrawalsHash != nil {
 		panic("unexpected withdrawal hash value in clique")
+	}
+	if header.ExcessBlobGas != nil {
+		panic("unexpected excess blob gas value in clique")
+	}
+	if header.BlobGasUsed != nil {
+		panic("unexpected blob gas used value in clique")
+	}
+	if header.ParentBeaconRoot != nil {
+		panic("unexpected parent beacon root value in clique")
 	}
 	if err := rlp.Encode(w, enc); err != nil {
 		panic("can't encode: " + err.Error())

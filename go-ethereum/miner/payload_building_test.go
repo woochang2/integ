@@ -30,6 +30,7 @@ import (
 )
 
 func TestBuildPayload(t *testing.T) {
+	t.Parallel()
 	var (
 		db        = rawdb.NewMemoryDatabase()
 		recipient = common.HexToAddress("0xdeadbeef")
@@ -51,19 +52,19 @@ func TestBuildPayload(t *testing.T) {
 	verify := func(outer *engine.ExecutionPayloadEnvelope, txs int) {
 		payload := outer.ExecutionPayload
 		if payload.ParentHash != b.chain.CurrentBlock().Hash() {
-			t.Fatal("Unexpect parent hash")
+			t.Fatal("Unexpected parent hash")
 		}
 		if payload.Random != (common.Hash{}) {
-			t.Fatal("Unexpect random value")
+			t.Fatal("Unexpected random value")
 		}
 		if payload.Timestamp != timestamp {
-			t.Fatal("Unexpect timestamp")
+			t.Fatal("Unexpected timestamp")
 		}
 		if payload.FeeRecipient != recipient {
-			t.Fatal("Unexpect fee recipient")
+			t.Fatal("Unexpected fee recipient")
 		}
 		if len(payload.Transactions) != txs {
-			t.Fatal("Unexpect transaction set")
+			t.Fatal("Unexpected transaction set")
 		}
 	}
 	empty := payload.ResolveEmpty()
@@ -82,50 +83,51 @@ func TestBuildPayload(t *testing.T) {
 }
 
 func TestPayloadId(t *testing.T) {
+	t.Parallel()
 	ids := make(map[string]int)
 	for i, tt := range []*BuildPayloadArgs{
-		&BuildPayloadArgs{
+		{
 			Parent:       common.Hash{1},
 			Timestamp:    1,
 			Random:       common.Hash{0x1},
 			FeeRecipient: common.Address{0x1},
 		},
 		// Different parent
-		&BuildPayloadArgs{
+		{
 			Parent:       common.Hash{2},
 			Timestamp:    1,
 			Random:       common.Hash{0x1},
 			FeeRecipient: common.Address{0x1},
 		},
 		// Different timestamp
-		&BuildPayloadArgs{
+		{
 			Parent:       common.Hash{2},
 			Timestamp:    2,
 			Random:       common.Hash{0x1},
 			FeeRecipient: common.Address{0x1},
 		},
 		// Different Random
-		&BuildPayloadArgs{
+		{
 			Parent:       common.Hash{2},
 			Timestamp:    2,
 			Random:       common.Hash{0x2},
 			FeeRecipient: common.Address{0x1},
 		},
 		// Different fee-recipient
-		&BuildPayloadArgs{
+		{
 			Parent:       common.Hash{2},
 			Timestamp:    2,
 			Random:       common.Hash{0x2},
 			FeeRecipient: common.Address{0x2},
 		},
 		// Different withdrawals (non-empty)
-		&BuildPayloadArgs{
+		{
 			Parent:       common.Hash{2},
 			Timestamp:    2,
 			Random:       common.Hash{0x2},
 			FeeRecipient: common.Address{0x2},
 			Withdrawals: []*types.Withdrawal{
-				&types.Withdrawal{
+				{
 					Index:     0,
 					Validator: 0,
 					Address:   common.Address{},
@@ -134,13 +136,13 @@ func TestPayloadId(t *testing.T) {
 			},
 		},
 		// Different withdrawals (non-empty)
-		&BuildPayloadArgs{
+		{
 			Parent:       common.Hash{2},
 			Timestamp:    2,
 			Random:       common.Hash{0x2},
 			FeeRecipient: common.Address{0x2},
 			Withdrawals: []*types.Withdrawal{
-				&types.Withdrawal{
+				{
 					Index:     2,
 					Validator: 0,
 					Address:   common.Address{},
