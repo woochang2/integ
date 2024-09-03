@@ -23,11 +23,14 @@ use reth::core::init::init_genesis;
 use reth::network::config::rng_secret_key;
 use reth::network::{NetworkConfig, NetworkEvents as _, NetworkManager};
 use reth::primitives::{ChainSpec, Genesis, NodeRecord};
+use reth::rpc::builder::{
+    RethRpcModule, RpcModuleBuilder, RpcServerConfig, TransportRpcModuleConfig,
+};
 use reth::transaction_pool::noop::NoopTransactionPool;
 use sslab_core::consensus_handler::SimpleConsensusHandler;
 use sslab_core::enode_keys::{get_enode_id, read_enode_key_from_file, write_enode_key_to_file};
 use sslab_execution::transaction_validator::EthereumTxValidator;
-use sslab_execution::{blockchain_provider, init_ether_db, ProviderFactoryMDBX};
+use sslab_execution::{get_blockchain_provider, init_ether_db, EthEvmConfig, ProviderFactoryMDBX};
 use sslab_execution_serial::SerialExecutor;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::str::FromStr;
@@ -315,39 +318,10 @@ async fn run(
     let (primary, worker) = match matches.subcommand() {
         // Spawn the primary and consensus core.
         ("primary", submatches) => {
-            let primary = PrimaryNode::new(
-                parameters.clone(),
-                !matches.is_present("consensus-disabled"),
-                registry_service,
-            );
-
-            // cfg_if::cfg_if! {
-            //     if #[cfg(feature = "nezha")] {
-            //         use sslab_execution_nezha::Nezha;
-
-            //         let concurrency_level = match matches.subcommand() {
-            //             ("primary", Some(sub_matches)) => {
-            //                 sub_matches
-            //                     .value_of("concurrency-level")
-            //                     .unwrap()
-            //                     .parse::<usize>()
-            //                     .context("The concurrency level must be a positive integer")?
-            //             }
-            //             _ => 10,
-            //         };
-
-            //         let execution_model = Nezha::new(memory_storage, concurrency_level);
-            //     }
-            //     else {
-            //         use sslab_execution_serial::SerialExecutor;
-
-            //         let execution_model = SerialExecutor::new(Arc::new(memory_storage));
-            //     }
-            // }
-
             // generate ethereum-related components
             let chain_spec;
             let factory_provider;
+            let blockchain_provider;
             let devp2p_network_manager;
             {
                 //* Load the genesis file.
@@ -378,7 +352,7 @@ async fn run(
                 info!("Genesis block hash: {:?}", gen_hash);
                 factory_provider = ProviderFactoryMDBX::new(db, chain_spec.clone());
 
-                let blockchain_provider = blockchain_provider(factory_provider.clone());
+                blockchain_provider = get_blockchain_provider(factory_provider.clone());
 
                 //* Configure the devp2p network
                 // set devp2p id as random because we don't have a deterministic way to generate it
@@ -395,7 +369,7 @@ async fn run(
                 );
                 let eth_port: u16 = submatches
                     .unwrap()
-                    .value_of("eth-port")
+                    .value_of("devp2p-port")
                     .unwrap_or("30303")
                     .parse()
                     .unwrap();
@@ -420,7 +394,7 @@ async fn run(
                     .await
                     .unwrap()
                     .transactions(NoopTransactionPool::default(), Default::default())
-                    .request_handler(blockchain_provider)
+                    .request_handler(blockchain_provider.clone())
                     .split_with_handle();
 
                 // logging network events
@@ -450,10 +424,16 @@ async fn run(
             // };
 
             let consensus_handler = SimpleConsensusHandler::new::<SerialExecutor>(
-                factory_provider,
+                blockchain_provider,
                 chain_spec,
                 None,
                 devp2p_network_manager,
+            );
+
+            let primary = PrimaryNode::new(
+                parameters.clone(),
+                !matches.is_present("consensus-disabled"),
+                registry_service,
             );
 
             primary

@@ -9,7 +9,7 @@ use sslab_execution::utils::test_utils::default_chain_spec;
 use sslab_execution::utils::{
     smallbank_contract_benchmark::get_smallbank_handler, test_utils::convert_into_block,
 };
-use sslab_execution::{get_provider_factory, ProviderFactoryMDBX};
+use sslab_execution::{get_blockchain_provider, get_provider_factory, ProviderFactoryMDBX};
 use sslab_execution_serial::SerialExecutor;
 
 const DEFAULT_BATCH_SIZE: usize = 200;
@@ -23,8 +23,9 @@ const DEFAULT_BATCH_SIZE: usize = 200;
 fn _get_serial_executor(provider_factory: ProviderFactoryMDBX) -> SerialExecutor {
     use reth::providers::ChainSpecProvider;
     let chain_spec = provider_factory.chain_spec();
+    let blockchain_provider = get_blockchain_provider(provider_factory);
     SerialExecutor::new_with_db(
-        provider_factory,
+        blockchain_provider,
         Some(cache_state_with_smallbank_contract()),
         chain_spec,
     )

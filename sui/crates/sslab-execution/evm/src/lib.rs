@@ -56,7 +56,7 @@ pub fn get_provider_factory_rw(
     ProviderFactoryMDBX::new(db, chain_spec)
 }
 
-pub fn blockchain_provider(factory: ProviderFactoryMDBX) -> BlockchainProviderMDBX {
+pub fn get_blockchain_provider(factory: ProviderFactoryMDBX) -> BlockchainProviderMDBX {
     let (sync_metrics_tx, _sync_metrics_rx) = tokio::sync::mpsc::unbounded_channel();
     let mut config = NodeConfig::default();
     config.dev.dev = true; // deactivate beacon consensus

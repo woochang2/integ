@@ -11,7 +11,7 @@ use sslab_execution::{
     executor::ParallelExecutor,
     traits::Executable,
     types::{ExecutableConsensusOutput, ExecutableEthereumBatch},
-    ProviderFactoryMDBX, SslabChainSpec, TransactionSigned,
+    BlockchainProviderMDBX, SslabChainSpec, TransactionSigned,
 };
 use sslab_p2p::block_announcer::BlockAnnouncer;
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
@@ -27,7 +27,7 @@ pub struct SimpleConsensusHandler {
 
 impl SimpleConsensusHandler {
     pub fn new<ExecutionModel>(
-        provider_factory: ProviderFactoryMDBX,
+        blockchain_provider: BlockchainProviderMDBX,
         chain_spec: Arc<SslabChainSpec>,
         preloaded_state: Option<ThreadSafeCacheState>,
         devp2p_network_manager: NetworkHandle,
@@ -39,7 +39,7 @@ impl SimpleConsensusHandler {
             tokio::sync::mpsc::channel(1000);
         let mut tx_shutdown = PreSubscribedBroadcastSender::new(1);
         let (mut handles, subscribe_new_block) = ParallelExecutor::spawn::<ExecutionModel>(
-            provider_factory,
+            blockchain_provider,
             chain_spec,
             preloaded_state,
             rx_executable_consensus_output,

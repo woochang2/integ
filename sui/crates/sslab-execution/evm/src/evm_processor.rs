@@ -19,7 +19,7 @@ use tracing::debug;
 
 use crate::{
     db::{SharableStateDBBox, ThreadSafeCacheState},
-    ProviderFactoryMDBX,
+    BlockchainProviderMDBX,
 };
 use crate::{
     traits::{Executable, ParallelBlockExecutor},
@@ -80,7 +80,7 @@ where
 
     /// Create a new pocessor with the given chain spec.
     pub fn new(
-        provider_factory: ProviderFactoryMDBX,
+        blockchain_provider: BlockchainProviderMDBX,
         chain_spec: Arc<ChainSpec>,
         preloaded_state: Option<ThreadSafeCacheState>,
     ) -> Self {
@@ -95,7 +95,7 @@ where
 
         EVMProcessor {
             execution_model: ParallelExecutionModel::new_with_db(
-                provider_factory.clone(),
+                blockchain_provider.clone(),
                 Some(cached_state),
                 chain_spec.clone(),
             ),

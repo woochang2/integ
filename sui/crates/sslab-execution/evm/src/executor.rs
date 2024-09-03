@@ -9,7 +9,7 @@ use reth::{
     },
     providers::{
         BlockIdReader, BlockReader, BlockReaderIdExt, BlockSource, BundleStateWithReceipts,
-        CanonChainTracker, Chain, ProviderError,
+        CanonChainTracker, Chain, ProviderError, StateProviderBox, StateProviderFactory,
     },
 };
 
@@ -27,13 +27,12 @@ use tokio::{
 use tracing::{info, trace};
 
 use crate::{
-    blockchain_provider,
     db::ThreadSafeCacheState,
     evm_processor::EVMProcessor,
     revm_utiles::{recover_senders, unpack_batches},
     traits::{Executable, ParallelBlockExecutor as _},
     types::ExecutableConsensusOutput,
-    BlockchainProviderMDBX, ProviderFactoryMDBX,
+    BlockchainProviderMDBX,
 };
 
 /// [ParallelExecutor] spawns the two components: [Inner] and [PostProcessor].
@@ -48,7 +47,7 @@ pub struct ParallelExecutor {
 
 impl ParallelExecutor {
     pub fn spawn<ParallelExecutionModel>(
-        provider_factory: ProviderFactoryMDBX,
+        blockchain_provider: BlockchainProviderMDBX,
         chain_spec: Arc<ChainSpec>,
         preloaded_state: Option<ThreadSafeCacheState>,
         rx_executable_consensus_output: Receiver<ExecutableConsensusOutput>,
@@ -60,7 +59,6 @@ impl ParallelExecutor {
     where
         ParallelExecutionModel: Executable + Send + 'static,
     {
-        let blockchain_provider = blockchain_provider(provider_factory.clone());
         let latest_header = blockchain_provider
             .latest_header()
             .ok()
@@ -75,14 +73,14 @@ impl ParallelExecutor {
 
         let post_processor = PostProcessor::spawn(
             rx_execution_output,
-            blockchain_provider,
+            blockchain_provider.clone(),
             tx_latest_block_hash,
             // metrics.clone(),
             tx_shutdown_post_processor.subscribe(),
         );
 
         let inner = Inner::<ParallelExecutionModel>::spawn(
-            provider_factory,
+            blockchain_provider,
             chain_spec.clone(),
             preloaded_state,
             latest_header,
@@ -108,7 +106,7 @@ pub struct Inner<ParallelExecutionModel> {
 
     chain_spec: Arc<ChainSpec>,
 
-    db: ProviderFactoryMDBX,
+    stateroot_provider: StateProviderBox,
 
     executor: EVMProcessor<ParallelExecutionModel>,
 
@@ -129,7 +127,7 @@ pub struct Inner<ParallelExecutionModel> {
 
 impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutionModel> {
     pub fn spawn(
-        factory: ProviderFactoryMDBX,
+        blockchain_provider: BlockchainProviderMDBX,
         chain_spec: Arc<ChainSpec>,
         preloaded_state: Option<ThreadSafeCacheState>,
         latest_header: SealedHeader,
@@ -145,7 +143,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
             let (latest, latest_hash) = latest_header.split();
 
             let executor = EVMProcessor::<ParallelExecutionModel>::new(
-                factory.clone(),
+                blockchain_provider.clone(),
                 chain_spec.clone(),
                 preloaded_state,
             );
@@ -154,7 +152,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
                 latest,
                 latest_hash,
                 chain_spec,
-                db: factory,
+                stateroot_provider: blockchain_provider.latest().unwrap(),
                 executor,
                 tx_execution_output,
                 wait_post_processing,
@@ -335,12 +333,7 @@ impl<ParallelExecutionModel: Executable + Send + 'static> Inner<ParallelExecutio
         header.gas_used = gas_used;
 
         // calculate the state root
-        let state_root = self
-            .db
-            .latest()
-            .map_err(|_| BlockExecutionError::ProviderError)?
-            .state_root(bundle_state)
-            .unwrap();
+        let state_root = self.stateroot_provider.state_root(bundle_state).unwrap();
         header.state_root = state_root;
         Ok(header)
     }

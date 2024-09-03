@@ -12,7 +12,7 @@ use reth_interfaces::executor::BlockExecutionError;
 use crate::{
     db::{SharableStateDBBox, ThreadSafeCacheState},
     types::ExecutableConsensusOutput,
-    ProviderFactoryMDBX,
+    BlockchainProviderMDBX,
 };
 
 pub trait Executable {
@@ -23,7 +23,7 @@ pub trait Executable {
     ) -> Result<(BlockWithSenders, Vec<Receipt>, u64), BlockExecutionError>;
 
     fn new_with_db(
-        db: ProviderFactoryMDBX,
+        db: BlockchainProviderMDBX,
         cached_state: Option<ThreadSafeCacheState>,
         chain_spec: Arc<ChainSpec>,
     ) -> Self;

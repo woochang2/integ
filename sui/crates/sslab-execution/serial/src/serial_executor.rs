@@ -7,7 +7,7 @@ use reth::{
         revm::env::fill_tx_env, Address, BlockWithSenders, ChainSpec, Header, Receipt,
         TransactionSigned, U256,
     },
-    providers::ProviderError,
+    providers::{ProviderError, StateProviderFactory as _},
     revm::{
         database::StateProviderDatabase,
         db::BundleState,
@@ -21,7 +21,8 @@ use reth::{
 use sslab_execution::{
     db::{SharableState, SharableStateDBBox, ThreadSafeCacheState},
     traits::Executable,
-    BlockExecutionError, BlockValidationError, EthEvmConfig, ProviderFactoryMDBX,
+    BlockExecutionError, BlockValidationError, BlockchainProviderMDBX, EthEvmConfig,
+    ProviderFactoryMDBX,
 };
 
 use tracing::debug;
@@ -51,7 +52,7 @@ impl Executable for SerialExecutor {
     }
 
     fn new_with_db(
-        db: ProviderFactoryMDBX,
+        db: BlockchainProviderMDBX,
         cached_state: Option<ThreadSafeCacheState>,
         chain_spec: Arc<ChainSpec>,
     ) -> Self {
