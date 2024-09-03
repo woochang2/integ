@@ -11,7 +11,8 @@ function init() {
     cd $GETH_BUILD_DIR && make geth
 
     echo "Initializing AuditChain gateway with genesis file...($GETH_GENESIS_FILE)"
-    geth --datadir $GETH_CONFIG_DIR init $GETH_GENESIS_FILE
+    geth --datadir $GETH_CONFIG_DIR --state.scheme=path init $GETH_GENESIS_FILE
+    # geth --state.scheme=path --mainnet init 
 }
 
 function exec() {
@@ -52,7 +53,9 @@ function exec() {
 
     echo "Starting AuditChain gateway... You MUST migrate contracts via migrate_contracts script after geth is fully started."
     echo "geth --config $GETH_CONFIG_DIR/$GETH_CONFIG_FILE --verbosity $VERBOSITY $@"
-    geth --config $GETH_CONFIG_DIR/$GETH_CONFIG_FILE --verbosity $VERBOSITY $@
+    geth --config $GETH_CONFIG_DIR/$GETH_CONFIG_FILE --verbosity $VERBOSITY --metrics --metrics.influxdb --metrics.influxdb.database geth --metrics.influxdb.tags host=localhost --metrics.influxdb.username test --metrics.influxdb.password test --metrics.expensive --state.scheme=path $@
+
+    # geth --mainnet --verbosity $VERBOSITY --metrics --metrics.influxdb --metrics.influxdb.database geth --metrics.influxdb.tags host=localhost --metrics.influxdb.username test --metrics.influxdb.password test --metrics.expensive --state.scheme=path $@
 }
 
 

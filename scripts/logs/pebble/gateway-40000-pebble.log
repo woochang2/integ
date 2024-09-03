@@ -1,0 +1,655 @@
+verbosity: 4
+Remaining arguments: --gcmode=archive
+Starting AuditChain gateway with validator url: 141.223.121.124:3009
+Starting AuditChain gateway... You MUST migrate contracts via migrate_contracts script after geth is fully started.
+geth --config ../eth-data/geth-config.toml --verbosity 4 --gcmode=archive
+INFO [07-25|14:06:37.891] Starting Geth on Ethereum mainnet... 
+INFO [07-25|14:06:37.891] Bumping default cache on mainnet         provided=1024 updated=4096
+INFO [07-25|14:06:37.891] Enabling metrics collection 
+INFO [07-25|14:06:37.892] Maximum peer count                       ETH=50 LES=0 total=50
+INFO [07-25|14:06:37.893] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+DEBUG[07-25|14:06:37.893] FS scan times                            list="13.011µs" set="2.77µs" diff=961ns
+WARN [07-25|14:06:37.893] Disable transaction unindexing for archive node 
+DEBUG[07-25|14:06:37.894] Sanitizing Go's GC trigger               percent=25
+INFO [07-25|14:06:37.894] Enabling recording of key preimages since archive mode is used 
+INFO [07-25|14:06:37.894] Set global gas cap                       cap=50,000,000
+INFO [07-25|14:06:37.895] Allocated trie memory caches             clean=1.20GiB dirty=0.00B
+INFO [07-25|14:06:37.895] Using pebble as the backing database 
+INFO [07-25|14:06:37.895] Allocated cache and file handles         database=/home/sslab/integ/eth-data/geth/chaindata cache=2.00GiB handles=524,288
+DEBUG[07-25|14:06:37.909] Chain freezer table opened               database=/home/sslab/integ/eth-data/geth/chaindata/ancient/chain table=headers items=0 size=0.00B
+DEBUG[07-25|14:06:37.910] Chain freezer table opened               database=/home/sslab/integ/eth-data/geth/chaindata/ancient/chain table=hashes  items=0 size=0.00B
+DEBUG[07-25|14:06:37.910] Chain freezer table opened               database=/home/sslab/integ/eth-data/geth/chaindata/ancient/chain table=bodies  items=0 size=0.00B
+DEBUG[07-25|14:06:37.911] Chain freezer table opened               database=/home/sslab/integ/eth-data/geth/chaindata/ancient/chain table=receipts items=0 size=0.00B
+DEBUG[07-25|14:06:37.911] Chain freezer table opened               database=/home/sslab/integ/eth-data/geth/chaindata/ancient/chain table=diffs    items=0 size=0.00B
+INFO [07-25|14:06:37.911] Opened ancient database                  database=/home/sslab/integ/eth-data/geth/chaindata/ancient/chain readonly=false
+DEBUG[07-25|14:06:37.912] Current full block not old enough        number=0 hash=bf0b2e..275af1 delay=90000
+INFO [07-25|14:06:37.912] Initialising Ethereum protocol           network=423,423 dbversion=<nil>
+INFO [07-25|14:06:37.912]  
+INFO [07-25|14:06:37.912] --------------------------------------------------------------------------------------------------------------------------------------------------------- 
+INFO [07-25|14:06:37.912] Chain ID:  423423 (unknown) 
+INFO [07-25|14:06:37.912] Consensus: Clique (proof-of-authority) 
+INFO [07-25|14:06:37.912]  
+INFO [07-25|14:06:37.912] Pre-Merge hard forks (block based): 
+INFO [07-25|14:06:37.912]  - Homestead:                   #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/homestead.md) 
+INFO [07-25|14:06:37.912]  - Tangerine Whistle (EIP 150): #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/tangerine-whistle.md) 
+INFO [07-25|14:06:37.912]  - Spurious Dragon/1 (EIP 155): #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/spurious-dragon.md) 
+INFO [07-25|14:06:37.912]  - Spurious Dragon/2 (EIP 158): #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/spurious-dragon.md) 
+INFO [07-25|14:06:37.912]  - Byzantium:                   #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/byzantium.md) 
+INFO [07-25|14:06:37.912]  - Constantinople:              #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/constantinople.md) 
+INFO [07-25|14:06:37.912]  - Petersburg:                  #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/petersburg.md) 
+INFO [07-25|14:06:37.912]  - Istanbul:                    #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/istanbul.md) 
+INFO [07-25|14:06:37.913]  - Berlin:                      #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/berlin.md) 
+INFO [07-25|14:06:37.913]  - London:                      #<nil> (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md) 
+INFO [07-25|14:06:37.913]  
+INFO [07-25|14:06:37.913] The Merge is not yet available for this network! 
+INFO [07-25|14:06:37.913]  - Hard-fork specification: https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md 
+INFO [07-25|14:06:37.913]  
+INFO [07-25|14:06:37.913] Post-Merge hard forks (timestamp based): 
+INFO [07-25|14:06:37.913]  
+INFO [07-25|14:06:37.913] --------------------------------------------------------------------------------------------------------------------------------------------------------- 
+INFO [07-25|14:06:37.913]  
+INFO [07-25|14:06:37.913] Loaded most recent local block           number=0 hash=bf0b2e..275af1 td=131,072 age=55y4mo1w
+WARN [07-25|14:06:37.913] Failed to load snapshot                  err="missing or corrupted snapshot"
+INFO [07-25|14:06:37.915] Rebuilding state snapshot 
+DEBUG[07-25|14:06:37.915] Journalled generator progress            progress=empty
+DEBUG[07-25|14:06:37.915] Start snapshot generation                root=25d014..70318b
+INFO [07-25|14:06:37.915] Resuming state snapshot generation       root=25d014..70318b accounts=0 slots=0 storage=0.00B dangling=0 elapsed="461.322µs"
+DEBUG[07-25|14:06:37.915] Reinjecting stale transactions           count=0
+INFO [07-25|14:06:37.916] Regenerated local transaction journal    transactions=0 accounts=0
+INFO [07-25|14:06:37.917] Gasprice oracle is ignoring threshold set threshold=2
+DEBUG[07-25|14:06:37.917] Regenerated state range                  kind=account prefix=0x61 root=25d014..70318b last=0x count=3 created=3 updated=0    untouched=0 deleted=0
+DEBUG[07-25|14:06:37.917] Journalled generator progress            progress=done
+INFO [07-25|14:06:37.917] Generated state snapshot                 accounts=3 slots=0 storage=194.00B dangling=0 elapsed=1.782ms
+WARN [07-25|14:06:37.917] Error reading unclean shutdown markers   error="pebble: not found"
+WARN [07-25|14:06:37.917] Engine API enabled                       protocol=eth
+WARN [07-25|14:06:37.917] Engine API started but chain not configured for merge yet 
+INFO [07-25|14:06:37.917] Starting peer-to-peer node               instance=Geth/v1.11.7-unstable-d5cef23e-20240724/linux-amd64/go1.22.4
+DEBUG[07-25|14:06:37.920] TCP listener up                          addr=[::]:30300
+DEBUG[07-25|14:06:37.920] UDP listener up                          addr=[::]:30300
+INFO [07-25|14:06:37.922] New local node record                    seq=1,721,883,997,921 id=d56fd4d6810d4129 ip=127.0.0.1 udp=30300 tcp=30300
+INFO [07-25|14:06:37.922] Started P2P networking                   self=enode://d54eff0afc05855a8d7fcdb9289a93733f049b12cddaf2cf6564046b3c6a9970d5cb882b163d965d63e986885b940b2e48e6fbcc35970023aef629b4adaf664a@127.0.0.1:30300
+DEBUG[07-25|14:06:37.925] IPCs registered                          namespaces=admin,debug,web3,eth,txpool,clique,miner,net,engine
+INFO [07-25|14:06:37.925] IPC endpoint opened                      url=/home/sslab/integ/eth-data/geth.ipc
+DEBUG[07-25|14:06:37.925] Adding p2p peer                          peercount=1 id=f9c7dac0882aaa0e conn=trusted-dyndial addr=141.223.121.127:30303 name=reth/v0.1.0-alpha.22
+DEBUG[07-25|14:06:37.925] Adding p2p peer                          peercount=2 id=1b78ad32b0b6e82e conn=trusted-dyndial addr=141.223.121.126:30303 name=reth/v0.1.0-alpha.22
+INFO [07-25|14:06:37.925] Generated JWT secret                     path=/home/sslab/integ/eth-data/geth/jwtsecret
+DEBUG[07-25|14:06:37.925] Adding p2p peer                          peercount=3 id=ec931eb69afaa5e4 conn=trusted-dyndial addr=141.223.121.125:30303 name=reth/v0.1.0-alpha.22
+DEBUG[07-25|14:06:37.925] Allowed origin(s) for WS RPC interface [localhost] 
+INFO [07-25|14:06:37.926] HTTP server started                      endpoint=127.0.0.1:40000 auth=false prefix=     cors= vhosts=localhost
+INFO [07-25|14:06:37.926] WebSocket enabled                        url=ws://127.0.0.1:8552
+INFO [07-25|14:06:37.926] HTTP server started                      endpoint=127.0.0.1:8552  auth=true  prefix=     cors=localhost vhosts=localhost
+DEBUG[07-25|14:06:37.927] Ethereum peer connected                  id=1b78ad32b0b6e82e conn=trusted-dyndial name=reth/v0.1.0-alpha.22
+DEBUG[07-25|14:06:37.927] Ethereum peer connected                  id=f9c7dac0882aaa0e conn=trusted-dyndial name=reth/v0.1.0-alpha.22
+DEBUG[07-25|14:06:37.927] Relaxed msgrate QoS values               proto=eth rtt=20s confidence=0.500 ttl=1m0s
+DEBUG[07-25|14:06:37.927] Ethereum peer connected                  id=ec931eb69afaa5e4 conn=trusted-dyndial name=reth/v0.1.0-alpha.22
+DEBUG[07-25|14:06:37.927] Relaxed msgrate QoS values               proto=eth rtt=20s confidence=0.333 ttl=1m0s
+INFO [07-25|14:06:39.031] [eth/handler] handleBlockBroadcast       number=1
+DEBUG[07-25|14:06:39.031] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=1
+DEBUG[07-25|14:06:39.031] Queued delivered header or block         peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=1 hash=9fa178..fec607 queued=1
+DEBUG[07-25|14:06:39.031] Importing propagated block               peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=1 hash=9fa178..fec607
+INFO [07-25|14:06:39.031] Stored checkpoint snapshot to disk       number=0 hash=bf0b2e..275af1
+INFO [07-25|14:06:39.031] Propagated block                         number=1 hash=9fa178..fec607 recipients=1 duration=11.711ms
+INFO [07-25|14:06:39.033] [eth/handler] handleBlockBroadcast       number=1
+DEBUG[07-25|14:06:39.033] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=1
+INFO [07-25|14:06:39.045] [eth/handler] handleBlockBroadcast       number=1
+DEBUG[07-25|14:06:39.045] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=1
+INFO [07-25|14:06:39.150] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:39.290] Persisted trie from memory database      nodes=10331 size=1.25MiB time=19.644769ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:39.292] Imported new chain segment               number=1 hash=9fa178..fec607 blocks=1 txs=4124 mgas=180.935 elapsed=261.252ms   mgasps=692.568 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:39.292] Inserted new block                       number=1 hash=9fa178..fec607 uncles=0 txs=4124 gas=180,934,768 elapsed=247.570ms   root=0dd45d..6656f4
+INFO [07-25|14:06:39.293] Block insertion metrics                  number=1 total=247.570ms Execution=105.052ms TrieUpdate=36.740ms Validation=14.156ms BlockWrite=55.550ms OtherCommit=35.981ms
+DEBUG[07-25|14:06:39.293] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=1 "block hash"=9fa178..fec607
+INFO [07-25|14:06:39.293] Announced block                          number=1 hash=9fa178..fec607 recipients=0 duration=273.206ms
+INFO [07-25|14:06:39.797] [eth/handler] handleBlockBroadcast       number=2
+DEBUG[07-25|14:06:39.797] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=2
+DEBUG[07-25|14:06:39.797] Queued delivered header or block         peer=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=2 hash=02320a..dece3a queued=1
+DEBUG[07-25|14:06:39.797] Importing propagated block               peer=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=2 hash=02320a..dece3a
+INFO [07-25|14:06:39.802] Propagated block                         number=2 hash=02320a..dece3a recipients=1 duration=46.364ms
+INFO [07-25|14:06:39.895] [eth/handler] handleBlockBroadcast       number=2
+DEBUG[07-25|14:06:39.895] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=2
+INFO [07-25|14:06:39.902] [eth/handler] handleBlockBroadcast       number=2
+DEBUG[07-25|14:06:39.902] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=2
+DEBUG[07-25|14:06:40.021] Couldn't add port mapping                proto=tcp extport=30300 intport=30300 interface="UPnP or NAT-PMP" err="no UPnP or NAT-PMP router discovered"
+DEBUG[07-25|14:06:40.021] Couldn't add port mapping                proto=udp extport=30300 intport=30300 interface="UPnP or NAT-PMP" err="no UPnP or NAT-PMP router discovered"
+INFO [07-25|14:06:40.181] [eth/handler] handleBlockBroadcast       number=3
+DEBUG[07-25|14:06:40.181] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=3
+DEBUG[07-25|14:06:40.181] Queued delivered header or block         peer=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=3 hash=be638c..4a9dce queued=1
+INFO [07-25|14:06:40.220] [eth/handler] handleBlockBroadcast       number=3
+DEBUG[07-25|14:06:40.220] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=3
+INFO [07-25|14:06:40.228] [eth/handler] handleBlockBroadcast       number=3
+DEBUG[07-25|14:06:40.228] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=3
+INFO [07-25|14:06:40.312] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:40.591] [eth/handler] handleBlockBroadcast       number=4
+DEBUG[07-25|14:06:40.591] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=4
+DEBUG[07-25|14:06:40.591] Queued delivered header or block         peer=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=4 hash=7bfed6..5d9145 queued=2
+INFO [07-25|14:06:40.622] [eth/handler] handleBlockBroadcast       number=4
+DEBUG[07-25|14:06:40.622] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=4
+INFO [07-25|14:06:40.628] Persisted trie from memory database      nodes=52262 size=6.46MiB time=84.531323ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:40.640] Imported new chain segment               number=2 hash=02320a..dece3a blocks=1 txs=19372 mgas=814.141 elapsed=836.572ms   mgasps=973.186 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:40.640] Inserted new block                       number=2 hash=02320a..dece3a uncles=0 txs=19372 gas=814,140,772 elapsed=762.903ms   root=4a9d67..085703
+INFO [07-25|14:06:40.641] Block insertion metrics                  number=2 total=762.903ms Execution=434.716ms TrieUpdate=77.476ms Validation=36.031ms BlockWrite=135.342ms OtherCommit=79.278ms
+DEBUG[07-25|14:06:40.641] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=2 "block hash"=02320a..dece3a
+INFO [07-25|14:06:40.641] Announced block                          number=2 hash=02320a..dece3a recipients=0 duration=884.563ms
+DEBUG[07-25|14:06:40.641] Importing propagated block               peer=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=3 hash=be638c..4a9dce
+INFO [07-25|14:06:40.644] [eth/handler] handleBlockBroadcast       number=4
+DEBUG[07-25|14:06:40.645] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=4
+INFO [07-25|14:06:40.664] Propagated block                         number=3 hash=be638c..4a9dce recipients=0 duration=516.844ms
+INFO [07-25|14:06:41.032] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:41.082] [eth/handler] handleBlockBroadcast       number=5
+DEBUG[07-25|14:06:41.082] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=5
+DEBUG[07-25|14:06:41.082] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=5 hash=c8a5bf..bdc6d0 queued=2
+INFO [07-25|14:06:41.104] [eth/handler] handleBlockBroadcast       number=5
+DEBUG[07-25|14:06:41.104] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=5
+INFO [07-25|14:06:41.122] [eth/handler] handleBlockBroadcast       number=5
+DEBUG[07-25|14:06:41.122] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=5
+INFO [07-25|14:06:41.330] Persisted trie from memory database      nodes=52395 size=7.03MiB time=75.585246ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:41.337] Imported new chain segment               number=3 hash=be638c..4a9dce blocks=1 txs=15855 mgas=648.729 elapsed=685.204ms   mgasps=946.767 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:41.337] Inserted new block                       number=3 hash=be638c..4a9dce uncles=0 txs=15855 gas=648,729,002 elapsed=650.615ms   root=77cfe0..88dd44
+INFO [07-25|14:06:41.337] Block insertion metrics                  number=3 total=650.615ms Execution=345.277ms TrieUpdate=84.285ms Validation=33.483ms BlockWrite=103.003ms OtherCommit=84.513ms
+DEBUG[07-25|14:06:41.337] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=3 "block hash"=be638c..4a9dce
+DEBUG[07-25|14:06:41.337] Importing propagated block               peer=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=4 hash=7bfed6..5d9145
+INFO [07-25|14:06:41.337] Announced block                          number=3 hash=be638c..4a9dce recipients=0 duration=1.190s
+INFO [07-25|14:06:41.350] Propagated block                         number=4 hash=7bfed6..5d9145 recipients=0 duration=787.648ms
+INFO [07-25|14:06:41.574] [eth/handler] handleBlockBroadcast       number=6
+DEBUG[07-25|14:06:41.574] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=6
+DEBUG[07-25|14:06:41.574] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=6 hash=a61673..7d320b queued=2
+INFO [07-25|14:06:41.619] [eth/handler] handleBlockBroadcast       number=6
+DEBUG[07-25|14:06:41.619] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=6
+INFO [07-25|14:06:41.621] [eth/handler] handleBlockBroadcast       number=6
+DEBUG[07-25|14:06:41.621] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=6
+INFO [07-25|14:06:41.809] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:42.067] [eth/handler] handleBlockBroadcast       number=7
+DEBUG[07-25|14:06:42.067] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=7
+DEBUG[07-25|14:06:42.067] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=7 hash=36b688..acb302 queued=3
+INFO [07-25|14:06:42.084] [eth/handler] handleBlockBroadcast       number=7
+DEBUG[07-25|14:06:42.084] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=7
+INFO [07-25|14:06:42.134] [eth/handler] handleBlockBroadcast       number=7
+DEBUG[07-25|14:06:42.134] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=7
+INFO [07-25|14:06:42.141] Persisted trie from memory database      nodes=59183 size=8.26MiB time=115.604276ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:42.146] Imported new chain segment               number=4 hash=7bfed6..5d9145 blocks=1 txs=16437 mgas=652.813 elapsed=797.353ms   mgasps=818.724 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:42.147] Inserted new block                       number=4 hash=7bfed6..5d9145 uncles=0 txs=16437 gas=652,813,162 elapsed=762.785ms   root=53dc2a..42ada6
+INFO [07-25|14:06:42.147] Block insertion metrics                  number=4 total=762.785ms Execution=424.919ms TrieUpdate=68.466ms Validation=30.411ms BlockWrite=140.694ms OtherCommit=98.236ms
+DEBUG[07-25|14:06:42.147] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=4 "block hash"=7bfed6..5d9145
+DEBUG[07-25|14:06:42.147] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=5 hash=c8a5bf..bdc6d0
+INFO [07-25|14:06:42.147] Announced block                          number=4 hash=7bfed6..5d9145 recipients=0 duration=1.584s
+INFO [07-25|14:06:42.160] Propagated block                         number=5 hash=c8a5bf..bdc6d0 recipients=0 duration=1.113s
+INFO [07-25|14:06:42.516] [eth/handler] handleBlockBroadcast       number=8
+DEBUG[07-25|14:06:42.516] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=8
+DEBUG[07-25|14:06:42.516] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=8 hash=65dfbe..9f46c5 queued=3
+INFO [07-25|14:06:42.553] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:42.575] [eth/handler] handleBlockBroadcast       number=8
+DEBUG[07-25|14:06:42.575] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=8
+INFO [07-25|14:06:42.613] [eth/handler] handleBlockBroadcast       number=8
+DEBUG[07-25|14:06:42.613] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=8
+INFO [07-25|14:06:42.894] Persisted trie from memory database      nodes=61142 size=8.84MiB time=110.643373ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:42.904] Imported new chain segment               number=5 hash=c8a5bf..bdc6d0 blocks=1 txs=15835 mgas=611.252 elapsed=744.137ms   mgasps=821.424 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:42.904] Inserted new block                       number=5 hash=c8a5bf..bdc6d0 uncles=0 txs=15835 gas=611,251,949 elapsed=719.409ms   root=851987..78d3de
+INFO [07-25|14:06:42.904] Block insertion metrics                  number=5 total=719.409ms Execution=368.054ms TrieUpdate=77.505ms Validation=33.037ms BlockWrite=142.475ms OtherCommit=98.241ms
+DEBUG[07-25|14:06:42.904] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=5 "block hash"=c8a5bf..bdc6d0
+DEBUG[07-25|14:06:42.904] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=6 hash=a61673..7d320b
+INFO [07-25|14:06:42.904] Announced block                          number=5 hash=c8a5bf..bdc6d0 recipients=0 duration=1.857s
+INFO [07-25|14:06:42.916] Propagated block                         number=6 hash=a61673..7d320b recipients=0 duration=1.373s
+INFO [07-25|14:06:43.006] [eth/handler] handleBlockBroadcast       number=9
+DEBUG[07-25|14:06:43.006] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=9
+DEBUG[07-25|14:06:43.006] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=9 hash=37f7e7..1b8e3d queued=3
+INFO [07-25|14:06:43.055] [eth/handler] handleBlockBroadcast       number=9
+DEBUG[07-25|14:06:43.055] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=9
+INFO [07-25|14:06:43.158] [eth/handler] handleBlockBroadcast       number=9
+DEBUG[07-25|14:06:43.158] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=9
+INFO [07-25|14:06:43.347] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:43.623] [eth/handler] handleBlockBroadcast       number=10
+DEBUG[07-25|14:06:43.623] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=10
+DEBUG[07-25|14:06:43.623] Queued delivered header or block         peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=10 hash=3553f2..af5134 queued=4
+INFO [07-25|14:06:43.721] Persisted trie from memory database      nodes=65581 size=9.66MiB time=126.067761ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:43.732] Imported new chain segment               number=6  hash=a61673..7d320b blocks=1 txs=16455 mgas=624.282 elapsed=816.297ms   mgasps=764.772 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:43.732] Inserted new block                       number=6  hash=a61673..7d320b uncles=0 txs=16455 gas=624,281,622 elapsed=780.125ms   root=4261cd..12a2c8
+INFO [07-25|14:06:43.732] Block insertion metrics                  number=6  total=780.125ms Execution=394.692ms TrieUpdate=72.599ms Validation=32.836ms BlockWrite=161.797ms OtherCommit=118.117ms
+DEBUG[07-25|14:06:43.732] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=6 "block hash"=a61673..7d320b
+DEBUG[07-25|14:06:43.733] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=7  hash=36b688..acb302
+INFO [07-25|14:06:43.733] Announced block                          number=6  hash=a61673..7d320b recipients=0 duration=2.189s
+INFO [07-25|14:06:43.743] Propagated block                         number=7  hash=36b688..acb302 recipients=0 duration=1.705s
+INFO [07-25|14:06:43.801] [eth/handler] handleBlockBroadcast       number=10
+DEBUG[07-25|14:06:43.801] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=10
+INFO [07-25|14:06:44.107] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:44.175] [eth/handler] handleBlockBroadcast       number=11
+DEBUG[07-25|14:06:44.175] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=11
+DEBUG[07-25|14:06:44.175] Queued delivered header or block         peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=11 hash=313e6e..b7cf71 queued=4
+INFO [07-25|14:06:44.349] [eth/handler] handleBlockBroadcast       number=11
+DEBUG[07-25|14:06:44.349] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=11
+INFO [07-25|14:06:44.438] Persisted trie from memory database      nodes=57476 size=8.94MiB time=117.492178ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:44.468] Imported new chain segment               number=7  hash=36b688..acb302 blocks=1 txs=13490 mgas=502.293 elapsed=724.842ms   mgasps=692.968 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:44.468] Inserted new block                       number=7  hash=36b688..acb302 uncles=0 txs=13490 gas=502,292,519 elapsed=685.731ms   root=9abf96..c2829a
+INFO [07-25|14:06:44.468] Block insertion metrics                  number=7  total=685.731ms Execution=325.615ms TrieUpdate=58.761ms Validation=34.393ms BlockWrite=163.663ms OtherCommit=103.235ms
+DEBUG[07-25|14:06:44.468] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=7 "block hash"=36b688..acb302
+DEBUG[07-25|14:06:44.468] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=8  hash=65dfbe..9f46c5
+INFO [07-25|14:06:44.468] Announced block                          number=7  hash=36b688..acb302 recipients=0 duration=2.429s
+INFO [07-25|14:06:44.481] Propagated block                         number=8  hash=65dfbe..9f46c5 recipients=0 duration=1.981s
+INFO [07-25|14:06:44.671] [eth/handler] handleBlockBroadcast       number=12
+DEBUG[07-25|14:06:44.671] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=12
+DEBUG[07-25|14:06:44.671] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=12 hash=c86e73..e70cc1 queued=4
+INFO [07-25|14:06:44.731] [eth/handler] handleBlockBroadcast       number=12
+DEBUG[07-25|14:06:44.731] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=12
+INFO [07-25|14:06:44.803] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:44.941] [eth/handler] handleBlockBroadcast       number=12
+DEBUG[07-25|14:06:44.941] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=12
+INFO [07-25|14:06:45.050] Persisted trie from memory database      nodes=47790 size=7.89MiB time=69.488404ms  gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:45.054] Imported new chain segment               number=8  hash=65dfbe..9f46c5 blocks=1 txs=10590 mgas=387.268 elapsed=573.776ms   mgasps=674.946 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:45.054] Inserted new block                       number=8  hash=65dfbe..9f46c5 uncles=0 txs=10590 gas=387,268,085 elapsed=552.622ms   root=aa89ca..e80e27
+INFO [07-25|14:06:45.054] Block insertion metrics                  number=8  total=552.622ms Execution=301.182ms TrieUpdate=53.547ms Validation=20.739ms BlockWrite=90.092ms  OtherCommit=87.010ms
+DEBUG[07-25|14:06:45.054] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=8 "block hash"=65dfbe..9f46c5
+INFO [07-25|14:06:45.054] Announced block                          number=8  hash=65dfbe..9f46c5 recipients=0 duration=2.555s
+DEBUG[07-25|14:06:45.054] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=9  hash=37f7e7..1b8e3d
+INFO [07-25|14:06:45.062] Propagated block                         number=9  hash=37f7e7..1b8e3d recipients=0 duration=2.081s
+INFO [07-25|14:06:45.329] [eth/handler] handleBlockBroadcast       number=13
+DEBUG[07-25|14:06:45.329] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=13
+DEBUG[07-25|14:06:45.329] Queued delivered header or block         peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=13 hash=734593..2f5827 queued=4
+INFO [07-25|14:06:45.522] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:45.578] [eth/handler] handleBlockBroadcast       number=13
+DEBUG[07-25|14:06:45.578] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=13
+INFO [07-25|14:06:45.862] [eth/handler] handleBlockBroadcast       number=14
+DEBUG[07-25|14:06:45.862] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=14
+DEBUG[07-25|14:06:45.863] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=14 hash=3ed453..e16655 queued=5
+INFO [07-25|14:06:45.928] Persisted trie from memory database      nodes=67319 size=10.47MiB time=142.786949ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:45.936] Imported new chain segment               number=9  hash=37f7e7..1b8e3d blocks=1 txs=15886 mgas=573.173 elapsed=874.564ms   mgasps=655.381 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:45.936] Inserted new block                       number=9  hash=37f7e7..1b8e3d uncles=0 txs=15886 gas=573,173,311 elapsed=826.743ms   root=d9d907..46246c
+INFO [07-25|14:06:45.936] Block insertion metrics                  number=9  total=826.743ms Execution=413.217ms TrieUpdate=74.038ms Validation=39.906ms BlockWrite=166.751ms OtherCommit=132.754ms
+DEBUG[07-25|14:06:45.936] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=9 "block hash"=37f7e7..1b8e3d
+INFO [07-25|14:06:45.936] Announced block                          number=9  hash=37f7e7..1b8e3d recipients=0 duration=2.955s
+DEBUG[07-25|14:06:45.936] Importing propagated block               peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=10 hash=3553f2..af5134
+DEBUG[07-25|14:06:45.945] ENR request failed                       id=1b78ad32b0b6e82e addr=141.223.121.126:30303 err="invalid IP in response record: zero address"
+DEBUG[07-25|14:06:45.945] Revalidated node                         b=16 id=1b78ad32b0b6e82e checks=1
+INFO [07-25|14:06:45.950] Propagated block                         number=10 hash=3553f2..af5134 recipients=1 duration=2.358s
+INFO [07-25|14:06:45.951] [eth/handler] handleBlockBroadcast       number=14
+DEBUG[07-25|14:06:45.951] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=14
+INFO [07-25|14:06:46.219] [eth/handler] handleBlockBroadcast       number=14
+DEBUG[07-25|14:06:46.219] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=14
+INFO [07-25|14:06:46.323] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:46.440] [eth/handler] handleBlockBroadcast       number=15
+DEBUG[07-25|14:06:46.440] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=15
+DEBUG[07-25|14:06:46.440] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=15 hash=e44100..926f6a queued=5
+INFO [07-25|14:06:46.664] Persisted trie from memory database      nodes=59609 size=9.70MiB  time=116.524953ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:46.671] Imported new chain segment               number=10 hash=3553f2..af5134 blocks=1 txs=13537 mgas=479.170 elapsed=720.704ms   mgasps=664.863 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:46.671] Inserted new block                       number=10 hash=3553f2..af5134 uncles=0 txs=13537 gas=479,170,255 elapsed=690.230ms   root=35e743..3800aa
+INFO [07-25|14:06:46.671] Block insertion metrics                  number=10 total=690.230ms Execution=342.033ms TrieUpdate=72.031ms Validation=38.680ms BlockWrite=143.952ms OtherCommit=93.476ms
+DEBUG[07-25|14:06:46.671] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=10 "block hash"=3553f2..af5134
+INFO [07-25|14:06:46.671] Announced block                          number=10 hash=3553f2..af5134 recipients=0 duration=3.079s
+DEBUG[07-25|14:06:46.671] Importing propagated block               peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=11 hash=313e6e..b7cf71
+INFO [07-25|14:06:46.684] Propagated block                         number=11 hash=313e6e..b7cf71 recipients=1 duration=2.541s
+INFO [07-25|14:06:46.840] [eth/handler] handleBlockBroadcast       number=15
+DEBUG[07-25|14:06:46.840] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=15
+INFO [07-25|14:06:46.999] [eth/handler] handleBlockBroadcast       number=16
+DEBUG[07-25|14:06:46.999] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=16
+DEBUG[07-25|14:06:46.999] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=16 hash=d90e90..cfd111 queued=5
+INFO [07-25|14:06:47.103] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:47.153] [eth/handler] handleBlockBroadcast       number=16
+DEBUG[07-25|14:06:47.153] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=16
+INFO [07-25|14:06:47.456] [eth/handler] handleBlockBroadcast       number=16
+DEBUG[07-25|14:06:47.456] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=16
+INFO [07-25|14:06:47.482] Persisted trie from memory database      nodes=62506 size=10.20MiB time=136.120424ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:47.490] Imported new chain segment               number=11 hash=313e6e..b7cf71 blocks=1 txs=14105 mgas=495.381 elapsed=806.312ms   mgasps=614.378 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:47.490] Inserted new block                       number=11 hash=313e6e..b7cf71 uncles=0 txs=14105 gas=495,380,536 elapsed=779.273ms   root=4107ce..5e226f
+INFO [07-25|14:06:47.490] Block insertion metrics                  number=11 total=779.273ms Execution=392.295ms TrieUpdate=76.999ms Validation=30.492ms BlockWrite=167.467ms OtherCommit=111.947ms
+DEBUG[07-25|14:06:47.490] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=11 "block hash"=313e6e..b7cf71
+INFO [07-25|14:06:47.490] Announced block                          number=11 hash=313e6e..b7cf71 recipients=0 duration=3.347s
+DEBUG[07-25|14:06:47.490] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=12 hash=c86e73..e70cc1
+INFO [07-25|14:06:47.519] Propagated block                         number=12 hash=c86e73..e70cc1 recipients=0 duration=2.874s
+INFO [07-25|14:06:47.622] [eth/handler] handleBlockBroadcast       number=17
+DEBUG[07-25|14:06:47.622] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=17
+DEBUG[07-25|14:06:47.622] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=17 hash=bd1af2..cddfd4 queued=5
+INFO [07-25|14:06:47.782] [eth/handler] handleBlockBroadcast       number=17
+DEBUG[07-25|14:06:47.782] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=17
+INFO [07-25|14:06:47.908] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:47.917] [mainLoop] Receive Event: cleanTicker 
+INFO [07-25|14:06:48.129] [eth/handler] handleBlockBroadcast       number=17
+DEBUG[07-25|14:06:48.130] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=17
+INFO [07-25|14:06:48.263] Persisted trie from memory database      nodes=62787 size=10.36MiB time=146.186994ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:48.272] Imported new chain segment               number=12 hash=c86e73..e70cc1 blocks=1 txs=14074 mgas=485.461 elapsed=768.671ms   mgasps=631.559 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:48.272] Inserted new block                       number=12 hash=c86e73..e70cc1 uncles=0 txs=14074 gas=485,460,984 elapsed=742.383ms   root=cdf85e..83f2af
+INFO [07-25|14:06:48.272] Block insertion metrics                  number=12 total=742.383ms Execution=378.667ms TrieUpdate=56.194ms Validation=33.899ms BlockWrite=175.114ms OtherCommit=98.445ms
+DEBUG[07-25|14:06:48.272] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=12 "block hash"=c86e73..e70cc1
+DEBUG[07-25|14:06:48.272] Importing propagated block               peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=13 hash=734593..2f5827
+INFO [07-25|14:06:48.272] Announced block                          number=12 hash=c86e73..e70cc1 recipients=0 duration=3.627s
+INFO [07-25|14:06:48.281] Propagated block                         number=13 hash=734593..2f5827 recipients=1 duration=2.982s
+INFO [07-25|14:06:48.327] [eth/handler] handleBlockBroadcast       number=18
+DEBUG[07-25|14:06:48.327] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=18
+DEBUG[07-25|14:06:48.327] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=18 hash=c43c2d..8ff840 queued=5
+INFO [07-25|14:06:48.483] [eth/handler] handleBlockBroadcast       number=18
+DEBUG[07-25|14:06:48.483] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=18
+INFO [07-25|14:06:48.768] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:48.856] [eth/handler] handleBlockBroadcast       number=18
+DEBUG[07-25|14:06:48.856] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=18
+INFO [07-25|14:06:48.974] [eth/handler] handleBlockBroadcast       number=19
+DEBUG[07-25|14:06:48.974] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=19
+DEBUG[07-25|14:06:48.974] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=19 hash=e5f0ec..6acfce queued=6
+INFO [07-25|14:06:49.119] [eth/handler] handleBlockBroadcast       number=19
+DEBUG[07-25|14:06:49.119] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=19
+INFO [07-25|14:06:49.186] Persisted trie from memory database      nodes=67672 size=11.12MiB time=172.473463ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:49.198] Imported new chain segment               number=13 hash=734593..2f5827 blocks=1 txs=15230 mgas=523.792 elapsed=916.896ms   mgasps=571.267 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:49.198] Inserted new block                       number=13 hash=734593..2f5827 uncles=0 txs=15230 gas=523,792,401 elapsed=859.528ms   root=3af2c9..e5a1eb
+INFO [07-25|14:06:49.198] Block insertion metrics                  number=13 total=859.528ms Execution=429.535ms TrieUpdate=79.864ms Validation=29.771ms BlockWrite=201.389ms OtherCommit=118.897ms
+DEBUG[07-25|14:06:49.198] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=13 "block hash"=734593..2f5827
+INFO [07-25|14:06:49.198] Announced block                          number=13 hash=734593..2f5827 recipients=0 duration=3.899s
+DEBUG[07-25|14:06:49.198] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=14 hash=3ed453..e16655
+INFO [07-25|14:06:49.218] Propagated block                         number=14 hash=3ed453..e16655 recipients=0 duration=3.382s
+INFO [07-25|14:06:49.531] [eth/handler] handleBlockBroadcast       number=19
+DEBUG[07-25|14:06:49.531] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=19
+INFO [07-25|14:06:49.593] [eth/handler] handleBlockBroadcast       number=20
+DEBUG[07-25|14:06:49.593] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=20
+DEBUG[07-25|14:06:49.593] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=20 hash=eaf74b..9f5d8d queued=6
+INFO [07-25|14:06:49.600] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:49.980] Persisted trie from memory database      nodes=63542 size=10.72MiB time=157.880037ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:49.987] Imported new chain segment               number=14 hash=3ed453..e16655 blocks=1 txs=14092 mgas=476.247 elapsed=780.022ms   mgasps=610.555 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:49.987] Inserted new block                       number=14 hash=3ed453..e16655 uncles=0 txs=14092 gas=476,246,852 elapsed=752.640ms   root=13b455..4fd642
+INFO [07-25|14:06:49.987] Block insertion metrics                  number=14 total=752.640ms Execution=365.757ms TrieUpdate=56.120ms Validation=35.295ms BlockWrite=187.541ms OtherCommit=107.852ms
+DEBUG[07-25|14:06:49.987] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=14 "block hash"=3ed453..e16655
+DEBUG[07-25|14:06:49.987] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=15 hash=e44100..926f6a
+INFO [07-25|14:06:49.987] Announced block                          number=14 hash=3ed453..e16655 recipients=0 duration=4.151s
+INFO [07-25|14:06:50.024] Propagated block                         number=15 hash=e44100..926f6a recipients=1 duration=3.609s
+INFO [07-25|14:06:50.224] [eth/handler] handleBlockBroadcast       number=20
+DEBUG[07-25|14:06:50.224] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=20
+INFO [07-25|14:06:50.389] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:50.417] [eth/handler] handleBlockBroadcast       number=21
+DEBUG[07-25|14:06:50.417] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=21
+DEBUG[07-25|14:06:50.417] Queued delivered header or block         peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=21 hash=5c08b9..36498c queued=6
+INFO [07-25|14:06:50.711] Persisted trie from memory database      nodes=59578 size=10.30MiB time=114.607226ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:50.716] Imported new chain segment               number=15 hash=e44100..926f6a blocks=1 txs=12934 mgas=431.343 elapsed=717.190ms   mgasps=601.435 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:50.716] Inserted new block                       number=15 hash=e44100..926f6a uncles=0 txs=12934 gas=431,343,356 elapsed=688.670ms   root=2f0768..c27e09
+INFO [07-25|14:06:50.716] Block insertion metrics                  number=15 total=688.670ms Execution=360.834ms TrieUpdate=64.460ms Validation=26.292ms BlockWrite=134.414ms OtherCommit=102.582ms
+DEBUG[07-25|14:06:50.716] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=15 "block hash"=e44100..926f6a
+INFO [07-25|14:06:50.716] Announced block                          number=15 hash=e44100..926f6a recipients=0 duration=4.302s
+DEBUG[07-25|14:06:50.716] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=16 hash=d90e90..cfd111
+INFO [07-25|14:06:50.725] Propagated block                         number=16 hash=d90e90..cfd111 recipients=0 duration=3.752s
+INFO [07-25|14:06:50.904] [eth/handler] handleBlockBroadcast       number=21
+DEBUG[07-25|14:06:50.904] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=21
+INFO [07-25|14:06:51.085] [eth/handler] handleBlockBroadcast       number=22
+DEBUG[07-25|14:06:51.085] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=22
+DEBUG[07-25|14:06:51.085] Queued delivered header or block         peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=22 hash=6e01ef..19f0cc queued=6
+INFO [07-25|14:06:51.150] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:51.538] Persisted trie from memory database      nodes=64037 size=10.96MiB time=151.3306ms   gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:51.545] Imported new chain segment               number=16 hash=d90e90..cfd111 blocks=1 txs=14074 mgas=466.470 elapsed=820.642ms   mgasps=568.420 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:51.545] Inserted new block                       number=16 hash=d90e90..cfd111 uncles=0 txs=14074 gas=466,469,617 elapsed=793.527ms   root=03a172..69337a
+INFO [07-25|14:06:51.545] Block insertion metrics                  number=16 total=793.527ms Execution=397.971ms TrieUpdate=60.437ms Validation=33.239ms BlockWrite=185.285ms OtherCommit=116.533ms
+DEBUG[07-25|14:06:51.545] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=16 "block hash"=d90e90..cfd111
+DEBUG[07-25|14:06:51.545] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=17 hash=bd1af2..cddfd4
+INFO [07-25|14:06:51.545] Announced block                          number=16 hash=d90e90..cfd111 recipients=0 duration=4.572s
+INFO [07-25|14:06:51.554] Propagated block                         number=17 hash=bd1af2..cddfd4 recipients=0 duration=3.957s
+INFO [07-25|14:06:51.628] [eth/handler] handleBlockBroadcast       number=23
+DEBUG[07-25|14:06:51.628] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=23
+DEBUG[07-25|14:06:51.628] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=23 hash=8e6ed5..653f38 queued=6
+INFO [07-25|14:06:51.644] [eth/handler] handleBlockBroadcast       number=22
+DEBUG[07-25|14:06:51.644] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=22
+INFO [07-25|14:06:51.827] [eth/handler] handleBlockBroadcast       number=23
+DEBUG[07-25|14:06:51.827] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=23
+INFO [07-25|14:06:52.050] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:52.415] [eth/handler] handleBlockBroadcast       number=23
+DEBUG[07-25|14:06:52.416] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=23
+INFO [07-25|14:06:52.472] Persisted trie from memory database      nodes=71227 size=12.00MiB time=164.449645ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:52.481] Imported new chain segment               number=17 hash=bd1af2..cddfd4 blocks=1 txs=15856 mgas=523.233 elapsed=926.772ms   mgasps=564.575 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:52.481] Inserted new block                       number=17 hash=bd1af2..cddfd4 uncles=0 txs=15856 gas=523,233,037 elapsed=877.861ms   root=b02c21..136b83
+INFO [07-25|14:06:52.481] Block insertion metrics                  number=17 total=877.861ms Execution=447.606ms TrieUpdate=67.581ms Validation=36.821ms BlockWrite=200.694ms OtherCommit=125.074ms
+DEBUG[07-25|14:06:52.481] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=17 "block hash"=bd1af2..cddfd4
+INFO [07-25|14:06:52.481] Announced block                          number=17 hash=bd1af2..cddfd4 recipients=0 duration=4.884s
+DEBUG[07-25|14:06:52.481] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=18 hash=c43c2d..8ff840
+INFO [07-25|14:06:52.490] Propagated block                         number=18 hash=c43c2d..8ff840 recipients=0 duration=4.217s
+INFO [07-25|14:06:52.573] [eth/handler] handleBlockBroadcast       number=24
+DEBUG[07-25|14:06:52.573] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=24
+DEBUG[07-25|14:06:52.573] Queued delivered header or block         peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=24 hash=7270b0..e56d87 queued=6
+INFO [07-25|14:06:53.008] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:53.113] [eth/handler] handleBlockBroadcast       number=25
+DEBUG[07-25|14:06:53.113] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=25
+DEBUG[07-25|14:06:53.113] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=25 hash=3633d6..19af4a queued=7
+INFO [07-25|14:06:53.187] [eth/handler] handleBlockBroadcast       number=24
+DEBUG[07-25|14:06:53.187] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=24
+INFO [07-25|14:06:53.313] [eth/handler] handleBlockBroadcast       number=25
+DEBUG[07-25|14:06:53.313] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=25
+INFO [07-25|14:06:53.445] Persisted trie from memory database      nodes=73875 size=12.47MiB time=162.917739ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:53.463] Imported new chain segment               number=18 hash=c43c2d..8ff840 blocks=1 txs=16447 mgas=536.083 elapsed=973.201ms   mgasps=550.845 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:53.463] Inserted new block                       number=18 hash=c43c2d..8ff840 uncles=0 txs=16447 gas=536,082,653 elapsed=920.922ms   root=b1b338..1344e6
+INFO [07-25|14:06:53.463] Block insertion metrics                  number=18 total=920.922ms Execution=465.460ms TrieUpdate=70.668ms Validation=38.665ms BlockWrite=208.237ms OtherCommit=137.793ms
+DEBUG[07-25|14:06:53.463] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=18 "block hash"=c43c2d..8ff840
+DEBUG[07-25|14:06:53.463] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=19 hash=e5f0ec..6acfce
+INFO [07-25|14:06:53.463] Announced block                          number=18 hash=c43c2d..8ff840 recipients=0 duration=5.190s
+INFO [07-25|14:06:53.478] Propagated block                         number=19 hash=e5f0ec..6acfce recipients=0 duration=4.530s
+DEBUG[07-25|14:06:53.602] Revalidated node                         b=16 id=1b78ad32b0b6e82e checks=2
+INFO [07-25|14:06:53.849] [eth/handler] handleBlockBroadcast       number=26
+DEBUG[07-25|14:06:53.849] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=26
+DEBUG[07-25|14:06:53.849] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=26 hash=5e8381..d49a89 queued=7
+DEBUG[07-25|14:06:53.894] Revalidated node                         b=16 id=1b78ad32b0b6e82e checks=3
+INFO [07-25|14:06:53.909] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:53.985] [eth/handler] handleBlockBroadcast       number=25
+DEBUG[07-25|14:06:53.985] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=25
+INFO [07-25|14:06:54.015] [eth/handler] handleBlockBroadcast       number=26
+DEBUG[07-25|14:06:54.015] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=26
+INFO [07-25|14:06:54.294] Persisted trie from memory database      nodes=62745 size=11.09MiB time=143.794437ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:54.302] Imported new chain segment               number=19 hash=e5f0ec..6acfce blocks=1 txs=13494 mgas=434.999 elapsed=824.704ms   mgasps=527.461 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:54.302] Inserted new block                       number=19 hash=e5f0ec..6acfce uncles=0 txs=13494 gas=434,999,145 elapsed=804.198ms   root=c32b8d..1620ba
+INFO [07-25|14:06:54.302] Block insertion metrics                  number=19 total=804.198ms Execution=411.108ms TrieUpdate=75.223ms Validation=40.516ms BlockWrite=170.136ms OtherCommit=107.157ms
+DEBUG[07-25|14:06:54.302] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=19 "block hash"=e5f0ec..6acfce
+INFO [07-25|14:06:54.302] Announced block                          number=19 hash=e5f0ec..6acfce recipients=0 duration=5.355s
+DEBUG[07-25|14:06:54.302] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=20 hash=eaf74b..9f5d8d
+INFO [07-25|14:06:54.330] Propagated block                         number=20 hash=eaf74b..9f5d8d recipients=1 duration=4.765s
+DEBUG[07-25|14:06:54.661] Revalidated node                         b=16 id=1b78ad32b0b6e82e checks=4
+INFO [07-25|14:06:54.706] [eth/handler] handleBlockBroadcast       number=27
+DEBUG[07-25|14:06:54.706] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=27
+DEBUG[07-25|14:06:54.706] Queued delivered header or block         peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=27 hash=1e8420..b795fe queued=7
+INFO [07-25|14:06:54.750] [eth/handler] handleBlockBroadcast       number=26
+DEBUG[07-25|14:06:54.750] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=26
+INFO [07-25|14:06:54.753] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:55.107] [eth/handler] handleBlockBroadcast       number=28
+DEBUG[07-25|14:06:55.107] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=28
+DEBUG[07-25|14:06:55.107] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=28 hash=08024f..92cd0a queued=8
+INFO [07-25|14:06:55.141] Persisted trie from memory database      nodes=63439 size=11.26MiB time=153.826155ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:55.150] Imported new chain segment               number=20 hash=eaf74b..9f5d8d blocks=1 txs=13504 mgas=433.851 elapsed=839.444ms   mgasps=516.831 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:55.150] Inserted new block                       number=20 hash=eaf74b..9f5d8d uncles=0 txs=13504 gas=433,851,269 elapsed=792.664ms   root=b8a44e..e566b6
+INFO [07-25|14:06:55.150] Block insertion metrics                  number=20 total=792.664ms Execution=396.070ms TrieUpdate=64.936ms Validation=37.305ms BlockWrite=182.695ms OtherCommit=111.603ms
+DEBUG[07-25|14:06:55.150] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=20 "block hash"=eaf74b..9f5d8d
+INFO [07-25|14:06:55.150] Announced block                          number=20 hash=eaf74b..9f5d8d recipients=0 duration=5.585s
+DEBUG[07-25|14:06:55.150] Importing propagated block               peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=21 hash=5c08b9..36498c
+INFO [07-25|14:06:55.159] Propagated block                         number=21 hash=5c08b9..36498c recipients=1 duration=4.768s
+INFO [07-25|14:06:55.326] [eth/handler] handleBlockBroadcast       number=28
+DEBUG[07-25|14:06:55.326] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=28
+INFO [07-25|14:06:55.462] [eth/handler] handleBlockBroadcast       number=27
+DEBUG[07-25|14:06:55.462] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=27
+INFO [07-25|14:06:55.624] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:55.761] [eth/handler] handleBlockBroadcast       number=29
+DEBUG[07-25|14:06:55.761] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=29
+DEBUG[07-25|14:06:55.761] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=29 hash=c2c8b2..eeb362 queued=8
+INFO [07-25|14:06:55.981] [eth/handler] handleBlockBroadcast       number=29
+DEBUG[07-25|14:06:55.981] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=29
+INFO [07-25|14:06:56.018] Persisted trie from memory database      nodes=60742 size=10.98MiB time=158.398185ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:56.028] Imported new chain segment               number=21 hash=5c08b9..36498c blocks=1 txs=12915 mgas=411.654 elapsed=869.817ms   mgasps=473.265 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:56.028] Inserted new block                       number=21 hash=5c08b9..36498c uncles=0 txs=12915 gas=411,654,394 elapsed=825.985ms   root=7aca46..1ecf78
+INFO [07-25|14:06:56.028] Block insertion metrics                  number=21 total=825.985ms Execution=421.590ms TrieUpdate=76.677ms Validation=39.889ms BlockWrite=182.812ms OtherCommit=104.956ms
+DEBUG[07-25|14:06:56.028] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=21 "block hash"=5c08b9..36498c
+INFO [07-25|14:06:56.028] Announced block                          number=21 hash=5c08b9..36498c recipients=0 duration=5.637s
+DEBUG[07-25|14:06:56.028] Importing propagated block               peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=22 hash=6e01ef..19f0cc
+INFO [07-25|14:06:56.049] Propagated block                         number=22 hash=6e01ef..19f0cc recipients=1 duration=5.000s
+INFO [07-25|14:06:56.128] [eth/handler] handleBlockBroadcast       number=28
+DEBUG[07-25|14:06:56.128] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=28
+INFO [07-25|14:06:56.487] [eth/handler] handleBlockBroadcast       number=30
+DEBUG[07-25|14:06:56.487] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=30
+DEBUG[07-25|14:06:56.487] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=30 hash=004ec3..f81001 queued=8
+INFO [07-25|14:06:56.640] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:56.718] [eth/handler] handleBlockBroadcast       number=30
+DEBUG[07-25|14:06:56.718] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=30
+INFO [07-25|14:06:56.822] [eth/handler] handleBlockBroadcast       number=29
+DEBUG[07-25|14:06:56.822] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=29
+INFO [07-25|14:06:57.117] Persisted trie from memory database      nodes=75073 size=12.98MiB time=190.692324ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:57.128] Imported new chain segment               number=22 hash=6e01ef..19f0cc blocks=1 txs=16428 mgas=520.468 elapsed=1.092s      mgasps=476.437 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:57.128] Inserted new block                       number=22 hash=6e01ef..19f0cc uncles=0 txs=16428 gas=520,467,682 elapsed=1.054s      root=d8551e..ebd368
+INFO [07-25|14:06:57.128] Block insertion metrics                  number=22 total=1.054s    Execution=565.670ms TrieUpdate=94.950ms Validation=47.827ms BlockWrite=218.322ms OtherCommit=127.504ms
+DEBUG[07-25|14:06:57.128] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=22 "block hash"=6e01ef..19f0cc
+INFO [07-25|14:06:57.128] Announced block                          number=22 hash=6e01ef..19f0cc recipients=0 duration=6.080s
+DEBUG[07-25|14:06:57.128] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=23 hash=8e6ed5..653f38
+INFO [07-25|14:06:57.139] Propagated block                         number=23 hash=8e6ed5..653f38 recipients=0 duration=5.540s
+INFO [07-25|14:06:57.240] [eth/handler] handleBlockBroadcast       number=31
+DEBUG[07-25|14:06:57.240] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=31
+DEBUG[07-25|14:06:57.240] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=31 hash=15ffce..adb7dd queued=8
+DEBUG[07-25|14:06:57.311] Revalidated node                         b=14 id=f9c7dac0882aaa0e checks=1
+INFO [07-25|14:06:57.417] [eth/handler] handleBlockBroadcast       number=31
+DEBUG[07-25|14:06:57.418] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=31
+INFO [07-25|14:06:57.616] [eth/handler] handleBlockBroadcast       number=30
+DEBUG[07-25|14:06:57.616] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=30
+INFO [07-25|14:06:57.665] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:06:57.894] [eth/handler] handleBlockBroadcast       number=32
+DEBUG[07-25|14:06:57.894] A direct block insertion was requested, try and fill any pending gaps origin=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=32
+DEBUG[07-25|14:06:57.894] Queued delivered header or block         peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=32 hash=93f054..0389b1 queued=9
+INFO [07-25|14:06:57.917] [mainLoop] Receive Event: cleanTicker 
+INFO [07-25|14:06:58.051] [eth/handler] handleBlockBroadcast       number=32
+DEBUG[07-25|14:06:58.051] A direct block insertion was requested, try and fill any pending gaps origin=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=32
+INFO [07-25|14:06:58.137] Persisted trie from memory database      nodes=73183 size=12.82MiB time=203.899042ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:58.149] Imported new chain segment               number=23 hash=8e6ed5..653f38 blocks=1 txs=15876 mgas=500.073 elapsed=1.011s      mgasps=494.608 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:58.149] Inserted new block                       number=23 hash=8e6ed5..653f38 uncles=0 txs=15876 gas=500,072,809 elapsed=971.412ms   root=a1237b..6b476d
+INFO [07-25|14:06:58.149] Block insertion metrics                  number=23 total=971.412ms Execution=487.273ms TrieUpdate=84.367ms Validation=32.888ms BlockWrite=233.782ms OtherCommit=133.033ms
+DEBUG[07-25|14:06:58.149] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=23 "block hash"=8e6ed5..653f38
+INFO [07-25|14:06:58.149] Announced block                          number=23 hash=8e6ed5..653f38 recipients=0 duration=6.550s
+DEBUG[07-25|14:06:58.149] Importing propagated block               peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=24 hash=7270b0..e56d87
+INFO [07-25|14:06:58.159] Propagated block                         number=24 hash=7270b0..e56d87 recipients=1 duration=5.621s
+INFO [07-25|14:06:58.429] [eth/handler] handleBlockBroadcast       number=31
+DEBUG[07-25|14:06:58.429] A direct block insertion was requested, try and fill any pending gaps origin=ec931eb69afaa5e4f01c03176e27f0f569a6b5d24f82c1c38ef57e3827c782a4 number=31
+INFO [07-25|14:06:58.700] No block rewards in PoA, so the state remains as is 
+DEBUG[07-25|14:06:58.747] Message handling failed in `eth`         id=1b78ad32b0b6e82e conn=trusted-dyndial err=EOF
+DEBUG[07-25|14:06:58.747] Removing Ethereum peer                   peer=1b78ad32 snap=false
+DEBUG[07-25|14:06:58.747] Removing p2p peer                        peercount=2 id=1b78ad32b0b6e82e duration=20.822s   req=false err=EOF
+DEBUG[07-25|14:06:58.773] Message handling failed in `eth`         id=ec931eb69afaa5e4 conn=trusted-dyndial err=EOF
+DEBUG[07-25|14:06:58.773] Removing Ethereum peer                   peer=ec931eb6 snap=false
+DEBUG[07-25|14:06:58.773] Removing p2p peer                        peercount=1 id=ec931eb69afaa5e4 duration=20.848s   req=false err=EOF
+DEBUG[07-25|14:06:58.780] Message handling failed in `eth`         id=f9c7dac0882aaa0e conn=trusted-dyndial err=EOF
+DEBUG[07-25|14:06:58.780] Removing Ethereum peer                   peer=f9c7dac0 snap=false
+DEBUG[07-25|14:06:58.780] Removing p2p peer                        peercount=0 id=f9c7dac0882aaa0e duration=20.855s   req=false err=EOF
+INFO [07-25|14:06:59.187] Persisted trie from memory database      nodes=77740 size=13.51MiB time=215.514334ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:06:59.206] Imported new chain segment               number=24 hash=7270b0..e56d87 blocks=1 txs=17016 mgas=536.627 elapsed=1.047s      mgasps=512.277 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:06:59.206] Inserted new block                       number=24 hash=7270b0..e56d87 uncles=0 txs=17016 gas=536,627,271 elapsed=1.014s      root=601d85..f33687
+INFO [07-25|14:06:59.206] Block insertion metrics                  number=24 total=1.014s    Execution=508.430ms TrieUpdate=74.391ms Validation=41.171ms BlockWrite=252.780ms OtherCommit=137.434ms
+DEBUG[07-25|14:06:59.206] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=24 "block hash"=7270b0..e56d87
+DEBUG[07-25|14:06:59.206] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=25 hash=3633d6..19af4a
+INFO [07-25|14:06:59.206] Announced block                          number=24 hash=7270b0..e56d87 recipients=0 duration=6.669s
+INFO [07-25|14:06:59.229] Propagated block                         number=25 hash=3633d6..19af4a recipients=0 duration=6.141s
+INFO [07-25|14:06:59.752] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:07:00.241] Persisted trie from memory database      nodes=73628 size=13.04MiB time=206.141635ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:07:00.254] Imported new chain segment               number=25 hash=3633d6..19af4a blocks=1 txs=15846 mgas=494.960 elapsed=1.036s      mgasps=477.738 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:07:00.254] Inserted new block                       number=25 hash=3633d6..19af4a uncles=0 txs=15846 gas=494,960,208 elapsed=1.005s      root=197c1e..1e33e0
+INFO [07-25|14:07:00.254] Block insertion metrics                  number=25 total=1.005s    Execution=503.391ms TrieUpdate=77.424ms Validation=35.678ms BlockWrite=235.601ms OtherCommit=152.976ms
+DEBUG[07-25|14:07:00.254] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=25 "block hash"=3633d6..19af4a
+INFO [07-25|14:07:00.254] Announced block                          number=25 hash=3633d6..19af4a recipients=0 duration=7.167s
+DEBUG[07-25|14:07:00.254] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=26 hash=5e8381..d49a89
+INFO [07-25|14:07:00.269] Propagated block                         number=26 hash=5e8381..d49a89 recipients=0 duration=6.441s
+INFO [07-25|14:07:00.732] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:07:01.148] Persisted trie from memory database      nodes=64570 size=11.85MiB time=116.833988ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:07:01.153] Imported new chain segment               number=26 hash=5e8381..d49a89 blocks=1 txs=13470 mgas=417.670 elapsed=889.329ms   mgasps=469.646 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:07:01.153] Inserted new block                       number=26 hash=5e8381..d49a89 uncles=0 txs=13470 gas=417,670,154 elapsed=851.493ms   root=babbe3..9ce8d2
+INFO [07-25|14:07:01.153] Block insertion metrics                  number=26 total=851.493ms Execution=430.084ms TrieUpdate=66.335ms Validation=38.337ms BlockWrite=199.475ms OtherCommit=117.204ms
+DEBUG[07-25|14:07:01.153] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=26 "block hash"=5e8381..d49a89
+INFO [07-25|14:07:01.153] Announced block                          number=26 hash=5e8381..d49a89 recipients=0 duration=7.325s
+DEBUG[07-25|14:07:01.153] Importing propagated block               peer=1b78ad32b0b6e82ebf5e4dc4257a8169d2431b97e3befcc38a33dbae17653f17 number=27 hash=1e8420..b795fe
+INFO [07-25|14:07:01.164] Propagated block                         number=27 hash=1e8420..b795fe recipients=0 duration=6.476s
+INFO [07-25|14:07:01.548] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:07:01.840] Persisted trie from memory database      nodes=55086 size=10.53MiB time=108.520916ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:07:01.844] Imported new chain segment               number=27 hash=1e8420..b795fe blocks=1 txs=11177 mgas=346.322 elapsed=681.512ms   mgasps=508.167 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:07:01.844] Inserted new block                       number=27 hash=1e8420..b795fe uncles=0 txs=11177 gas=346,322,137 elapsed=656.167ms   root=b07783..e9479e
+INFO [07-25|14:07:01.844] Block insertion metrics                  number=27 total=656.167ms Execution=359.381ms TrieUpdate=46.765ms Validation=24.993ms BlockWrite=127.436ms OtherCommit=97.532ms
+DEBUG[07-25|14:07:01.845] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=27 "block hash"=1e8420..b795fe
+DEBUG[07-25|14:07:01.845] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=28 hash=08024f..92cd0a
+INFO [07-25|14:07:01.845] Announced block                          number=27 hash=1e8420..b795fe recipients=0 duration=7.157s
+INFO [07-25|14:07:01.852] Propagated block                         number=28 hash=08024f..92cd0a recipients=0 duration=6.763s
+INFO [07-25|14:07:02.238] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:07:02.577] Persisted trie from memory database      nodes=55754 size=10.67MiB time=132.119173ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:07:02.582] Imported new chain segment               number=28 hash=08024f..92cd0a blocks=1 txs=11177 mgas=347.327 elapsed=730.857ms   mgasps=475.232 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:07:02.582] Inserted new block                       number=28 hash=08024f..92cd0a uncles=0 txs=11177 gas=347,326,793 elapsed=702.520ms   root=2504f0..2c787d
+INFO [07-25|14:07:02.582] Block insertion metrics                  number=28 total=702.520ms Execution=358.482ms TrieUpdate=56.748ms Validation=25.969ms BlockWrite=150.433ms OtherCommit=110.830ms
+DEBUG[07-25|14:07:02.582] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=28 "block hash"=08024f..92cd0a
+INFO [07-25|14:07:02.582] Announced block                          number=28 hash=08024f..92cd0a recipients=0 duration=7.493s
+DEBUG[07-25|14:07:02.583] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=29 hash=c2c8b2..eeb362
+INFO [07-25|14:07:02.591] Propagated block                         number=29 hash=c2c8b2..eeb362 recipients=0 duration=6.863s
+INFO [07-25|14:07:03.065] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:07:03.490] Persisted trie from memory database      nodes=65400 size=12.09MiB time=190.846597ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:07:03.497] Imported new chain segment               number=29 hash=c2c8b2..eeb362 blocks=1 txs=13506 mgas=416.259 elapsed=906.635ms   mgasps=459.125 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:07:03.497] Inserted new block                       number=29 hash=c2c8b2..eeb362 uncles=0 txs=13506 gas=416,258,812 elapsed=861.154ms   root=4dec21..eab4f4
+INFO [07-25|14:07:03.497] Block insertion metrics                  number=29 total=861.154ms Execution=428.787ms TrieUpdate=72.473ms Validation=29.015ms BlockWrite=212.722ms OtherCommit=118.095ms
+DEBUG[07-25|14:07:03.497] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=29 "block hash"=c2c8b2..eeb362
+DEBUG[07-25|14:07:03.497] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=30 hash=004ec3..f81001
+INFO [07-25|14:07:03.497] Announced block                          number=29 hash=c2c8b2..eeb362 recipients=0 duration=7.769s
+INFO [07-25|14:07:03.507] Propagated block                         number=30 hash=004ec3..f81001 recipients=0 duration=7.045s
+INFO [07-25|14:07:04.022] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:07:04.505] Persisted trie from memory database      nodes=75104 size=13.57MiB time=192.818484ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:07:04.514] Imported new chain segment               number=30 hash=004ec3..f81001 blocks=1 txs=15886 mgas=488.914 elapsed=1.008s      mgasps=484.819 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:07:04.514] Inserted new block                       number=30 hash=004ec3..f81001 uncles=0 txs=15886 gas=488,914,193 elapsed=977.815ms   root=4e2448..7d25b4
+INFO [07-25|14:07:04.514] Block insertion metrics                  number=30 total=977.815ms Execution=485.382ms TrieUpdate=89.749ms Validation=33.327ms BlockWrite=224.997ms OtherCommit=144.302ms
+DEBUG[07-25|14:07:04.514] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=30 "block hash"=004ec3..f81001
+INFO [07-25|14:07:04.514] Announced block                          number=30 hash=004ec3..f81001 recipients=0 duration=8.052s
+DEBUG[07-25|14:07:04.514] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=31 hash=15ffce..adb7dd
+INFO [07-25|14:07:04.524] Propagated block                         number=31 hash=15ffce..adb7dd recipients=0 duration=7.304s
+INFO [07-25|14:07:04.907] No block rewards in PoA, so the state remains as is 
+DEBUG[07-25|14:07:05.024] NTP sanity check done                    drift="-929.198µs"
+INFO [07-25|14:07:05.267] Persisted trie from memory database      nodes=58464 size=11.21MiB time=162.598034ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:07:05.275] Imported new chain segment               number=31 hash=15ffce..adb7dd blocks=1 txs=11759 mgas=360.813 elapsed=750.747ms   mgasps=480.605 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:07:05.275] Inserted new block                       number=31 hash=15ffce..adb7dd uncles=0 txs=11759 gas=360,813,239 elapsed=727.998ms   root=63c7f7..c19a1b
+INFO [07-25|14:07:05.275] Block insertion metrics                  number=31 total=727.998ms Execution=360.231ms TrieUpdate=47.287ms Validation=24.451ms BlockWrite=193.767ms OtherCommit=102.194ms
+DEBUG[07-25|14:07:05.275] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=31 "block hash"=15ffce..adb7dd
+INFO [07-25|14:07:05.275] Announced block                          number=31 hash=15ffce..adb7dd recipients=0 duration=8.054s
+DEBUG[07-25|14:07:05.275] Importing propagated block               peer=f9c7dac0882aaa0e3178b8853cec0d65ff4fb4a2df29dedc2556df1e36e4583d number=32 hash=93f054..0389b1
+INFO [07-25|14:07:05.286] Propagated block                         number=32 hash=93f054..0389b1 recipients=0 duration=7.420s
+INFO [07-25|14:07:05.613] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:07:05.953] Persisted trie from memory database      nodes=53660 size=10.50MiB time=138.5183ms   gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:07:05.960] Imported new chain segment               number=32 hash=93f054..0389b1 blocks=1 txs=10573 mgas=323.027 elapsed=673.389ms   mgasps=479.703 age=55y4mo1w dirty=0.00B
+DEBUG[07-25|14:07:05.960] Inserted new block                       number=32 hash=93f054..0389b1 uncles=0 txs=10573 gas=323,026,687 elapsed=651.438ms   root=484a75..6a41cf
+INFO [07-25|14:07:05.960] Block insertion metrics                  number=32 total=651.438ms Execution=304.332ms TrieUpdate=54.726ms Validation=28.724ms BlockWrite=155.871ms OtherCommit=107.731ms
+DEBUG[07-25|14:07:05.960] print instead of bc.chainHeadFeed.Send(ChainHeadEvent{lastCanon}) "block no"=32 "block hash"=93f054..0389b1
+INFO [07-25|14:07:05.960] Announced block                          number=32 hash=93f054..0389b1 recipients=0 duration=8.093s
+DEBUG[07-25|14:07:07.790] Removed dead node                        b=14 id=ec931eb69afaa5e4 ip=141.223.121.125 checks=0
+INFO [07-25|14:07:07.917] [mainLoop] Receive Event: cleanTicker 
+INFO [07-25|14:07:07.955] Looking for peers                        peercount=0 tried=0 static=0
+INFO [07-25|14:07:14.431] Got interrupt, shutting down... 
+DEBUG[07-25|14:07:14.431] RPC server shutting down 
+INFO [07-25|14:07:14.431] HTTP server stopped                      endpoint=127.0.0.1:40000
+DEBUG[07-25|14:07:14.431] RPC server shutting down 
+DEBUG[07-25|14:07:14.431] RPC server shutting down 
+INFO [07-25|14:07:14.431] HTTP server stopped                      endpoint=127.0.0.1:8552
+DEBUG[07-25|14:07:14.431] RPC server shutting down 
+INFO [07-25|14:07:14.431] IPC endpoint closed                      url=/home/sslab/integ/eth-data/geth.ipc
+DEBUG[07-25|14:07:14.431] RPC server shutting down 
+DEBUG[07-25|14:07:14.431] RPC connection read error                err=EOF
+INFO [07-25|14:07:14.431] Ethereum protocol stopped 
+INFO [07-25|14:07:14.431] Transaction pool stopped 
+DEBUG[07-25|14:07:14.432] Journalled generator progress            progress=done
+DEBUG[07-25|14:07:14.432] Journalled disk layer                    root=25d014..70318b
+DEBUG[07-25|14:07:14.433] Journalled diff layer                    root=0dd45d..6656f4 parent=25d014..70318b
+DEBUG[07-25|14:07:14.434] Journalled diff layer                    root=4a9d67..085703 parent=0dd45d..6656f4
+DEBUG[07-25|14:07:14.436] Journalled diff layer                    root=77cfe0..88dd44 parent=4a9d67..085703
+DEBUG[07-25|14:07:14.438] Journalled diff layer                    root=53dc2a..42ada6 parent=77cfe0..88dd44
+DEBUG[07-25|14:07:14.439] Journalled diff layer                    root=851987..78d3de parent=53dc2a..42ada6
+DEBUG[07-25|14:07:14.441] Journalled diff layer                    root=4261cd..12a2c8 parent=851987..78d3de
+DEBUG[07-25|14:07:14.442] Journalled diff layer                    root=9abf96..c2829a parent=4261cd..12a2c8
+DEBUG[07-25|14:07:14.447] Journalled diff layer                    root=aa89ca..e80e27 parent=9abf96..c2829a
+DEBUG[07-25|14:07:14.448] Journalled diff layer                    root=d9d907..46246c parent=aa89ca..e80e27
+DEBUG[07-25|14:07:14.449] Journalled diff layer                    root=35e743..3800aa parent=d9d907..46246c
+DEBUG[07-25|14:07:14.450] Journalled diff layer                    root=4107ce..5e226f parent=35e743..3800aa
+DEBUG[07-25|14:07:14.451] Journalled diff layer                    root=cdf85e..83f2af parent=4107ce..5e226f
+DEBUG[07-25|14:07:14.452] Journalled diff layer                    root=3af2c9..e5a1eb parent=cdf85e..83f2af
+DEBUG[07-25|14:07:14.453] Journalled diff layer                    root=13b455..4fd642 parent=3af2c9..e5a1eb
+DEBUG[07-25|14:07:14.455] Journalled diff layer                    root=2f0768..c27e09 parent=13b455..4fd642
+DEBUG[07-25|14:07:14.467] Journalled diff layer                    root=03a172..69337a parent=2f0768..c27e09
+DEBUG[07-25|14:07:14.470] Journalled diff layer                    root=b02c21..136b83 parent=03a172..69337a
+DEBUG[07-25|14:07:14.471] Journalled diff layer                    root=b1b338..1344e6 parent=b02c21..136b83
+DEBUG[07-25|14:07:14.472] Journalled diff layer                    root=c32b8d..1620ba parent=b1b338..1344e6
+DEBUG[07-25|14:07:14.474] Journalled diff layer                    root=b8a44e..e566b6 parent=c32b8d..1620ba
+DEBUG[07-25|14:07:14.475] Journalled diff layer                    root=7aca46..1ecf78 parent=b8a44e..e566b6
+DEBUG[07-25|14:07:14.476] Journalled diff layer                    root=d8551e..ebd368 parent=7aca46..1ecf78
+DEBUG[07-25|14:07:14.478] Journalled diff layer                    root=a1237b..6b476d parent=d8551e..ebd368
+DEBUG[07-25|14:07:14.479] Journalled diff layer                    root=601d85..f33687 parent=a1237b..6b476d
+DEBUG[07-25|14:07:14.481] Journalled diff layer                    root=197c1e..1e33e0 parent=601d85..f33687
+DEBUG[07-25|14:07:14.482] Journalled diff layer                    root=babbe3..9ce8d2 parent=197c1e..1e33e0
+DEBUG[07-25|14:07:14.483] Journalled diff layer                    root=b07783..e9479e parent=babbe3..9ce8d2
+DEBUG[07-25|14:07:14.484] Journalled diff layer                    root=2504f0..2c787d parent=b07783..e9479e
+DEBUG[07-25|14:07:14.486] Journalled diff layer                    root=4dec21..eab4f4 parent=2504f0..2c787d
+DEBUG[07-25|14:07:14.512] Journalled diff layer                    root=4e2448..7d25b4 parent=4dec21..eab4f4
+DEBUG[07-25|14:07:14.514] Journalled diff layer                    root=63c7f7..c19a1b parent=4e2448..7d25b4
+DEBUG[07-25|14:07:14.515] Journalled diff layer                    root=484a75..6a41cf parent=63c7f7..c19a1b
+INFO [07-25|14:07:14.555] Writing clean trie cache to disk         path=/home/sslab/integ/eth-data/geth/triecache threads=32
+INFO [07-25|14:07:14.579] Persisted the clean trie cache           path=/home/sslab/integ/eth-data/geth/triecache elapsed=23.709ms
+INFO [07-25|14:07:14.579] Blockchain stopped 
+DEBUG[07-25|14:07:14.621] Read error                               err="accept tcp [::]:30300: use of closed network connection"
+DEBUG[07-25|14:07:14.621] Deleting port mapping                    proto=tcp extport=30300 intport=30300 interface="UPnP or NAT-PMP"
+DEBUG[07-25|14:07:14.621] Deleting port mapping                    proto=udp extport=30300 intport=30300 interface="UPnP or NAT-PMP"
+DEBUG[07-25|14:07:14.621] UDP read error                           err="read udp [::]:30300: use of closed network connection"
+DEBUG[07-25|14:07:14.621] Removed dead node                        b=16 id=1b78ad32b0b6e82e ip=141.223.121.126 checks=4

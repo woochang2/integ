@@ -1,0 +1,357 @@
+verbosity: 3
+Remaining arguments: --gcmode=archive
+Starting AuditChain gateway with validator url: 141.223.121.124:3009
+Starting AuditChain gateway... You MUST migrate contracts via migrate_contracts script after geth is fully started.
+geth --config ../eth-data/geth-config.toml --verbosity 3 --gcmode=archive
+INFO [07-25|14:38:44.724] Starting Geth on Ethereum mainnet... 
+INFO [07-25|14:38:44.724] Bumping default cache on mainnet         provided=1024 updated=4096
+INFO [07-25|14:38:44.724] Enabling metrics collection 
+INFO [07-25|14:38:44.725] Maximum peer count                       ETH=50 LES=0 total=50
+INFO [07-25|14:38:44.726] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
+WARN [07-25|14:38:44.727] Disable transaction unindexing for archive node 
+INFO [07-25|14:38:44.727] Enabling recording of key preimages since archive mode is used 
+INFO [07-25|14:38:44.728] Set global gas cap                       cap=50,000,000
+INFO [07-25|14:38:44.728] Allocated trie memory caches             clean=1.20GiB dirty=0.00B
+INFO [07-25|14:38:44.728] Using leveldb as the backing database 
+INFO [07-25|14:38:44.728] Allocated cache and file handles         database=/home/sslab/integ/eth-data/geth/chaindata cache=2.00GiB handles=524,288
+INFO [07-25|14:38:44.741] Using LevelDB as the backing database 
+INFO [07-25|14:38:44.743] Opened ancient database                  database=/home/sslab/integ/eth-data/geth/chaindata/ancient/chain readonly=false
+INFO [07-25|14:38:44.744] Initialising Ethereum protocol           network=423,423 dbversion=<nil>
+INFO [07-25|14:38:44.744]  
+INFO [07-25|14:38:44.744] --------------------------------------------------------------------------------------------------------------------------------------------------------- 
+INFO [07-25|14:38:44.744] Chain ID:  423423 (unknown) 
+INFO [07-25|14:38:44.744] Consensus: Clique (proof-of-authority) 
+INFO [07-25|14:38:44.744]  
+INFO [07-25|14:38:44.744] Pre-Merge hard forks (block based): 
+INFO [07-25|14:38:44.744]  - Homestead:                   #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/homestead.md) 
+INFO [07-25|14:38:44.744]  - Tangerine Whistle (EIP 150): #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/tangerine-whistle.md) 
+INFO [07-25|14:38:44.744]  - Spurious Dragon/1 (EIP 155): #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/spurious-dragon.md) 
+INFO [07-25|14:38:44.744]  - Spurious Dragon/2 (EIP 158): #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/spurious-dragon.md) 
+INFO [07-25|14:38:44.744]  - Byzantium:                   #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/byzantium.md) 
+INFO [07-25|14:38:44.744]  - Constantinople:              #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/constantinople.md) 
+INFO [07-25|14:38:44.744]  - Petersburg:                  #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/petersburg.md) 
+INFO [07-25|14:38:44.744]  - Istanbul:                    #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/istanbul.md) 
+INFO [07-25|14:38:44.744]  - Berlin:                      #0        (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/berlin.md) 
+INFO [07-25|14:38:44.744]  - London:                      #<nil> (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md) 
+INFO [07-25|14:38:44.744]  
+INFO [07-25|14:38:44.744] The Merge is not yet available for this network! 
+INFO [07-25|14:38:44.744]  - Hard-fork specification: https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md 
+INFO [07-25|14:38:44.744]  
+INFO [07-25|14:38:44.744] Post-Merge hard forks (timestamp based): 
+INFO [07-25|14:38:44.744]  
+INFO [07-25|14:38:44.744] --------------------------------------------------------------------------------------------------------------------------------------------------------- 
+INFO [07-25|14:38:44.744]  
+INFO [07-25|14:38:44.744] Loaded most recent local block           number=0 hash=bf0b2e..275af1 td=131,072 age=55y4mo1w
+WARN [07-25|14:38:44.744] Failed to load snapshot                  err="missing or corrupted snapshot"
+INFO [07-25|14:38:44.744] Rebuilding state snapshot 
+INFO [07-25|14:38:44.745] Resuming state snapshot generation       root=25d014..70318b accounts=0 slots=0 storage=0.00B dangling=0 elapsed="297.638µs"
+INFO [07-25|14:38:44.745] Regenerated local transaction journal    transactions=0 accounts=0
+INFO [07-25|14:38:44.745] Generated state snapshot                 accounts=3 slots=0 storage=194.00B dangling=0 elapsed="434.792µs"
+INFO [07-25|14:38:44.745] Gasprice oracle is ignoring threshold set threshold=2
+WARN [07-25|14:38:44.745] Error reading unclean shutdown markers   error="leveldb: not found"
+WARN [07-25|14:38:44.745] Engine API enabled                       protocol=eth
+WARN [07-25|14:38:44.745] Engine API started but chain not configured for merge yet 
+INFO [07-25|14:38:44.745] Starting peer-to-peer node               instance=Geth/v1.11.7-unstable-d5cef23e-20240724/linux-amd64/go1.22.4
+INFO [07-25|14:38:44.751] New local node record                    seq=1,721,885,924,749 id=cddc7b60d156945d ip=127.0.0.1 udp=30300 tcp=30300
+INFO [07-25|14:38:44.751] Started P2P networking                   self=enode://400b6ea4bf9e5ca830fdafa9ea4dfec5e8d9764035d4a7eaaa02e3ae445dc3d558b057d7b7dee340b7b843276305927fa193084cabeb97d4a05c7dfe853a62c2@127.0.0.1:30300
+INFO [07-25|14:38:44.752] IPC endpoint opened                      url=/home/sslab/integ/eth-data/geth.ipc
+INFO [07-25|14:38:44.752] Generated JWT secret                     path=/home/sslab/integ/eth-data/geth/jwtsecret
+INFO [07-25|14:38:44.752] HTTP server started                      endpoint=127.0.0.1:40000 auth=false prefix= cors= vhosts=localhost
+INFO [07-25|14:38:44.753] WebSocket enabled                        url=ws://127.0.0.1:8552
+INFO [07-25|14:38:44.753] HTTP server started                      endpoint=127.0.0.1:8552  auth=true  prefix= cors=localhost vhosts=localhost
+INFO [07-25|14:38:45.730] [eth/handler] handleBlockBroadcast       number=1
+INFO [07-25|14:38:45.730] Stored checkpoint snapshot to disk       number=0 hash=bf0b2e..275af1
+INFO [07-25|14:38:45.731] Propagated block                         number=1 hash=cc4c1c..50c7ea recipients=1 duration=8.494ms
+INFO [07-25|14:38:45.738] [eth/handler] handleBlockBroadcast       number=1
+INFO [07-25|14:38:45.741] [eth/handler] handleBlockBroadcast       number=1
+INFO [07-25|14:38:45.818] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:45.873] Persisted trie from memory database      nodes=10053 size=1.23MiB time=12.345871ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:45.875] Imported new chain segment               number=1 hash=cc4c1c..50c7ea blocks=1 txs=4104 mgas=178.416 elapsed=144.743ms   mgasps=1232.641 age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:45.875] Block insertion metrics                  number=1 total=135.438ms Execution=78.232ms TrieUpdate=16.924ms Validation=7.502ms BlockWrite=21.614ms OtherCommit=11.112ms
+INFO [07-25|14:38:45.875] Announced block                          number=1 hash=cc4c1c..50c7ea recipients=0 duration=152.791ms
+INFO [07-25|14:38:46.475] [eth/handler] handleBlockBroadcast       number=2
+INFO [07-25|14:38:46.479] Propagated block                         number=2 hash=7a96e2..d7070f recipients=1 duration=33.736ms
+INFO [07-25|14:38:46.490] [eth/handler] handleBlockBroadcast       number=2
+INFO [07-25|14:38:46.492] [eth/handler] handleBlockBroadcast       number=2
+INFO [07-25|14:38:46.855] [eth/handler] handleBlockBroadcast       number=3
+INFO [07-25|14:38:46.857] [eth/handler] handleBlockBroadcast       number=3
+INFO [07-25|14:38:46.865] [eth/handler] handleBlockBroadcast       number=3
+INFO [07-25|14:38:46.898] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:47.166] Persisted trie from memory database      nodes=49740 size=6.14MiB time=81.097067ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:47.174] Imported new chain segment               number=2 hash=7a96e2..d7070f blocks=1 txs=18240 mgas=768.233 elapsed=695.715ms   mgasps=1104.235 age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:47.174] Block insertion metrics                  number=2 total=664.391ms Execution=388.722ms TrieUpdate=56.138ms Validation=32.172ms BlockWrite=108.590ms OtherCommit=78.700ms
+INFO [07-25|14:38:47.174] Announced block                          number=2 hash=7a96e2..d7070f recipients=0 duration=728.592ms
+INFO [07-25|14:38:47.186] Propagated block                         number=3 hash=7d6320..1880db recipients=0 duration=357.507ms
+INFO [07-25|14:38:47.304] [eth/handler] handleBlockBroadcast       number=4
+INFO [07-25|14:38:47.304] [eth/handler] handleBlockBroadcast       number=4
+INFO [07-25|14:38:47.307] [eth/handler] handleBlockBroadcast       number=4
+INFO [07-25|14:38:47.540] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:47.755] [eth/handler] handleBlockBroadcast       number=5
+INFO [07-25|14:38:47.764] [eth/handler] handleBlockBroadcast       number=5
+INFO [07-25|14:38:47.781] [eth/handler] handleBlockBroadcast       number=5
+INFO [07-25|14:38:47.826] Persisted trie from memory database      nodes=51803 size=6.93MiB time=110.063353ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:47.834] Imported new chain segment               number=3 hash=7d6320..1880db blocks=1 txs=15861 mgas=647.479 elapsed=649.042ms   mgasps=997.591  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:47.835] Block insertion metrics                  number=3 total=622.615ms Execution=327.693ms TrieUpdate=49.073ms Validation=28.533ms BlockWrite=132.373ms OtherCommit=84.881ms
+INFO [07-25|14:38:47.835] Announced block                          number=3 hash=7d6320..1880db recipients=0 duration=1.005s
+INFO [07-25|14:38:47.845] Propagated block                         number=4 hash=274d13..8cc3c4 recipients=0 duration=576.664ms
+INFO [07-25|14:38:48.208] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:48.265] [eth/handler] handleBlockBroadcast       number=6
+INFO [07-25|14:38:48.268] [eth/handler] handleBlockBroadcast       number=6
+INFO [07-25|14:38:48.271] [eth/handler] handleBlockBroadcast       number=6
+INFO [07-25|14:38:48.529] Persisted trie from memory database      nodes=59051 size=8.21MiB time=120.430922ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:48.540] Imported new chain segment               number=4 hash=274d13..8cc3c4 blocks=1 txs=16406 mgas=655.282 elapsed=695.961ms   mgasps=941.549  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:48.540] Block insertion metrics                  number=4 total=663.558ms Execution=331.860ms TrieUpdate=68.342ms Validation=34.093ms BlockWrite=147.887ms OtherCommit=81.314ms
+INFO [07-25|14:38:48.540] Announced block                          number=4 hash=274d13..8cc3c4 recipients=0 duration=1.271s
+INFO [07-25|14:38:48.565] Propagated block                         number=5 hash=c17d84..745f9e recipients=0 duration=835.582ms
+INFO [07-25|14:38:48.772] [eth/handler] handleBlockBroadcast       number=7
+INFO [07-25|14:38:48.774] [eth/handler] handleBlockBroadcast       number=7
+INFO [07-25|14:38:48.782] [eth/handler] handleBlockBroadcast       number=7
+INFO [07-25|14:38:48.940] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:49.228] [eth/handler] handleBlockBroadcast       number=8
+INFO [07-25|14:38:49.231] [eth/handler] handleBlockBroadcast       number=8
+INFO [07-25|14:38:49.250] [eth/handler] handleBlockBroadcast       number=8
+INFO [07-25|14:38:49.294] Persisted trie from memory database      nodes=60966 size=8.79MiB time=154.33865ms  gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:49.304] Imported new chain segment               number=5 hash=c17d84..745f9e blocks=1 txs=15839 mgas=616.384 elapsed=754.381ms   mgasps=817.072  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:49.304] Block insertion metrics                  number=5 total=723.868ms Execution=359.292ms TrieUpdate=51.665ms Validation=31.140ms BlockWrite=192.175ms OtherCommit=89.537ms
+INFO [07-25|14:38:49.305] Announced block                          number=5 hash=c17d84..745f9e recipients=0 duration=1.575s
+INFO [07-25|14:38:49.319] Propagated block                         number=6 hash=d28888..febf11 recipients=0 duration=1.082s
+INFO [07-25|14:38:49.693] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:49.706] [eth/handler] handleBlockBroadcast       number=9
+INFO [07-25|14:38:49.749] [eth/handler] handleBlockBroadcast       number=9
+INFO [07-25|14:38:50.087] Persisted trie from memory database      nodes=67565 size=9.88MiB time=173.751839ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:50.098] Imported new chain segment               number=6 hash=d28888..febf11 blocks=1 txs=17036 mgas=645.997 elapsed=783.612ms   mgasps=824.382  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:50.098] Block insertion metrics                  number=6 total=750.255ms Execution=345.221ms TrieUpdate=63.278ms Validation=34.646ms BlockWrite=205.419ms OtherCommit=101.624ms
+INFO [07-25|14:38:50.098] Announced block                          number=6 hash=d28888..febf11 recipients=0 duration=1.861s
+INFO [07-25|14:38:50.108] Propagated block                         number=7 hash=5de7ef..1216c1 recipients=0 duration=1.357s
+INFO [07-25|14:38:50.247] [eth/handler] handleBlockBroadcast       number=10
+INFO [07-25|14:38:50.320] [eth/handler] handleBlockBroadcast       number=10
+INFO [07-25|14:38:50.417] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:50.749] Persisted trie from memory database      nodes=57273 size=8.92MiB time=150.60883ms  gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:50.759] Imported new chain segment               number=7  hash=5de7ef..1216c1 blocks=1 txs=13526 mgas=502.464 elapsed=651.594ms   mgasps=771.130  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:50.759] Block insertion metrics                  number=7  total=621.573ms Execution=279.639ms TrieUpdate=60.430ms Validation=27.787ms BlockWrite=171.117ms OtherCommit=82.548ms
+INFO [07-25|14:38:50.759] Announced block                          number=7  hash=5de7ef..1216c1 recipients=0 duration=2.008s
+INFO [07-25|14:38:50.778] Propagated block                         number=8  hash=5c7be7..97ba41 recipients=0 duration=1.567s
+INFO [07-25|14:38:50.858] [eth/handler] handleBlockBroadcast       number=11
+INFO [07-25|14:38:50.866] [eth/handler] handleBlockBroadcast       number=11
+INFO [07-25|14:38:51.035] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:51.307] [eth/handler] handleBlockBroadcast       number=12
+INFO [07-25|14:38:51.318] Persisted trie from memory database      nodes=49811 size=8.16MiB time=141.860976ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:51.327] Imported new chain segment               number=8  hash=5c7be7..97ba41 blocks=1 txs=11192 mgas=409.063 elapsed=560.370ms   mgasps=729.986  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:51.327] Block insertion metrics                  number=8  total=538.837ms Execution=246.922ms TrieUpdate=44.871ms Validation=21.207ms BlockWrite=160.096ms OtherCommit=65.680ms
+INFO [07-25|14:38:51.327] Announced block                          number=8  hash=5c7be7..97ba41 recipients=0 duration=2.117s
+INFO [07-25|14:38:51.335] Propagated block                         number=9  hash=e8110e..7535ab recipients=1 duration=1.654s
+INFO [07-25|14:38:51.384] [eth/handler] handleBlockBroadcast       number=12
+INFO [07-25|14:38:51.404] [eth/handler] handleBlockBroadcast       number=12
+INFO [07-25|14:38:51.723] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:51.898] [eth/handler] handleBlockBroadcast       number=13
+INFO [07-25|14:38:52.002] [eth/handler] handleBlockBroadcast       number=13
+INFO [07-25|14:38:52.149] Persisted trie from memory database      nodes=67566 size=10.51MiB time=221.711449ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:52.162] Imported new chain segment               number=9  hash=e8110e..7535ab blocks=1 txs=15857 mgas=571.956 elapsed=828.477ms   mgasps=690.371  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:52.162] Block insertion metrics                  number=9  total=798.275ms Execution=358.652ms TrieUpdate=58.576ms Validation=31.291ms BlockWrite=254.354ms OtherCommit=95.318ms
+INFO [07-25|14:38:52.163] Announced block                          number=9  hash=e8110e..7535ab recipients=0 duration=2.482s
+INFO [07-25|14:38:52.185] Propagated block                         number=10 hash=8a930c..af2be0 recipients=1 duration=1.958s
+INFO [07-25|14:38:52.468] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:52.549] [eth/handler] handleBlockBroadcast       number=14
+INFO [07-25|14:38:52.621] [eth/handler] handleBlockBroadcast       number=14
+INFO [07-25|14:38:52.844] Persisted trie from memory database      nodes=59975 size=9.74MiB  time=188.154283ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:52.856] Imported new chain segment               number=10 hash=8a930c..af2be0 blocks=1 txs=13515 mgas=481.159 elapsed=684.457ms   mgasps=702.979  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:52.857] Block insertion metrics                  number=10 total=661.637ms Execution=273.123ms TrieUpdate=63.635ms Validation=28.874ms BlockWrite=212.843ms OtherCommit=83.089ms
+INFO [07-25|14:38:52.857] Announced block                          number=10 hash=8a930c..af2be0 recipients=0 duration=2.630s
+INFO [07-25|14:38:52.866] Propagated block                         number=11 hash=cc6ab1..ea1ebe recipients=1 duration=2.039s
+INFO [07-25|14:38:53.088] [eth/handler] handleBlockBroadcast       number=15
+INFO [07-25|14:38:53.167] [eth/handler] handleBlockBroadcast       number=15
+INFO [07-25|14:38:53.180] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:53.551] Persisted trie from memory database      nodes=60156 size=9.91MiB  time=183.671896ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:53.563] Imported new chain segment               number=11 hash=cc6ab1..ea1ebe blocks=1 txs=13524 mgas=472.744 elapsed=697.951ms   mgasps=677.331  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:53.563] Block insertion metrics                  number=11 total=674.030ms Execution=290.225ms TrieUpdate=59.614ms Validation=30.680ms BlockWrite=207.182ms OtherCommit=86.270ms
+INFO [07-25|14:38:53.563] Announced block                          number=11 hash=cc6ab1..ea1ebe recipients=0 duration=2.736s
+INFO [07-25|14:38:53.572] Propagated block                         number=12 hash=bfd3e0..f273f1 recipients=0 duration=2.287s
+INFO [07-25|14:38:53.752] [eth/handler] handleBlockBroadcast       number=16
+INFO [07-25|14:38:53.964] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:54.335] Persisted trie from memory database      nodes=60841 size=10.12MiB time=187.954157ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:54.349] Imported new chain segment               number=12 hash=bfd3e0..f273f1 blocks=1 txs=13494 mgas=466.928 elapsed=777.029ms   mgasps=600.914  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:54.349] Block insertion metrics                  number=12 total=762.904ms Execution=378.513ms TrieUpdate=56.456ms Validation=27.876ms BlockWrite=215.873ms OtherCommit=84.122ms
+INFO [07-25|14:38:54.349] Announced block                          number=12 hash=bfd3e0..f273f1 recipients=0 duration=3.064s
+INFO [07-25|14:38:54.350] [eth/handler] handleBlockBroadcast       number=17
+INFO [07-25|14:38:54.369] Propagated block                         number=13 hash=406966..e7082f recipients=1 duration=2.498s
+INFO [07-25|14:38:54.396] [eth/handler] handleBlockBroadcast       number=17
+INFO [07-25|14:38:54.745] [mainLoop] Receive Event: cleanTicker 
+INFO [07-25|14:38:54.798] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:55.026] [eth/handler] handleBlockBroadcast       number=18
+INFO [07-25|14:38:55.109] [eth/handler] handleBlockBroadcast       number=18
+INFO [07-25|14:38:55.114] [eth/handler] handleBlockBroadcast       number=18
+INFO [07-25|14:38:55.303] Persisted trie from memory database      nodes=71732 size=11.62MiB time=254.161343ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:55.329] Imported new chain segment               number=13 hash=406966..e7082f blocks=1 txs=16423 mgas=560.430 elapsed=971.987ms   mgasps=576.581  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:55.329] Block insertion metrics                  number=13 total=940.269ms Execution=409.103ms TrieUpdate=71.108ms Validation=38.220ms BlockWrite=301.547ms OtherCommit=120.184ms
+INFO [07-25|14:38:55.329] Announced block                          number=13 hash=406966..e7082f recipients=0 duration=3.458s
+INFO [07-25|14:38:55.345] Propagated block                         number=14 hash=997dc4..c68f4e recipients=1 duration=2.822s
+INFO [07-25|14:38:55.654] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:55.762] [eth/handler] handleBlockBroadcast       number=19
+INFO [07-25|14:38:55.785] [eth/handler] handleBlockBroadcast       number=19
+INFO [07-25|14:38:56.019] Persisted trie from memory database      nodes=59148 size=10.15MiB time=189.484217ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:56.033] Imported new chain segment               number=14 hash=997dc4..c68f4e blocks=1 txs=12914 mgas=435.323 elapsed=688.577ms   mgasps=632.205  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:56.033] Block insertion metrics                  number=14 total=669.098ms Execution=290.024ms TrieUpdate=49.184ms Validation=26.121ms BlockWrite=213.872ms OtherCommit=89.807ms
+INFO [07-25|14:38:56.033] Announced block                          number=14 hash=997dc4..c68f4e recipients=0 duration=3.509s
+INFO [07-25|14:38:56.045] Propagated block                         number=15 hash=8b68bf..b40de9 recipients=1 duration=2.978s
+INFO [07-25|14:38:56.391] [eth/handler] handleBlockBroadcast       number=20
+INFO [07-25|14:38:56.408] [eth/handler] handleBlockBroadcast       number=20
+INFO [07-25|14:38:56.458] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:56.877] Persisted trie from memory database      nodes=63765 size=10.85MiB time=212.523545ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:56.892] Imported new chain segment               number=15 hash=8b68bf..b40de9 blocks=1 txs=14099 mgas=471.907 elapsed=851.335ms   mgasps=554.314  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:56.892] Block insertion metrics                  number=15 total=823.311ms Execution=389.752ms TrieUpdate=60.527ms Validation=29.436ms BlockWrite=240.464ms OtherCommit=103.034ms
+INFO [07-25|14:38:56.892] Announced block                          number=15 hash=8b68bf..b40de9 recipients=0 duration=3.826s
+INFO [07-25|14:38:56.914] Propagated block                         number=16 hash=d0890c..ce83d8 recipients=1 duration=3.184s
+INFO [07-25|14:38:56.958] [eth/handler] handleBlockBroadcast       number=21
+INFO [07-25|14:38:57.032] [eth/handler] handleBlockBroadcast       number=21
+INFO [07-25|14:38:57.043] [eth/handler] handleBlockBroadcast       number=21
+INFO [07-25|14:38:57.267] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:57.621] [eth/handler] handleBlockBroadcast       number=22
+INFO [07-25|14:38:57.695] [eth/handler] handleBlockBroadcast       number=22
+INFO [07-25|14:38:57.708] [eth/handler] handleBlockBroadcast       number=22
+INFO [07-25|14:38:57.720] Persisted trie from memory database      nodes=61888 size=10.70MiB time=251.901759ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:57.735] Imported new chain segment               number=16 hash=d0890c..ce83d8 blocks=1 txs=13460 mgas=446.270 elapsed=834.607ms   mgasps=534.706  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:57.735] Block insertion metrics                  number=16 total=808.575ms Execution=340.537ms TrieUpdate=52.149ms Validation=27.514ms BlockWrite=284.361ms OtherCommit=103.948ms
+INFO [07-25|14:38:57.735] Announced block                          number=16 hash=d0890c..ce83d8 recipients=1 duration=4.005s
+INFO [07-25|14:38:57.744] Propagated block                         number=17 hash=9d6c53..aac416 recipients=1 duration=3.430s
+INFO [07-25|14:38:58.170] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:58.443] [eth/handler] handleBlockBroadcast       number=23
+INFO [07-25|14:38:58.448] [eth/handler] handleBlockBroadcast       number=23
+INFO [07-25|14:38:58.655] Persisted trie from memory database      nodes=70972 size=11.98MiB time=245.248536ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:58.673] Imported new chain segment               number=17 hash=9d6c53..aac416 blocks=1 txs=15882 mgas=520.620 elapsed=930.291ms   mgasps=559.631  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:58.673] Block insertion metrics                  number=17 total=897.982ms Execution=394.283ms TrieUpdate=65.759ms Validation=33.523ms BlockWrite=277.560ms OtherCommit=126.735ms
+INFO [07-25|14:38:58.673] Announced block                          number=17 hash=9d6c53..aac416 recipients=0 duration=4.360s
+INFO [07-25|14:38:58.683] Propagated block                         number=18 hash=114161..82383f recipients=0 duration=3.685s
+INFO [07-25|14:38:59.191] [eth/handler] handleBlockBroadcast       number=24
+INFO [07-25|14:38:59.194] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:38:59.217] [eth/handler] handleBlockBroadcast       number=24
+INFO [07-25|14:38:59.708] Persisted trie from memory database      nodes=75848 size=12.72MiB time=254.263947ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:38:59.728] Imported new chain segment               number=18 hash=114161..82383f blocks=1 txs=17025 mgas=553.910 elapsed=1.045s      mgasps=529.646  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:38:59.728] Block insertion metrics                  number=18 total=1.012s    Execution=478.517ms TrieUpdate=80.775ms Validation=37.452ms BlockWrite=298.782ms OtherCommit=117.315ms
+INFO [07-25|14:38:59.728] Announced block                          number=18 hash=114161..82383f recipients=0 duration=4.730s
+INFO [07-25|14:38:59.740] Propagated block                         number=19 hash=69e356..687951 recipients=1 duration=4.002s
+INFO [07-25|14:38:59.886] [eth/handler] handleBlockBroadcast       number=25
+INFO [07-25|14:38:59.953] [eth/handler] handleBlockBroadcast       number=25
+INFO [07-25|14:38:59.995] [eth/handler] handleBlockBroadcast       number=25
+INFO [07-25|14:39:00.141] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:00.573] Persisted trie from memory database      nodes=60602 size=10.79MiB time=230.129803ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:00.589] Imported new chain segment               number=19 hash=69e356..687951 blocks=1 txs=12924 mgas=416.524 elapsed=850.004ms   mgasps=490.026  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:00.589] Block insertion metrics                  number=19 total=823.793ms Execution=375.788ms TrieUpdate=56.919ms Validation=27.028ms BlockWrite=272.431ms OtherCommit=91.544ms
+INFO [07-25|14:39:00.589] Announced block                          number=19 hash=69e356..687951 recipients=0 duration=4.852s
+INFO [07-25|14:39:00.598] Propagated block                         number=20 hash=2f2419..46d49b recipients=1 duration=4.229s
+INFO [07-25|14:39:00.619] [eth/handler] handleBlockBroadcast       number=26
+INFO [07-25|14:39:00.678] [eth/handler] handleBlockBroadcast       number=26
+INFO [07-25|14:39:00.721] [eth/handler] handleBlockBroadcast       number=26
+INFO [07-25|14:39:01.002] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:01.259] [eth/handler] handleBlockBroadcast       number=27
+INFO [07-25|14:39:01.332] [eth/handler] handleBlockBroadcast       number=27
+INFO [07-25|14:39:01.369] [eth/handler] handleBlockBroadcast       number=27
+INFO [07-25|14:39:01.461] Persisted trie from memory database      nodes=65039 size=11.47MiB time=237.90498ms  gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:01.478] Imported new chain segment               number=20 hash=2f2419..46d49b blocks=1 txs=14044 mgas=451.972 elapsed=881.100ms   mgasps=512.963  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:01.478] Block insertion metrics                  number=20 total=855.067ms Execution=378.462ms TrieUpdate=68.451ms Validation=31.043ms BlockWrite=273.826ms OtherCommit=103.218ms
+INFO [07-25|14:39:01.478] Announced block                          number=20 hash=2f2419..46d49b recipients=0 duration=5.110s
+INFO [07-25|14:39:01.506] Propagated block                         number=21 hash=ef877d..6a8b30 recipients=0 duration=4.568s
+INFO [07-25|14:39:01.840] [eth/handler] handleBlockBroadcast       number=28
+INFO [07-25|14:39:01.869] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:01.928] [eth/handler] handleBlockBroadcast       number=28
+INFO [07-25|14:39:01.952] [eth/handler] handleBlockBroadcast       number=28
+INFO [07-25|14:39:02.283] Persisted trie from memory database      nodes=61313 size=11.00MiB time=217.530239ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:02.300] Imported new chain segment               number=21 hash=ef877d..6a8b30 blocks=1 txs=12937 mgas=413.661 elapsed=812.382ms   mgasps=509.195  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:02.300] Block insertion metrics                  number=21 total=784.659ms Execution=354.320ms TrieUpdate=51.929ms Validation=27.613ms BlockWrite=245.378ms OtherCommit=105.355ms
+INFO [07-25|14:39:02.300] Announced block                          number=21 hash=ef877d..6a8b30 recipients=0 duration=5.362s
+INFO [07-25|14:39:02.308] Propagated block                         number=22 hash=d6f4c6..3aae5b recipients=0 duration=4.713s
+INFO [07-25|14:39:02.479] [eth/handler] handleBlockBroadcast       number=29
+INFO [07-25|14:39:02.572] [eth/handler] handleBlockBroadcast       number=29
+INFO [07-25|14:39:02.579] [eth/handler] handleBlockBroadcast       number=29
+INFO [07-25|14:39:02.747] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:03.213] [eth/handler] handleBlockBroadcast       number=30
+INFO [07-25|14:39:03.263] Persisted trie from memory database      nodes=72686 size=12.65MiB time=269.43593ms  gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:03.285] Imported new chain segment               number=22 hash=d6f4c6..3aae5b blocks=1 txs=15849 mgas=505.182 elapsed=977.796ms   mgasps=516.653  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:03.285] Block insertion metrics                  number=22 total=947.185ms Execution=408.410ms TrieUpdate=73.206ms Validation=35.224ms BlockWrite=309.078ms OtherCommit=121.181ms
+INFO [07-25|14:39:03.285] Announced block                          number=22 hash=d6f4c6..3aae5b recipients=0 duration=5.690s
+INFO [07-25|14:39:03.297] Propagated block                         number=23 hash=6f773b..7b2377 recipients=1 duration=4.883s
+INFO [07-25|14:39:03.325] [eth/handler] handleBlockBroadcast       number=30
+INFO [07-25|14:39:03.335] [eth/handler] handleBlockBroadcast       number=30
+INFO [07-25|14:39:03.800] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:03.937] [eth/handler] handleBlockBroadcast       number=31
+INFO [07-25|14:39:04.027] [eth/handler] handleBlockBroadcast       number=31
+INFO [07-25|14:39:04.037] [eth/handler] handleBlockBroadcast       number=31
+INFO [07-25|14:39:04.307] Persisted trie from memory database      nodes=72856 size=12.78MiB time=267.65659ms  gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:04.365] Imported new chain segment               number=23 hash=6f773b..7b2377 blocks=1 txs=15840 mgas=500.916 elapsed=1.068s      mgasps=468.666  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:04.366] Block insertion metrics                  number=23 total=1.032s    Execution=466.334ms TrieUpdate=65.834ms Validation=35.811ms BlockWrite=350.774ms OtherCommit=113.466ms
+INFO [07-25|14:39:04.366] Announced block                          number=23 hash=6f773b..7b2377 recipients=0 duration=5.952s
+INFO [07-25|14:39:04.376] Propagated block                         number=24 hash=be6502..fabe77 recipients=1 duration=5.218s
+INFO [07-25|14:39:04.568] [eth/handler] handleBlockBroadcast       number=32
+INFO [07-25|14:39:04.685] [eth/handler] handleBlockBroadcast       number=32
+INFO [07-25|14:39:04.745] [mainLoop] Receive Event: cleanTicker 
+INFO [07-25|14:39:04.898] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:05.277] [eth/handler] handleBlockBroadcast       number=33
+INFO [07-25|14:39:05.345] [eth/handler] handleBlockBroadcast       number=33
+INFO [07-25|14:39:05.453] Persisted trie from memory database      nodes=80144 size=13.85MiB time=305.674815ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:05.476] Imported new chain segment               number=24 hash=be6502..fabe77 blocks=1 txs=17617 mgas=555.045 elapsed=1.100s      mgasps=504.399  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:05.476] Block insertion metrics                  number=24 total=1.064s    Execution=485.992ms TrieUpdate=82.600ms Validation=35.536ms BlockWrite=343.362ms OtherCommit=117.183ms
+INFO [07-25|14:39:05.477] Announced block                          number=24 hash=be6502..fabe77 recipients=0 duration=6.318s
+INFO [07-25|14:39:05.488] Propagated block                         number=25 hash=31620d..5d9ed8 recipients=0 duration=5.633s
+INFO [07-25|14:39:05.989] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:06.507] Persisted trie from memory database      nodes=73877 size=13.06MiB time=271.133469ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:06.527] Imported new chain segment               number=25 hash=31620d..5d9ed8 blocks=1 txs=15846 mgas=496.187 elapsed=1.040s      mgasps=477.073  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:06.527] Block insertion metrics                  number=25 total=1.009s    Execution=470.985ms TrieUpdate=74.759ms Validation=33.234ms BlockWrite=312.671ms OtherCommit=117.746ms
+INFO [07-25|14:39:06.527] Announced block                          number=25 hash=31620d..5d9ed8 recipients=0 duration=6.672s
+INFO [07-25|14:39:06.538] Propagated block                         number=26 hash=f61bd8..6b0801 recipients=0 duration=5.953s
+INFO [07-25|14:39:06.948] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:07.423] Persisted trie from memory database      nodes=67067 size=12.21MiB time=244.838692ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:07.441] Imported new chain segment               number=26 hash=f61bd8..6b0801 blocks=1 txs=14071 mgas=438.836 elapsed=904.212ms   mgasps=485.324  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:07.441] Block insertion metrics                  number=26 total=872.680ms Execution=379.102ms TrieUpdate=67.940ms Validation=38.243ms BlockWrite=275.611ms OtherCommit=111.699ms
+INFO [07-25|14:39:07.441] Announced block                          number=26 hash=f61bd8..6b0801 recipients=0 duration=6.856s
+INFO [07-25|14:39:07.450] Propagated block                         number=27 hash=0a8e5e..426bc7 recipients=0 duration=6.208s
+INFO [07-25|14:39:07.757] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:08.118] Persisted trie from memory database      nodes=52845 size=10.19MiB time=211.277743ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:08.134] Imported new chain segment               number=27 hash=0a8e5e..426bc7 blocks=1 txs=10548 mgas=327.078 elapsed=684.368ms   mgasps=477.927  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:08.134] Block insertion metrics                  number=27 total=664.069ms Execution=286.871ms TrieUpdate=43.493ms Validation=21.540ms BlockWrite=235.522ms OtherCommit=76.559ms
+INFO [07-25|14:39:08.134] Announced block                          number=27 hash=0a8e5e..426bc7 recipients=0 duration=6.892s
+INFO [07-25|14:39:08.142] Propagated block                         number=28 hash=67638a..be23a9 recipients=0 duration=6.319s
+INFO [07-25|14:39:08.453] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:08.830] Persisted trie from memory database      nodes=53228 size=10.29MiB time=212.497432ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:08.845] Imported new chain segment               number=28 hash=67638a..be23a9 blocks=1 txs=10576 mgas=328.342 elapsed=705.034ms   mgasps=465.710  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:08.846] Block insertion metrics                  number=28 total=684.313ms Execution=292.133ms TrieUpdate=52.830ms Validation=21.784ms BlockWrite=236.145ms OtherCommit=81.350ms
+INFO [07-25|14:39:08.846] Announced block                          number=28 hash=67638a..be23a9 recipients=0 duration=7.023s
+INFO [07-25|14:39:08.853] Propagated block                         number=29 hash=1a8e81..6f4caa recipients=0 duration=6.394s
+INFO [07-25|14:39:09.252] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:09.787] Persisted trie from memory database      nodes=65111 size=12.07MiB time=325.778401ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:09.806] Imported new chain segment               number=29 hash=1a8e81..6f4caa blocks=1 txs=13492 mgas=415.156 elapsed=953.670ms   mgasps=435.324  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:09.806] Block insertion metrics                  number=29 total=926.580ms Execution=372.974ms TrieUpdate=58.948ms Validation=35.937ms BlockWrite=356.584ms OtherCommit=102.042ms
+INFO [07-25|14:39:09.806] Announced block                          number=29 hash=1a8e81..6f4caa recipients=0 duration=7.348s
+INFO [07-25|14:39:09.815] Propagated block                         number=30 hash=5e41a5..372632 recipients=0 duration=6.637s
+INFO [07-25|14:39:10.294] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:10.852] Persisted trie from memory database      nodes=74999 size=13.53MiB time=325.508975ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:10.875] Imported new chain segment               number=30 hash=5e41a5..372632 blocks=1 txs=15856 mgas=488.252 elapsed=1.060s      mgasps=460.244  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:10.875] Block insertion metrics                  number=30 total=1.017s    Execution=436.488ms TrieUpdate=66.927ms Validation=31.947ms BlockWrite=365.585ms OtherCommit=116.579ms
+INFO [07-25|14:39:10.875] Announced block                          number=30 hash=5e41a5..372632 recipients=0 duration=7.697s
+INFO [07-25|14:39:10.885] Propagated block                         number=31 hash=5abf15..e94854 recipients=0 duration=6.968s
+INFO [07-25|14:39:11.186] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:11.526] Persisted trie from memory database      nodes=53776 size=10.46MiB time=161.978821ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:11.530] Imported new chain segment               number=31 hash=5abf15..e94854 blocks=1 txs=10561 mgas=324.496 elapsed=645.458ms   mgasps=502.737  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:11.530] Block insertion metrics                  number=31 total=625.905ms Execution=281.373ms TrieUpdate=63.042ms Validation=23.220ms BlockWrite=174.976ms OtherCommit=83.240ms
+INFO [07-25|14:39:11.530] Announced block                          number=31 hash=5abf15..e94854 recipients=0 duration=7.613s
+INFO [07-25|14:39:11.537] Propagated block                         number=32 hash=0be187..adc203 recipients=0 duration=6.995s
+INFO [07-25|14:39:11.929] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:12.236] Persisted trie from memory database      nodes=58676 size=11.26MiB time=116.246681ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:12.241] Imported new chain segment               number=32 hash=0be187..adc203 blocks=1 txs=11750 mgas=360.654 elapsed=704.220ms   mgasps=512.133  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:12.241] Block insertion metrics                  number=32 total=675.004ms Execution=363.331ms TrieUpdate=49.827ms Validation=24.743ms BlockWrite=143.922ms OtherCommit=93.129ms
+INFO [07-25|14:39:12.241] Announced block                          number=32 hash=0be187..adc203 recipients=0 duration=7.699s
+INFO [07-25|14:39:12.249] Propagated block                         number=33 hash=512f1b..2e2b3b recipients=0 duration=7.004s
+INFO [07-25|14:39:12.691] No block rewards in PoA, so the state remains as is 
+INFO [07-25|14:39:13.056] Persisted trie from memory database      nodes=68646 size=12.79MiB time=158.822591ms gcnodes=0 gcsize=0.00B gctime=0s livenodes=0 livesize=0.00B
+INFO [07-25|14:39:13.073] Imported new chain segment               number=33 hash=512f1b..2e2b3b blocks=1 txs=14099 mgas=431.444 elapsed=824.050ms   mgasps=523.565  age=55y4mo1w dirty=0.00B
+INFO [07-25|14:39:13.073] Block insertion metrics                  number=33 total=796.377ms Execution=415.115ms TrieUpdate=59.433ms Validation=28.483ms BlockWrite=188.341ms OtherCommit=104.917ms
+INFO [07-25|14:39:13.073] Announced block                          number=33 hash=512f1b..2e2b3b recipients=0 duration=7.828s
+INFO [07-25|14:39:14.746] [mainLoop] Receive Event: cleanTicker 
+INFO [07-25|14:39:14.787] Looking for peers                        peercount=0 tried=0 static=0
+INFO [07-25|14:39:21.673] Got interrupt, shutting down... 
+INFO [07-25|14:39:21.673] HTTP server stopped                      endpoint=127.0.0.1:40000
+INFO [07-25|14:39:21.673] HTTP server stopped                      endpoint=127.0.0.1:8552
+INFO [07-25|14:39:21.673] IPC endpoint closed                      url=/home/sslab/integ/eth-data/geth.ipc
+INFO [07-25|14:39:21.673] Ethereum protocol stopped 
+INFO [07-25|14:39:21.673] Transaction pool stopped 
+INFO [07-25|14:39:21.783] Writing clean trie cache to disk         path=/home/sslab/integ/eth-data/geth/triecache threads=32
+INFO [07-25|14:39:21.809] Persisted the clean trie cache           path=/home/sslab/integ/eth-data/geth/triecache elapsed=25.279ms
+INFO [07-25|14:39:21.809] Blockchain stopped 
