@@ -67,7 +67,7 @@ class CommandMaker:
         return f'./narwhal-node get_enode_id --filename {filename}'
      
     @staticmethod
-    def run_primary(primary_keys, primary_network_keys, worker_keys, committee, workers, store, parameters, genesis, enode_keys, boot_nodes, eth_port=30303, debug=False):
+    def run_primary(primary_keys, primary_network_keys, worker_keys, committee, workers, store, parameters, genesis, enode_keys, boot_nodes, eth_addr="0.0.0.0:8545", devp2p_port=30303, debug=False):
         assert isinstance(primary_keys, str)
         assert isinstance(primary_network_keys, str)
         assert isinstance(worker_keys, str)
@@ -77,11 +77,11 @@ class CommandMaker:
         assert isinstance(debug, bool)
         assert isinstance(genesis, str)
         assert isinstance(boot_nodes, str)
-        assert isinstance(eth_port, int) and eth_port > 1024
+        assert isinstance(devp2p_port, int) and devp2p_port > 1024
         v = '-vvv' if debug else '-vv'
         return (f'./narwhal-node {v} run --primary-keys {primary_keys} --primary-network-keys {primary_network_keys} '
                 f'--worker-keys {worker_keys} --committee {committee} --workers {workers} --store {store} '
-                f'--parameters {parameters} primary --genesis {genesis} --eth-port {eth_port} --enode-keys {enode_keys} --boot-nodes {boot_nodes}')
+                f'--parameters {parameters} primary --genesis {genesis} --devp2p-port {devp2p_port} --eth_addr {eth_addr} --enode-keys {enode_keys} --boot-nodes {boot_nodes}')
 
     @staticmethod
     def run_worker(primary_keys, primary_network_keys, worker_keys, committee, workers, store, parameters, id, debug=False):

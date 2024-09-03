@@ -314,6 +314,9 @@ async fn run(
 
     let store = NodeStorage::reopen(store_path);
 
+    // holds the eth api server handle to keep it alive
+    let mut _eth_api_server = None;
+
     // Check whether to run a primary, a worker, or an entire authority.
     let (primary, worker) = match matches.subcommand() {
         // Spawn the primary and consensus core.
@@ -415,6 +418,61 @@ async fn run(
 
                 devp2p_network_manager = network_manager;
             }
+
+            {
+                // Pick which namespaces to expose.
+                let rpc_module_config =
+                    TransportRpcModuleConfig::default().with_http([RethRpcModule::Eth]);
+
+                //* build EthApi JSON-RPC server
+                let server = RpcModuleBuilder::default()
+                    .with_provider(blockchain_provider.clone())
+                    .with_noop_pool() // TODO:forward txs to the worker
+                    .with_network(devp2p_network_manager.clone())
+                    .with_tokio_executor()
+                    .with_evm_config(EthEvmConfig::default())
+                    .with_events(blockchain_provider.clone())
+                    .build(rpc_module_config);
+
+                let eth_addr: SocketAddr = submatches
+                    .unwrap()
+                    .value_of("eth-addr")
+                    .unwrap_or("0.0.0.0:8545")
+                    .parse()
+                    .unwrap();
+
+                // Start the server & keep it alive
+                let _handle = RpcServerConfig::http(Default::default())
+                    .with_http_address(eth_addr)
+                    .start(server)
+                    .await?;
+
+                _eth_api_server = Some(_handle);
+            }
+
+            // cfg_if::cfg_if! {
+            //     if #[cfg(feature = "nezha")] {
+            //         use sslab_execution_nezha::Nezha;
+
+            //         let concurrency_level = match matches.subcommand() {
+            //             ("primary", Some(sub_matches)) => {
+            //                 sub_matches
+            //                     .value_of("concurrency-level")
+            //                     .unwrap()
+            //                     .parse::<usize>()
+            //                     .context("The concurrency level must be a positive integer")?
+            //             }
+            //             _ => 10,
+            //         };
+
+            //         let execution_model = Nezha::new(memory_storage, concurrency_level);
+            //     }
+            //     else {
+            //         use sslab_execution_serial::SerialExecutor;
+
+            //         let execution_model = SerialExecutor::new(Arc::new(memory_storage));
+            //     }
+            // }
 
             // let preloaded_state = if cfg!(feature = "benchmark") {
             //     info!("Using preloaded state for benchmarking");

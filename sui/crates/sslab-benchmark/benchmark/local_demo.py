@@ -156,7 +156,8 @@ class LocalDemoBench:
                             PathMaker.genesis_file(),
                             PathMaker.primary_enode_key_file(i),
                             PathMaker.boot_nodes_file(),
-                            eth_port=30303 + i,
+                            eth_addr="0.0.0.0:8545",
+                            devp2p_port=30303 + i,
                             debug=debug
                         )
                         log_file = PathMaker.primary_log_file(i)
