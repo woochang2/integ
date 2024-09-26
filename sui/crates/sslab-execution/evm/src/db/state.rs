@@ -199,13 +199,17 @@ impl<DB: Database> SharableState<DB> {
                     }
                 }
                 // if not found in bundle, load it from database
-                let info = self.database.basic(address).ok().unwrap(); //TODO: process DB::Error
-                let account = match info {
-                    None => CacheAccount::new_loaded_not_existing(),
-                    Some(acc) if acc.is_empty() => {
-                        CacheAccount::new_loaded_empty_eip161(HashMap::new())
+                let info = self.database.basic(address).ok();
+                let account = if info.is_some() {
+                    match info.unwrap() {
+                        None => CacheAccount::new_loaded_not_existing(),
+                        Some(acc) if acc.is_empty() => {
+                            CacheAccount::new_loaded_empty_eip161(HashMap::new())
+                        }
+                        Some(acc) => CacheAccount::new_loaded(acc, HashMap::new()),
                     }
-                    Some(acc) => CacheAccount::new_loaded(acc, HashMap::new()),
+                } else {
+                    CacheAccount::new_loaded_not_existing()
                 };
                 entry.insert(account).into()
             }
@@ -233,13 +237,17 @@ impl<DB: Database> SharableState<DB> {
                     }
                 }
                 // if not found in bundle, load it from database
-                let info = self.database.basic(address).ok().unwrap(); //TODO: process DB::Error
-                let account = match info {
-                    None => CacheAccount::new_loaded_not_existing(),
-                    Some(acc) if acc.is_empty() => {
-                        CacheAccount::new_loaded_empty_eip161(HashMap::new())
+                let info = self.database.basic(address).ok();
+                let account = if info.is_some() {
+                    match info.unwrap() {
+                        None => CacheAccount::new_loaded_not_existing(),
+                        Some(acc) if acc.is_empty() => {
+                            CacheAccount::new_loaded_empty_eip161(HashMap::new())
+                        }
+                        Some(acc) => CacheAccount::new_loaded(acc, HashMap::new()),
                     }
-                    Some(acc) => CacheAccount::new_loaded(acc, HashMap::new()),
+                } else {
+                    CacheAccount::new_loaded_not_existing()
                 };
                 entry.insert(account).downgrade()
             }
