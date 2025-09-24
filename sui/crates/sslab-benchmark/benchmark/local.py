@@ -182,7 +182,7 @@ class LocalBench:
 
                     # Wait for all transactions to be processed.
                     if self.duration >= 0:
-                        Print.info(f'Running benchmark ({self.duration} sec)...')
+                        Print.info(f'Running auditchain...')
                         sleep(self.duration)
                         self._kill_nodes()
                         

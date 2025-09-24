@@ -12,6 +12,7 @@ use crate::{
     state_handler::StateHandler,
     synchronizer::Synchronizer,
     BlockRemover,
+    cef_client::{self, CefConfig},
 };
 
 use anemo::{codegen::InboundRequestLayer, types::Address};
@@ -182,7 +183,11 @@ impl Primary {
             .replace_registered_new_certificates_metric(registry, Box::new(new_certificates_gauge));
 
         let (tx_narwhal_round_updates, rx_narwhal_round_updates) = watch::channel(0u64);
+        // Make a dedicated round receiver for the CEF task
+        let rx_rounds_for_cef = rx_narwhal_round_updates.clone();
         let (tx_synchronizer_network, rx_synchronizer_network) = oneshot::channel();
+
+        let rx_rounds_for_cef = rx_narwhal_round_updates.clone();
 
         let synchronizer = Arc::new(Synchronizer::new(
             name.clone(),
@@ -388,6 +393,28 @@ impl Primary {
 
         info!("Primary {} listening on {}", name.encode_base64(), address);
 
+        // ---------- CEF client integration (env-configured) ----------
+        let cef_cfg = CefConfig {
+            server_addr: std::env::var("CEF_SERVER").unwrap_or_else(|_| "http://52.79.227.158:50051".into()),
+            channel:     std::env::var("CEF_CHANNEL").unwrap_or_else(|_| "channelName".into()),
+        };
+
+        // Use the network key as nodeId (same as your logs)
+        let node_id = format!("{}", PeerId(network_signer.public().0.to_bytes()));
+
+        // Public key bytes for proto; adjust if your PublicKey wrapper differs
+        let public_key_bytes = name.as_ref().to_vec();
+
+        let cef_handle = mysten_metrics::spawn_monitored_task!(async move {
+            if let Err(e) = cef_client::run_cef_loop(cef_cfg, node_id, public_key_bytes, rx_rounds_for_cef).await {
+                tracing::warn!("CEF client exited: {:?}", e);
+            }
+        });
+        
+// -------------------------------------------------------------
+
+
+
         let mut peer_types = HashMap::new();
 
         // Add my workers
@@ -514,7 +541,7 @@ impl Primary {
             connection_monitor_handle,
         ];
         handles.extend(admin_handles);
-
+        handles.push(cef_handle);
         // If a DAG component is present then we are not using the internal consensus (Bullshark/Tusk)
         // but rather an external one and we are leveraging a pure DAG structure, and more components
         // need to get initialised.

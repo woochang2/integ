@@ -18,7 +18,8 @@ fn main() -> Result<()> {
         PathBuf::from(env::var("OUT_DIR")?)
     };
 
-    let proto_files = &["proto/narwhal.proto"];
+    //let proto_files = &["proto/narwhal.proto"];
+    let proto_files = &["proto/narwhal.proto", "proto/interface.proto"];
     // let proto_files = &["proto/narwhal.proto", "proto/narwhal_gateway.proto"];
     let dirs = &["proto"];
 

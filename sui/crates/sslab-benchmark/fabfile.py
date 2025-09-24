@@ -20,21 +20,21 @@ def local(ctx, debug=False):
     ''' Run benchmarks on localhost '''
     bench_params = {
         'faults': 0,
-        'nodes': 4,
+        'nodes': 10,
         'workers': 1,
-        'rate': 10_000,
+        'rate': 1_000,
         'skewness': 0.0,
         'duration': 10,
         'execution_model': ExecutionModel.SERIAL,
     }
     node_params = {
-        'header_num_of_batches_threshold': 32,
-        'max_header_num_of_batches': 1000,
+        'header_num_of_batches_threshold': 320,
+        'max_header_num_of_batches': 10000,
         'max_header_delay': '2000ms',  # ms
         'gc_depth': 50,  # rounds
         'sync_retry_delay': '10_000ms',  # ms
         'sync_retry_nodes': 3,  # number of nodes
-        'batch_size': 500_000,  # bytes
+        'batch_size': 1_000_000,  # bytes
         'max_batch_delay': '200ms',  # ms,
         'block_synchronizer': {
             'range_synchronize_timeout': '30_000ms',
@@ -355,7 +355,7 @@ def LAN(ctx, debug=False):
         'nodes': [4],
         'workers': 1,
         'collocate': True,
-        'rate': [10_000], #[10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000],
+        'rate': [90_000], #[10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000],
         'skewness': [0.0],
         'tx_size': 270,
         'duration': 10,

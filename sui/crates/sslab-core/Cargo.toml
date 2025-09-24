@@ -61,6 +61,8 @@ rand = "0.8.5"
 tonic = "0.8.2"
 bincode = "1.3.3"
 
+jsonrpsee = { version = "0.21", features = ["server"] }
+
 [dev-dependencies]
 criterion.workspace = true
 ethers-core = "^2.0.0"

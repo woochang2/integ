@@ -29,6 +29,12 @@ use std::{
     fmt,
 };
 use tracing::warn;
+use hex;
+
+use once_cell::sync::Lazy;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::fs::{OpenOptions};
+use std::path::Path;
 
 #[cfg(test)]
 #[path = "./tests/primary_type_tests.rs"]
@@ -627,6 +633,21 @@ impl Certificate {
             .map_err(|_| DagError::InvalidSignature)?
         };
 
+        /*
+        // Convert to raw bytes
+        let sig_bytes = aggregated_signature.as_ref(); // &[u8]
+        let sig_len = sig_bytes.len();
+
+        // Now log with warn!
+        warn!(
+            "Aggregated signature size = {} bytes (expected 64). Raw hex={:?}",
+            sig_len,
+            hex::encode(sig_bytes)
+        );
+
+        //agg_sig_record(sig_len);
+        */
+
         Ok(Certificate {
             header,
             aggregated_signature,
@@ -712,6 +733,61 @@ impl Certificate {
         self.header.author.clone()
     }
 }
+
+// ---- Aggregated signature size run-wide stats ----
+static AGG_SIG_SUM:   Lazy<AtomicU64>  = Lazy::new(|| AtomicU64::new(0));
+static AGG_SIG_COUNT: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(0));
+
+/// 각 Certificate가 가진 aggregated_signature의 바이트 길이를 기록
+pub fn agg_sig_record(len_bytes: usize) {
+    AGG_SIG_SUM.fetch_add(len_bytes as u64, Ordering::Relaxed);
+    AGG_SIG_COUNT.fetch_add(1, Ordering::Relaxed);
+}
+
+/// (샘플수, 총바이트, 평균바이트)를 스냅샷으로 반환
+pub fn agg_sig_snapshot() -> Option<(usize, u64, f64)> {
+    let n = AGG_SIG_COUNT.load(Ordering::Relaxed);
+    if n == 0 { return None; }
+    let s = AGG_SIG_SUM.load(Ordering::Relaxed);
+    Some((n, s, s as f64 / n as f64))
+}
+
+/// CSV에 한 줄을 append (열: timestamp, run_label, samples, total_bytes, mean_bytes)
+pub fn agg_sig_write_csv(path: &str, run_label: &str) -> std::io::Result<()> {
+    let Some((n, s, mean)) = agg_sig_snapshot() else { return Ok(()); };
+
+    // 1) Open for append (no truncate)
+    let new_file = !Path::new(path).exists();
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?;
+
+    // 2) If the file existed but was empty (or just created), we need a header
+    let need_header = new_file || file.metadata()?.len() == 0;
+
+    // 3) Use from_writer (not from_path) so we control truncation
+    let mut wtr = csv::WriterBuilder::new()
+        .has_headers(false) // we'll write header manually
+        .from_writer(&mut file);
+
+    if need_header {
+        wtr.write_record(&["timestamp","run_label","samples","total_bytes","mean_bytes"])?;
+    }
+
+    let ts = chrono::Utc::now().to_rfc3339();
+    wtr.write_record(&[
+        ts.as_str(),
+        run_label,
+        &n.to_string(),
+        &s.to_string(),
+        &format!("{:.6}", mean),
+    ])?;
+
+    wtr.flush()?;
+    Ok(())
+}
+
 
 #[derive(
     Clone,

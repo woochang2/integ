@@ -18,6 +18,9 @@ use tokio::{sync::mpsc::Sender, task::JoinHandle};
 use tracing::{instrument, warn};
 use types::{ConsensusOutput, PreSubscribedBroadcastSender};
 
+// for Polygon L2 connection
+//use crate::l2_executor_bridge::bridge::{L2Payload, submit_to_engine_api};
+
 #[allow(dead_code)]
 pub struct SimpleConsensusHandler {
     tx_executable_consensus_output: Sender<ExecutableConsensusOutput>,
@@ -126,6 +129,13 @@ impl ExecutionState for SimpleConsensusHandler {
         }
 
         let executable_consensus_output = ExecutableConsensusOutput::new(ethereum_batches);
+
+        //warn!("///////////////////aaaaaa{:#?}", executable_consensus_output);
+        warn!("///////////////////bbbbbb Here is the end of executable_consensus_output");
+
+        // start for L2 migration
+        
+        // end for L2 migration
 
         if !executable_consensus_output.data().is_empty() {
             let _ = self

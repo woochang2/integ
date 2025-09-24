@@ -17,6 +17,8 @@ thiserror = "1.0.35"
 tokio = { workspace = true, features = ["sync"] }
 tracing = "0.1.36"
 
+tracing-subscriber = { version = "0.3", features = ["env-filter"]}
+
 config = { path = "../config", package = "narwhal-config" }
 fastcrypto.workspace = true
 crypto = { path = "../crypto", package = "narwhal-crypto" }
@@ -30,6 +32,11 @@ mysten-metrics = { path = "../../crates/mysten-metrics" }
 mysten-util-mem.workspace = true
 store = { path = "../../crates/typed-store", package = "typed-store" }
 telemetry-subscribers.workspace = true
+
+once_cell = "1"
+csv = "1"
+# optional, if you want graceful Ctrl-C flushing:
+ctrlc = "3"
 
 [dev-dependencies]
 bincode = "1.3.3"

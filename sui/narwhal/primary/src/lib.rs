@@ -20,6 +20,11 @@ mod proposer;
 mod state_handler;
 mod synchronizer;
 mod utils;
+pub mod cef_client;
+
+pub mod mesh {
+    tonic::include_proto!("mesh");
+}
 
 #[cfg(test)]
 #[path = "tests/common.rs"]
@@ -37,4 +42,5 @@ pub use crate::{
     grpc_server::metrics::EndpointMetrics,
     metrics::PrimaryChannelMetrics,
     primary::{NetworkModel, Primary, CHANNEL_CAPACITY, NUM_SHUTDOWN_RECEIVERS},
+    cef_client::*,
 };

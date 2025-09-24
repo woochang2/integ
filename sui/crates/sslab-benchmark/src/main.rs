@@ -106,6 +106,7 @@ struct MultipleClient {
     clients: Vec<Arc<Client>>,
 }
 
+/*
 impl MultipleClient {
     const MAX_RATE_PER_CLIENT: u64 = 10_000;
 
@@ -134,6 +135,67 @@ impl MultipleClient {
             };
             clients.push(Arc::new(client));
         }
+        MultipleClient { clients }
+    }
+
+    pub async fn wait(&self) {
+        join_all(self.clients.iter().cloned().map(|client| {
+            tokio::spawn(async move {
+                client.wait().await;
+            })
+        }))
+        .await;
+    }
+
+    pub async fn send(&self) -> Result<(), eyre::Report> {
+        let results = join_all(
+            self.clients
+                .iter()
+                .cloned()
+                .map(|client| tokio::spawn(async move { client.send().await })),
+        )
+        .await;
+
+        for result in results {
+            if let Err(e) = result {
+                return Err(e.into());
+            }
+        }
+
+        Ok(())
+    }
+}
+*/
+impl MultipleClient {
+    const MAX_RATE_PER_CLIENT: u64 = 10_000;
+
+    pub fn new(target: Url, rate: u64, skewness: f32, nodes: Vec<Url>) -> MultipleClient {
+        let chain_id = serde_json::from_str::<Genesis>(include_str!("../genesis.json"))
+            .unwrap()
+            .config
+            .chain_id;
+
+        // (A) per-node rate 모드: 노드마다 동일 rate
+        let per_node_rate = rate; // 각 노드가 처리할 rate
+
+        let mut clients = Vec::new();
+        for node_url in nodes.iter().cloned() {
+            // 필요시 초당 10k 이상이면 자동 분할(기존 로직 유지)
+            let num_of_clients = std::cmp::max(
+                (per_node_rate + Self::MAX_RATE_PER_CLIENT - 1) / Self::MAX_RATE_PER_CLIENT,
+                1,
+            );
+            for _ in 0..num_of_clients {
+                clients.push(Arc::new(Client {
+                    target: node_url.clone(),  // ★각 클라이언트는 서로 다른 노드로 보냄
+                    rate: per_node_rate / num_of_clients, // ★나누는 건 같은 노드 안의 클라이언트들끼리만
+                    skewness,
+                    nodes: nodes.clone(),
+                    chain_id,
+                }));
+            }
+        }
+        info!("Per-node rate enabled: {} tx/s per node, total clients {}", per_node_rate, clients.len());
         MultipleClient { clients }
     }
 

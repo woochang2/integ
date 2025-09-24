@@ -25,6 +25,7 @@ use types::{
     metered_channel::Receiver,
     Certificate, CertificateDigest, ConditionalBroadcastReceiver, Header, HeaderDigest,
     PrimaryToPrimaryClient, RequestVoteRequest, Round, Vote,
+    agg_sig_write_csv,
 };
 
 #[cfg(test)]
@@ -399,6 +400,14 @@ impl Core {
                 // Process certificates formed after receiving enough votes.
                 // TODO: move logic into Proposer.
                 Some(result) = self.propose_header_tasks.join_next() => {
+
+                    info!("Core on node {} has ended successfully.", self.name);
+                    let run_label = std::env::var("RUN_LABEL").unwrap_or_else(|_| "run1".into());
+                    // 파일 경로는 원하는 곳으로
+                    if let Err(e) = types::agg_sig_write_csv("agg_sig_costs.csv", &run_label) {
+                        tracing::error!("failed to write agg_sig CSV: {e}");
+                    }
+                    
                     match result {
                         Ok(Ok(certificate)) => {
                             self.synchronizer.accept_own_certificate(certificate, &self.network).await
@@ -409,6 +418,7 @@ impl Core {
                 },
 
                 _ = self.rx_shutdown.receiver.recv() => {
+
                     return Ok(self);
                 }
 
@@ -432,5 +442,6 @@ impl Core {
 
             Self::process_result(&result);
         }
+        
     }
 }

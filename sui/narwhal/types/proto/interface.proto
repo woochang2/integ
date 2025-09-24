@@ -1,0 +1,58 @@
+syntax = "proto3";
+package mesh; // tonic/prost use this as Rust module path
+
+service Mesh {
+  // 최초 네트워크 진입 시 committee 정보 수신을 위한 subscribe에  필수
+  // 노드가 메시지를 브로드캐스트할 때 JoinNetowrk의 stream으로 전송
+  rpc JoinNetwork (CommitteeCandidateInfo) returns (stream FinalizedCommittee);
+
+  //graceful-shutdown을 위한 option(없어도 자동 감지되어 연결해제됨)
+  rpc LeaveNetwork (NodeAccount) returns (Ack);
+
+  rpc RequestCommittee (CommitteeCandidateInfo) returns (Ack);
+
+  rpc RequestAggregatedCommit (CommitData) returns (Ack);
+}
+
+
+message NodeAccount {
+  string nodeId    = 1;
+  string publicKey = 2;
+}
+
+//예시
+message CommitteeCandidateInfo {
+  uint64 round = 1;
+  string nodeId = 2;  //노드의 libp2p 식별자(또는 구별가능한 string)
+
+  //3,4번 데이터는 VrfResult 데이터
+  string seed = 3;
+  bytes proof = 4;
+  bytes publicKey = 5;
+  bytes commit = 6;
+
+  string ipAddress = 7; //노드의 IP 주소
+  string port = 8;      //노드의 포트 번호
+  string channel = 9;   //패브릭 채널 이름
+}
+
+//예시 
+message FinalizedCommittee {
+  uint64 round = 1;
+  //노드를 식별할 수 있는 unique한 값들로 구성된 리스트
+  string channel = 2;
+  repeated string nodeId = 3;
+  string leader_nodeId = 4; //client의 경우 테스트코드이므로, 고정 리더 사용
+
+  bytes aggregatedCommit = 5;
+  bytes aggregatedPubKey = 6;
+  repeated bytes publicKeys = 7 ;  //cosi.NewCosigners(pubKeys, nil)에 필요한 데이터
+  bytes rosterHash = 8;
+}
+
+message CommitData {
+  uint64 round = 1;
+  bytes commit = 2;
+}
+
+message Ack { bool ok = 1; }

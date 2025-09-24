@@ -31,11 +31,15 @@ serde = { version = "1.0.144", features = ["derive"] }
 thiserror = "1.0.35"
 tokio = { workspace = true, features = ["sync", "rt", "macros", "time", "test-util"] }
 tokio-util = { version = "0.7.4", features = ["codec"] }
+tokio-stream = "0.1"
 tonic = "0.8.2"
 tower = { version = "0.4.13", features = ["full"] }
 tracing = "0.1.36"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+tracing-appender = "0.2"
 tap = "1.0.1"
-
+sha2 = "0.10"
+curve25519-dalek = { version = "4", default-features = false, features = ["alloc"] }
 
 consensus = { path = "../consensus", package = "narwhal-consensus" }
 fastcrypto.workspace = true
@@ -71,6 +75,11 @@ worker = { path = "../worker", package = "narwhal-worker" }
 storage = { path = "../storage", package = "narwhal-storage" }
 reqwest = { version = "0.11.13", default_features= false, features = ["json", "rustls-tls"] }
 telemetry-subscribers = { path = "../../crates/telemetry-subscribers"}
+
+
+[build-dependencies]
+prost-build = "0.11.1"
+tonic-build = { version = "0.8.2", features = [ "prost", "transport" ] }
 
 [features]
 benchmark = []

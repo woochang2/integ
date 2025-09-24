@@ -16,7 +16,8 @@ use std::{
 };
 use storage::CertificateStore;
 use tokio::{sync::watch, task::JoinHandle};
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, warn, instrument};
+use tracing_subscriber::{fmt, EnvFilter};
 use types::{
     metered_channel, Certificate, CertificateDigest, CommittedSubDag, ConditionalBroadcastReceiver,
     ConsensusStore, Round, Timestamp,
@@ -355,9 +356,61 @@ where
                         .consensus_dag_rounds
                         .with_label_values(&[])
                         .set(self.state.dag.len() as i64);
+
+                    let dag_bytes = get_dag_size_in_bytes(&self.state.dag);
+
+                    // number of certificates currently in the DAG
+                    let num_certs: usize = self.state
+                        .dag
+                        .values()                // HashMap<PublicKey, (...)>
+                        .map(|m| m.len())
+                        .sum();
+
+                    let avg_bytes_per_cert = if num_certs > 0 { dag_bytes / num_certs } else { 0 };
+
+                    warn!(
+                        "avg committee auditing cost = {} bytes",
+                        avg_bytes_per_cert
+                    );
+                    
+                    // ---- header-only metrics over the current DAG ----
+                    let header_total_bytes = get_total_header_bytes_in_dag(&self.state.dag);
+                    let num_headers = num_certs; // one header per certificate
+                    let avg_header_bytes = if num_headers > 0 { header_total_bytes / num_headers } else { 0 };
+
+                    warn!(
+                        "avg consensus message cost = {} bytes",
+                        avg_header_bytes
+                    );
+
                 },
 
             }
         }
     }
 }
+
+pub fn get_dag_size_in_bytes( dag: &BTreeMap<Round, HashMap<PublicKey, (CertificateDigest, Certificate)>> ) -> usize { dag.values() .flat_map(|x| x.values()) .map(|(_, cert)| bincode::serialize(cert).unwrap_or_default().len()) .sum() }
+
+/// Sum of serialized HEADER bytes of all certificates currently in the DAG.
+pub fn get_total_header_bytes_in_dag(
+    dag: &BTreeMap<Round, HashMap<PublicKey, (CertificateDigest, Certificate)>>
+) -> usize {
+    dag.values()
+        .flat_map(|m| m.values())
+        .map(|(_, cert)| bincode::serialized_size(&cert.header).unwrap_or(0) as usize)
+        .sum()
+}
+
+/// Sum of serialized HEADER bytes for a specific round.
+pub fn get_round_header_bytes(
+    dag: &BTreeMap<Round, HashMap<PublicKey, (CertificateDigest, Certificate)>>,
+    round: Round,
+) -> usize {
+    dag.get(&round)
+        .into_iter()
+        .flat_map(|m| m.values())
+        .map(|(_, cert)| bincode::serialized_size(&cert.header).unwrap_or(0) as usize)
+        .sum()
+}
+
