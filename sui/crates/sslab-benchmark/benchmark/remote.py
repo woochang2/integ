@@ -169,7 +169,7 @@ class Bench:
             f'(cd {self.settings.repo_name}/sui/crates/sslab-benchmark && {compile_cmd})',  
         ]
         if include_execution:
-            compile_cmd = ' '.join(CommandMaker.compile(execution_model=execution_model, LAN=True))
+            compile_cmd = ' '.join(CommandMaker.compile(execution_model=execution_model, LAN=False))
             cmd += [f'(cd {self.settings.repo_name}/sui/crates/sslab-core && {compile_cmd})']
         else:
             cmd += [f'(cd {self.settings.repo_name}/sui/narwhal/node && {compile_cmd})']
