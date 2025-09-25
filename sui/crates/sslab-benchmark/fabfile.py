@@ -295,7 +295,7 @@ def create_aws_key(ctx):
         Print.error(e)
 
 @task
-def create(ctx, nodes=2):
+def create(ctx, nodes=4):
     ''' Create a testbed'''
     try:
         InstanceManager.make().create_instances(nodes)
@@ -403,17 +403,17 @@ def remote(ctx, debug=False):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [4],
+        'nodes': 4,
         'workers': 1,
-        'collocate': False,
-        'rate': 700_000, #[100_000, 200_000, 300_000, 400_000, 500_000, 600_000],
-        'skewness': [0.0],
+        'collocate': True,
+        'rate': 5_000, #[100_000, 200_000, 300_000, 400_000, 500_000, 600_000],
+        'skewness': 0.0,
         'tx_size': 270,
         'duration': 100,
         'runs': 1,
-        'execution_model': [ExecutionModel.NEZHA, ExecutionModel.BLOCKSTM],
+        'execution_model': ExecutionModel.SERIAL,
     }
-    for batch_size in [500_000]:
+    for batch_size in [50_000]:
         node_params = {
             'header_num_of_batches_threshold': 32,
             'max_header_num_of_batches': 1000,

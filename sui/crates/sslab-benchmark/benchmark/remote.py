@@ -75,8 +75,8 @@ class Bench:
 
             # This is missing from the Rocksdb installer (needed for Rocksdb).
             'sudo apt-get install -y clang',
-            'sudo apt-get install pkg-config',
-            'sudo apt-get install libssl-dev',
+            'sudo apt-get install -y pkg-config',
+            'sudo apt-get install -y libssl-dev',
 
             # Clone the repo.
             'sudo apt-get install -y git tmux protobuf-compiler',
@@ -315,7 +315,8 @@ class Bench:
             threads = []
             for i, addresses in enumerate(workers_addresses):
                 for (id, address) in addresses:
-                    host = address.split(':')[1].strip("/")
+                    #host = address.split(':')[1].strip("/")
+                    host = self._host_from_address(address)
                     cmd = CommandMaker.run_client(
                         address,
                         rate_share,
@@ -376,7 +377,23 @@ class Bench:
         for _ in progress_bar(range(20), prefix=f'Running benchmark ({duration} sec):'):
             sleep(ceil(duration / 20))
         self.kill(hosts=hosts, delete_logs=False)
-        
+
+    def _host_from_address(self, address: str) -> str:
+        a = address.strip()
+        # strip scheme if present
+        if '://' in a:
+            a = a.split('://', 1)[1]
+        a = a.strip('/')
+        parts = a.split('/')
+
+        # Multiaddr: /ip4/<ip>/tcp/<port>/http
+        for i, p in enumerate(parts):
+            if p in ('ip4', 'ip6') and i + 1 < len(parts):
+                return parts[i + 1]
+
+        # host:port or just host
+        return a.split(':', 1)[0]
+    
         
     def _download_worker_logs(self, i, id, address):
         host = address.split(':')[1].strip("/")
