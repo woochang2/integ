@@ -166,16 +166,16 @@ class Bench:
             f'(cd {self.settings.repo_name} && git reset --hard origin/{self.settings.branch})',
             # f'(cd {self.settings.repo_name} && git pull -f)',
             'source $HOME/.cargo/env',
-            f'(cd {self.settings.repo_name}/crates/sslab-benchmark && {compile_cmd})',  
+            f'(cd {self.settings.repo_name}/sui/crates/sslab-benchmark && {compile_cmd})',  
         ]
         if include_execution:
             compile_cmd = ' '.join(CommandMaker.compile(execution_model=execution_model, LAN=True))
-            cmd += [f'(cd {self.settings.repo_name}/crates/sslab-core && {compile_cmd})']
+            cmd += [f'(cd {self.settings.repo_name}/sui/crates/sslab-core && {compile_cmd})']
         else:
-            cmd += [f'(cd {self.settings.repo_name}/narwhal/node && {compile_cmd})']
+            cmd += [f'(cd {self.settings.repo_name}/sui/narwhal/node && {compile_cmd})']
 
         cmd += [CommandMaker.alias_binaries(
-            f'./{self.settings.repo_name}/target/release/', include_execution
+            f'./{self.settings.repo_name}/sui/target/release/', include_execution
         )]
         cmd = ' && '.join(cmd)
         with ThreadPoolExecutor() as executor:

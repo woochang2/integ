@@ -353,7 +353,7 @@ def LAN(ctx, debug=False):
     bench_params = {
         'faults': 0,
         'nodes': [4],
-        'workers': 1,
+        'workers': 4,
         'collocate': True,
         'rate': [90_000], #[10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000],
         'skewness': [0.0],
@@ -404,12 +404,12 @@ def remote(ctx, debug=False):
     bench_params = {
         'faults': 0,
         'nodes': 4,
-        'workers': 1,
+        'workers': 4,
         'collocate': True,
         'rate': 5_000, #[100_000, 200_000, 300_000, 400_000, 500_000, 600_000],
         'skewness': 0.0,
         'tx_size': 270,
-        'duration': 100,
+        'duration': 10,
         'runs': 1,
         'execution_model': ExecutionModel.SERIAL,
     }
