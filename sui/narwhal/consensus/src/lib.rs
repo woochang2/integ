@@ -9,6 +9,7 @@
 
 pub mod auditchain;
 pub mod bullshark;
+pub mod cut_engine;
 pub mod consensus;
 #[cfg(test)]
 #[path = "tests/consensus_utils.rs"]

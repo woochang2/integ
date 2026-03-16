@@ -3,8 +3,8 @@
 use crate::metrics::new_registry;
 use crate::{try_join_all, FuturesUnordered, NodeError};
 use config::{Committee, Parameters, SharedWorkerCache};
-use consensus::auditchain::AuditChain;
 use consensus::bullshark::Bullshark;
+use consensus::cut_engine::{CutEngine, CutStyle};
 use consensus::dag::Dag;
 use consensus::metrics::{ChannelMetrics, ConsensusMetrics};
 use consensus::Consensus;
@@ -322,18 +322,19 @@ impl PrimaryNodeInner {
 
         // Spawn the consensus core who only sequences transactions.
         // Select consensus engine via CONSENSUS_ENGINE env var:
-        //   "auditchain"          -> Relaxed Mempool cut (top 2f+1, H_min)
-        //   "auditchain_inclusive" -> Autobahn-style inclusive cut (all n lanes)
-        //   _  (default)          -> Bullshark
+        //   "relaxed"   -> Relaxed Mempool cut (top 2f+1, H_min) - excludes slow validators
+        //   "inclusive"  -> Autobahn-style inclusive cut (all n lane tips)
+        //   "adaptive"  -> Adaptive: switches between relaxed/inclusive based on height disparity
+        //   _  (default) -> Bullshark (standard DAG consensus)
         let consensus_engine = std::env::var("CONSENSUS_ENGINE").unwrap_or_default();
         let consensus_handles = match consensus_engine.as_str() {
-            "auditchain" => {
-                info!("Using AuditChain consensus (Relaxed Mempool cut)");
-                let ordering_engine = AuditChain::new(
+            "relaxed" => {
+                info!("Using Relaxed Mempool cut engine (conservative, top 2f+1, H_min)");
+                let ordering_engine = CutEngine::new(
                     committee.clone(),
                     store.consensus_store.clone(),
                     parameters.gc_depth,
-                    false, // inclusive = false -> Relaxed Mempool style
+                    CutStyle::Relaxed,
                 );
                 Consensus::spawn(
                     committee.clone(),
@@ -348,13 +349,34 @@ impl PrimaryNodeInner {
                     consensus_metrics.clone(),
                 )
             }
-            "auditchain_inclusive" => {
-                info!("Using AuditChain consensus (Autobahn-style inclusive cut)");
-                let ordering_engine = AuditChain::new(
+            "inclusive" => {
+                info!("Using Autobahn-style inclusive cut engine (all n lane tips)");
+                let ordering_engine = CutEngine::new(
                     committee.clone(),
                     store.consensus_store.clone(),
                     parameters.gc_depth,
-                    true, // inclusive = true -> Autobahn-style
+                    CutStyle::Inclusive,
+                );
+                Consensus::spawn(
+                    committee.clone(),
+                    store.consensus_store.clone(),
+                    store.certificate_store.clone(),
+                    shutdown_receivers.pop().unwrap(),
+                    rx_new_certificates,
+                    tx_committed_certificates,
+                    tx_consensus_round_updates,
+                    tx_sequence,
+                    ordering_engine,
+                    consensus_metrics.clone(),
+                )
+            }
+            "adaptive" => {
+                info!("Using Adaptive cut engine (switches relaxed/inclusive by disparity)");
+                let ordering_engine = CutEngine::new(
+                    committee.clone(),
+                    store.consensus_store.clone(),
+                    parameters.gc_depth,
+                    CutStyle::Adaptive,
                 );
                 Consensus::spawn(
                     committee.clone(),

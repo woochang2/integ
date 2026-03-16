@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.3.4)  16 MAR 2026 17:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.3.4)  16 MAR 2026 17:44
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1404,51 +1404,69 @@ surrounding objects on input line 59.
 Class acmart Warning: \vspace should only be used to provide space above/below 
 surrounding objects on input line 62.
 
+
+Class acmart Warning: \vspace should only be used to provide space above/below 
+surrounding objects on input line 65.
+
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 9.0pt on input line 65.
+(Font)              scaled to size 9.0pt on input line 68.
 LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 9.0pt on input line 70.
+(Font)              scaled to size 9.0pt on input line 73.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/b/n' will be
-(Font)              scaled to size 9.0pt on input line 72.
+(Font)              scaled to size 9.0pt on input line 75.
 
 Class acmart Warning: \vspace should only be used to provide space above/below 
-surrounding objects on input line 83.
+surrounding objects on input line 86.
 
 
 Class acmart Warning: \vspace should only be used to provide space above/below 
-surrounding objects on input line 85.
+surrounding objects on input line 88.
+
+LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 90
+.
+(/usr/share/texlive/texmf-dist/tex/latex/inconsolata/t1zi4.fd
+File: t1zi4.fd 2018/01/14 T1/zi4 (Inconsolata)
+)
+LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
+(Font)              scaled to size 10.0pt on input line 90.
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `zi4' (encoding: T1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+
+Overfull \hbox (41.03975pt too wide) in paragraph at lines 90--91
+\T1/LinuxLibertineT-TLF/m/n/10 (-20) We im-ple-ment all three cut strate-gies a
+s plug-gable \T1/zi4/m/n/10 ConsensusProtocol
+ []
 
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 6.0pt on input line 117.
+(Font)              scaled to size 6.0pt on input line 123.
 LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 6.5pt on input line 117.
+(Font)              scaled to size 6.5pt on input line 123.
 
-Class acmart Warning: A possible image without description on input line 162.
+Class acmart Warning: A possible image without description on input line 171.
 
-
-Class acmart Warning: \vspace should only be used to provide space above/below 
-surrounding objects on input line 170.
-
-
-Class acmart Warning: \vspace should only be used to provide space above/below 
-surrounding objects on input line 172.
-
-
-Underfull \vbox (badness 1546) has occurred while \output is active []
-
- [1.1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
+[1.1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
 
 ]
 
 Class acmart Warning: \vspace should only be used to provide space above/below 
-surrounding objects on input line 176.
+surrounding objects on input line 179.
 
 
 Class acmart Warning: \vspace should only be used to provide space above/below 
-surrounding objects on input line 179.
+surrounding objects on input line 181.
+
+
+Class acmart Warning: \vspace should only be used to provide space above/below 
+surrounding objects on input line 185.
+
+
+Class acmart Warning: \vspace should only be used to provide space above/below 
+surrounding objects on input line 188.
 
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
-(Font)              scaled to size 8.0pt on input line 183.
+(Font)              scaled to size 8.0pt on input line 192.
 (/usr/share/texlive/texmf-dist/tex/generic/stringenc/se-pdfdoc.def
 File: se-pdfdoc.def 2019/11/29 v1.12 stringenc: PDFDocEncoding
 )
@@ -1458,39 +1476,54 @@ File: se-utf8.def 2019/11/29 v1.12 stringenc: UTF-8
 
 Class acmart Warning: Some images may lack descriptions.
 
+
+Overfull \vbox (1.86pt too high) has occurred while \output is active []
+
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
-(Font)              scaled to size 10.0pt on input line 196.
+(Font)              scaled to size 10.0pt on input line 205.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
-(Font)              scaled to size 8.0pt on input line 196.
-[2.2] (./main.aux)
-Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: FF9F0C271415F0C5F88DFE9F8CCB84A3;744.
+(Font)              scaled to size 8.0pt on input line 205.
+ [2.2]
+(./main.aux)
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+
+Package rerunfilecheck Warning: File `main.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `main.out':
+(rerunfilecheck)             Before: FF9F0C271415F0C5F88DFE9F8CCB84A3;744
+(rerunfilecheck)             After:  954BAC2A597ECC4F8C8695A92431BBB5;744.
  ) 
 Here is how much of TeX's memory you used:
- 41861 strings out of 480247
- 923072 string characters out of 5896152
- 1365833 words of memory out of 5000000
- 58589 multiletter control sequences out of 15000+600000
- 624997 words of font info for 318 fonts, out of 8000000 for 9000
+ 41900 strings out of 480247
+ 923785 string characters out of 5896152
+ 1369833 words of memory out of 5000000
+ 58618 multiletter control sequences out of 15000+600000
+ 625586 words of font info for 322 fonts, out of 8000000 for 9000
  175 hyphenation exceptions out of 8191
- 84i,21n,131p,1001b,2510s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 84i,21n,131p,1001b,2512s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc}{/us
-r/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_oexx6f.enc}{/usr/shar
-e/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_7grukw.enc}{/usr/share/texl
-ive/texmf-dist/fonts/enc/dvips/libertine/lbtn_nh77jq.enc}{/usr/share/texlive/te
-xmf-dist/fonts/enc/dvips/libertine/lbtn_76gpa5.enc}</usr/share/texlive/texmf-di
-st/fonts/type1/public/newtx/LibertineMathMI.pfb></usr/share/texlive/texmf-dist/
-fonts/type1/public/newtx/LibertineMathMI7.pfb></usr/share/texlive/texmf-dist/fo
-nts/type1/public/libertine/LinBiolinumT.pfb></usr/share/texlive/texmf-dist/font
-s/type1/public/libertine/LinBiolinumTB.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/libertine/LinLibertineT.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/libertine/LinLibertineTB.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/libertine/LinLibertineTI.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/newtx/txsys.pfb>
-Output written on main.pdf (2 pages, 375413 bytes).
+r/share/texlive/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-4.enc}{/usr/share/
+texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_oexx6f.enc}{/usr/share/texliv
+e/texmf-dist/fonts/enc/dvips/libertine/lbtn_7grukw.enc}{/usr/share/texlive/texm
+f-dist/fonts/enc/dvips/libertine/lbtn_nh77jq.enc}{/usr/share/texlive/texmf-dist
+/fonts/enc/dvips/libertine/lbtn_76gpa5.enc}</usr/share/texlive/texmf-dist/fonts
+/type1/public/inconsolata/Inconsolata-zi4r.pfb></usr/share/texlive/texmf-dist/f
+onts/type1/public/newtx/LibertineMathMI.pfb></usr/share/texlive/texmf-dist/font
+s/type1/public/newtx/LibertineMathMI7.pfb></usr/share/texlive/texmf-dist/fonts/
+type1/public/libertine/LinBiolinumT.pfb></usr/share/texlive/texmf-dist/fonts/ty
+pe1/public/libertine/LinBiolinumTB.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/public/libertine/LinLibertineT.pfb></usr/share/texlive/texmf-dist/fonts/type
+1/public/libertine/LinLibertineTB.pfb></usr/share/texlive/texmf-dist/fonts/type
+1/public/libertine/LinLibertineTI.pfb></usr/share/texlive/texmf-dist/fonts/type
+1/public/newtx/txsys.pfb>
+Output written on main.pdf (2 pages, 384312 bytes).
 PDF statistics:
- 115 PDF objects out of 1000 (max. 8388607)
- 89 compressed objects within 1 object stream
+ 120 PDF objects out of 1000 (max. 8388607)
+ 93 compressed objects within 1 object stream
  17 named destinations out of 1000 (max. 500000)
- 84045 words of extra memory for PDF output out of 89155 (max. 10000000)
+ 84557 words of extra memory for PDF output out of 89155 (max. 10000000)
 

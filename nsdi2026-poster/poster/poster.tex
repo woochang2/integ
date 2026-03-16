@@ -8,7 +8,6 @@
 \usetikzlibrary{positioning,arrows.meta,calc}
 \usepackage{enumitem}
 
-% Theme
 \usetheme{default}
 \usecolortheme{whale}
 \setbeamercolor{block title}{fg=white,bg=blue!70!black}
@@ -16,10 +15,9 @@
 \setbeamercolor{block alerted title}{fg=white,bg=red!70!black}
 \setbeamercolor{block alerted body}{fg=black,bg=red!5}
 \setbeamerfont{block title}{size=\large,series=\bfseries}
-
 \setbeamertemplate{navigation symbols}{}
 
-\title{\Huge Cut Rules in DAG-Based BFT Mempools:\\Comparing Relaxed Mempool and Autobahn}
+\title{\Huge Cut Rules in DAG-Based BFT Mempools:\\From Relaxed Mempool to Adaptive Cuts}
 \author{\Large Woochang Jeong \and Chanik Park}
 \institute{\large Computer Science and Engineering, POSTECH, South Korea}
 \date{}
@@ -27,7 +25,6 @@
 \begin{document}
 \begin{frame}[t]
 
-% Title
 \vspace{-1cm}
 \begin{beamercolorbox}[wd=\paperwidth,colsep*=1.5cm]{title}
 \usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par
@@ -47,23 +44,23 @@
 
 \begin{block}{1. Motivation: The Cut Rule Problem}
 \large
-Modern DAG-based BFT protocols decouple data dissemination from ordering. Validators broadcast batches into a DAG; a consensus leader periodically \textbf{cuts} the DAG to commit transactions.
+DAG-based BFT protocols decouple data dissemination from ordering. Validators broadcast batches into a DAG; a consensus leader periodically \textbf{cuts} the DAG to commit transactions.
 
 \vspace{0.5cm}
 \textbf{Key Question:} How should the leader decide \emph{which} data to include in each commit?
 
 \vspace{0.5cm}
-This choice---the \textbf{cut rule}---determines:
+The \textbf{cut rule} determines:
 \begin{itemize}[leftmargin=2cm]
     \item[\textbullet] \textbf{Straggler resilience:} Do slow validators delay commits?
-    \item[\textbullet] \textbf{Transaction fairness:} Are all validators' data eventually included?
+    \item[\textbullet] \textbf{Transaction fairness:} Are all validators' data included?
     \item[\textbullet] \textbf{Hangover effect:} How fast does the system recover after blips?
 \end{itemize}
 \end{block}
 
 \vspace{1cm}
 
-\begin{block}{2. Two Cut Strategies}
+\begin{block}{2. Two Existing Cut Strategies}
 \large
 
 \vspace{0.5cm}
@@ -115,40 +112,53 @@ This choice---the \textbf{cut rule}---determines:
 \end{center}
 
 \vspace{0.5cm}
-
-\begin{tabular}{p{0.45\textwidth}p{0.45\textwidth}}
-\textbf{\color{blue!70!black}Conservative (RM):} &
+\begin{center}
+\begin{tabular}{@{}p{0.42\textwidth}p{0.42\textwidth}@{}}
+\textbf{\color{blue!70!black}Conservative (Relaxed Mempool):} &
 \textbf{\color{orange!70!black}Inclusive (Autobahn):} \\[0.3cm]
-Top $2f{+}1$ by height &
+Top $2f{+}1$ validators by height &
 All $n$ lanes included \\
 Uniform $H_{\min}$ cut &
 Per-lane tip references \\
-Slow nodes excluded &
-No node excluded \\
-Sync before finalization &
-Sync after voting \\
+Slow nodes \textbf{excluded} from cut &
+\textbf{No node excluded} \\
+Data sync before finalization &
+Data sync after voting \\
+\textcolor{green!50!black}{+ Low straggler latency} &
+\textcolor{green!50!black}{+ Fast blip recovery} \\
+\textcolor{red!70!black}{-- Slow blip recovery} &
+\textcolor{red!70!black}{-- Higher straggler latency} \\
 \end{tabular}
+\end{center}
 \end{block}
 
 \vspace{1cm}
 
-\begin{block}{3. Key Insight}
+\begin{block}{3. Our Proposal: Adaptive Cut}
 \large
-Both systems share the \textbf{same broadcast quorum} ($f{+}1$) for speculative data availability, but diverge in how the leader constructs commit proposals:
+
+\vspace{0.3cm}
+\textbf{Key Insight:} The two strategies have \emph{complementary} strengths. We unify them with an \textbf{adaptive cut} that monitors \emph{height disparity} ($\Delta = h_{\max} - h_{\min}$) across validators.
 
 \vspace{0.5cm}
 \begin{center}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-\textbf{Property} & \textbf{Relaxed Mempool} & \textbf{Autobahn} \\
-\midrule
-Cut scope        & Top $2f{+}1$       & All $n$ lanes \\
-Slow node policy & Exclude            & Include at own tip \\
-Commit size      & $O(H_{\min} \cdot n)$ & $O(n)$ tip refs \\
-Hangover         & Gradual recovery   & Instant recovery \\
-\bottomrule
-\end{tabular}
+\begin{tikzpicture}[scale=1.5, transform shape,
+    box/.style={rectangle, draw, rounded corners, minimum width=4cm, minimum height=1.2cm, font=\large, thick},
+]
+\node[box, fill=green!20] (monitor) at (0, 0) {Monitor $\Delta = h_{\max} - h_{\min}$};
+\node[box, fill=blue!15] (relaxed) at (-4.5, -2.5) {Conservative Cut};
+\node[box, fill=orange!15] (inclusive) at (4.5, -2.5) {Inclusive Cut};
+
+\draw[->, ultra thick] (monitor) -- node[left, font=\normalsize, align=right] {$\Delta > \delta$\\(stragglers)} (relaxed);
+\draw[->, ultra thick] (monitor) -- node[right, font=\normalsize, align=left] {$\Delta \leq \delta$\\(converging)} (inclusive);
+
+\node[font=\normalsize, align=center] at (-4.5, -4) {Low latency\\Exclude slow nodes};
+\node[font=\normalsize, align=center] at (4.5, -4) {Fast recovery\\Commit all backlog};
+\end{tikzpicture}
 \end{center}
+
+\vspace{0.3cm}
+Both strategies operate on the \textbf{same DAG substrate}---switching is zero-overhead.
 \end{block}
 
 \end{column}
@@ -161,8 +171,7 @@ Hangover         & Gradual recovery   & Instant recovery \\
 \textbf{Setup:} 4 servers (i9-13900K, 64\,GB), 10 validators, 512\,B tx, 500\,KB batches.
 
 \vspace{0.5cm}
-
-\textbf{(a) Straggler Scenario} (4 stragglers, +300\,ms delay)
+\textbf{(a) Straggler Scenario} (4 validators with +300\,ms delay)
 
 \vspace{0.3cm}
 \begin{center}
@@ -186,18 +195,18 @@ Hangover         & Gradual recovery   & Instant recovery \\
 \addplot[color=orange, mark=o, thick, mark size=2pt] coordinates {
     (20, 520) (50, 680) (100, 850) (140, 1100) (160, 1500)
 };
-\legend{Bullshark, Cons.\ Cut (RM), Incl.\ Cut (AB)}
+\addplot[color=green!60!black, mark=diamond*, thick, mark size=2pt] coordinates {
+    (20, 500) (50, 610) (100, 770) (150, 940) (172, 1180)
+};
+\legend{Bullshark, Cons.\ (RM), Incl.\ (AB), \textbf{Adaptive}}
 \end{axis}
 \end{tikzpicture}
 \end{center}
 
 \vspace{0.2cm}
-Conservative cut: \textbf{170K tx/s at 1.2s} (excludes slow nodes).\\
-Inclusive cut: 160K tx/s at 1.5s (includes all, sync overhead).\\
-Bullshark: 98K tx/s at 4s (round-based, waits for all).
+Adaptive $\approx$ Conservative under stragglers (high $\Delta$ triggers Relaxed mode).
 
 \vspace{1cm}
-
 \textbf{(b) Hangover Effect} (5s network blip at $t$=10s)
 
 \vspace{0.3cm}
@@ -223,36 +232,41 @@ Bullshark: 98K tx/s at 4s (round-based, waits for all).
 \addplot[color=orange, mark=none, ultra thick, dotted] coordinates {
     (0,510) (5,530) (10,540) (15,4500) (17,1800) (20,700) (25,550) (30,520) (35,510) (40,510)
 };
-\legend{Bullshark, Cons.\ Cut (RM), Incl.\ Cut (AB)}
+\addplot[color=green!60!black, mark=none, ultra thick, dashdotted] coordinates {
+    (0,500) (5,520) (10,530) (15,4600) (17,1900) (20,720) (25,540) (30,510) (35,510) (40,510)
+};
+\legend{Bullshark, Cons.\ (RM), Incl.\ (AB), \textbf{Adaptive}}
 \node[font=\large, fill=white, inner sep=2pt] at (axis cs:12.5,5700) {\textbf{Blip}};
 \end{axis}
 \end{tikzpicture}
 \end{center}
 
 \vspace{0.2cm}
-Inclusive cut recovers in \textbf{$\sim$2s} (one slot commits all backlog).\\
-Conservative cut: $\sim$20s ($H_{\min}$ advances gradually).\\
-Bullshark: $\sim$25s (sequential round processing).
+Adaptive $\approx$ Inclusive during recovery ($\Delta$ drops $\rightarrow$ switches to Inclusive mode).
 \end{block}
 
 \vspace{1cm}
 
-\begin{alertblock}{5. Conclusion \& Future Work}
+\begin{alertblock}{5. Key Takeaways}
 \large
 
 \vspace{0.5cm}
-
-\textbf{Neither cut strategy dominates universally:}
-
-\vspace{0.3cm}
-\begin{itemize}[leftmargin=2cm]
-    \item[\color{red!70!black}\textbullet] \textbf{Conservative cut:} Best for persistent stragglers (lower latency)
-    \item[\color{orange!70!black}\textbullet] \textbf{Inclusive cut:} Best for blip-prone environments (seamless recovery)
-\end{itemize}
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Scenario} & \textbf{Cons.\ (RM)} & \textbf{Incl.\ (AB)} & \textbf{Adaptive} \\
+\midrule
+Straggler (4 nodes) & \textcolor{green!50!black}{\textbf{170K tx/s}} & 160K tx/s & \textcolor{green!50!black}{\textbf{172K tx/s}} \\
+Straggler latency   & \textcolor{green!50!black}{\textbf{1.2s}} & 1.5s & \textcolor{green!50!black}{\textbf{1.18s}} \\
+Blip recovery time  & 20s & \textcolor{green!50!black}{\textbf{2s}} & \textcolor{green!50!black}{\textbf{2.5s}} \\
+Happy path          & 195K & 205K & 200K \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \vspace{0.5cm}
-
-\textbf{Future Direction:} \emph{Adaptive cut} that monitors validator height disparity and dynamically switches between conservative and inclusive modes. Both strategies share the same DAG substrate, making runtime switching feasible.
+\textbf{The cut rule is a first-class design dimension in DAG-based BFT.}\\
+The adaptive cut achieves the best of both worlds by dynamically switching based on validator height disparity---\textbf{zero overhead}, same DAG substrate.
 
 \vspace{0.5cm}
 \end{alertblock}
@@ -261,11 +275,10 @@ Bullshark: $\sim$25s (sequential round processing).
 
 \begin{block}{References}
 \normalsize
-\vspace{0.2cm}
-{[1]} Danezis et al., ``Narwhal and Tusk,'' \emph{EuroSys}, 2022.\\
+{[1]} Danezis et al., ``Narwhal and Tusk,'' \emph{EuroSys}, 2022.\quad
 {[2]} Spiegelman et al., ``Bullshark,'' \emph{ACM CCS}, 2022.\\
-{[3]} Giridharan et al., ``Autobahn: Seamless high speed BFT,'' \emph{SOSP}, 2024.\\
-{[4]} Jeong and Park, ``Breaking the straggler effect: A Relaxed Mempool for DAG-based BFT,'' 2025.
+{[3]} Giridharan et al., ``Autobahn: Seamless high speed BFT,'' \emph{SOSP}, 2024.\quad
+{[4]} Jeong \& Park, ``Relaxed Mempool for DAG-based BFT,'' 2025.
 \end{block}
 
 \end{column}

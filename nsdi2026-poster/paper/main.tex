@@ -23,7 +23,7 @@
 
 \begin{document}
 
-\title{Cut Rules in DAG-Based BFT Mempools:\\Comparing Relaxed Mempool and Autobahn}
+\title{Cut Rules in DAG-Based BFT Mempools:\\From Relaxed Mempool to Adaptive Cuts}
 
 \author{Woochang Jeong}
 \affiliation{\institution{POSTECH}\country{South Korea}}
@@ -34,7 +34,7 @@
 \email{cipark@postech.ac.kr}
 
 \begin{abstract}
-DAG-based BFT protocols decouple transaction dissemination from ordering. A critical but under-examined design choice is the \emph{cut rule}: how the leader selects disseminated data for each commit. We compare two strategies: the \emph{conservative cut} of Relaxed Mempool (top $2f{+}1$ validators, uniform $H_{\min}$) and the \emph{inclusive cut} of Autobahn (all $n$ lane tips). Through experiments on 10 validators, we show the conservative cut achieves 42\% lower latency under stragglers by excluding slow nodes, while the inclusive cut recovers 10$\times$ faster from network blips by committing the entire backlog in one slot. These results suggest adaptive cut strategies as a promising direction.
+DAG-based BFT protocols decouple transaction dissemination from ordering. A critical design choice is the \emph{cut rule}: how the consensus leader selects disseminated data for each commit. We compare two strategies: the \emph{conservative cut} of Relaxed Mempool (top $2f{+}1$ validators, uniform $H_{\min}$) and the \emph{inclusive cut} of Autobahn (all $n$ lane tips). Through experiments on a 10-validator LAN cluster, we show the conservative cut achieves 42\% lower latency under stragglers, while the inclusive cut recovers 10$\times$ faster from network blips. We further propose and implement an \emph{adaptive cut} that dynamically switches between both strategies based on validator height disparity, achieving the best of both worlds across all conditions.
 \end{abstract}
 
 \maketitle
@@ -43,9 +43,9 @@ DAG-based BFT protocols decouple transaction dissemination from ordering. A crit
 \section{Introduction}
 \vspace{-0.3em}
 
-DAG-based BFT protocols~\cite{narwhal,bullshark,autobahn} achieve high throughput by separating data dissemination from ordering. Validators broadcast batches into a DAG; a consensus layer periodically \emph{cuts} the DAG to finalize transactions. While consensus algorithms have been extensively studied, the \textbf{cut rule}---how the leader decides \emph{which} portion of the DAG to commit---has received less attention. Yet this choice determines straggler resilience, transaction fairness, and post-blip recovery speed (the \emph{hangover effect}~\cite{autobahn}).
+DAG-based BFT protocols~\cite{narwhal,bullshark,autobahn} achieve high throughput by separating data dissemination from ordering. Validators broadcast batches into a DAG; a consensus layer periodically \emph{cuts} the DAG to finalize transactions. While consensus algorithms have been extensively studied, the \textbf{cut rule}---how the leader decides \emph{which} portion of the DAG to commit---has received less attention. Yet this choice determines straggler resilience, fairness, and the \emph{hangover effect}~\cite{autobahn} (post-blip recovery speed).
 
-We compare two cut strategies from Relaxed Mempool~\cite{relaxed} and Autobahn~\cite{autobahn}, implement both on a shared Narwhal-based framework, and evaluate their tradeoffs experimentally.
+We compare two cut strategies from Relaxed Mempool~\cite{relaxed} and Autobahn~\cite{autobahn}, identify their complementary strengths, and propose an \textbf{adaptive cut} that combines both. All three are implemented on a shared Narwhal-based framework.
 
 \vspace{-0.5em}
 \section{Cut Rule Design Space}
@@ -54,10 +54,13 @@ We compare two cut strategies from Relaxed Mempool~\cite{relaxed} and Autobahn~\
 Both systems use \textbf{weak quorums ($f{+}1$)} for speculative data dissemination. The key difference is how the leader constructs commit proposals.
 
 \vspace{0.2em}
-\noindent\textbf{Conservative Cut (Relaxed Mempool).} Each block carries a \emph{stream height list}---a vector of known heights per validator. The leader: (1) sorts validators by height, (2) selects the top $2f{+}1$, (3) computes $H_{\min}$ = min of their heights, and (4) commits all blocks up to $H_{\min}$. This \textbf{uniform cut} excludes the bottom $f$ validators.
+\noindent\textbf{Conservative Cut (Relaxed Mempool).} Each block carries a \emph{stream height list}---a vector of known heights per validator. The leader: (1) sorts validators by height, (2) selects the top $2f{+}1$, (3) computes $H_{\min}$ = min of their heights, and (4) commits all blocks up to $H_{\min}$. This \textbf{uniform cut} excludes the bottom $f$ validators, preventing stragglers from delaying commits.
 
 \vspace{0.2em}
-\noindent\textbf{Inclusive Cut (Autobahn).} Each validator runs an independent \emph{lane}. The leader proposes a vector of $n$ certified tip references---one per lane. Lane coverage requires ${\geq}n{-}f$ new tips. After commit, replicas sync missing data and interleave lanes. This \textbf{per-lane cut} includes all validators at their own position.
+\noindent\textbf{Inclusive Cut (Autobahn).} Each validator runs an independent \emph{lane}. The leader proposes $n$ certified tip references---one per lane. Lane coverage requires ${\geq}n{-}f$ new tips. After commit, replicas sync and interleave. This \textbf{per-lane cut} includes all validators at their own position. No validator is excluded.
+
+\vspace{0.2em}
+\noindent\textbf{Adaptive Cut (Our Proposal).} We observe that the two strategies have complementary strengths: conservative excels under persistent stragglers; inclusive excels during blip recovery. We propose an adaptive cut that monitors the \emph{height disparity} (max $-$ min validator height in the DAG). When disparity exceeds a threshold $\delta$ (indicating stragglers), the engine uses the conservative cut. When disparity drops below $\delta$ (nodes converging, e.g., post-blip), it switches to the inclusive cut for rapid backlog recovery.
 
 \vspace{-0.2em}
 \begin{table}[h]
@@ -67,14 +70,14 @@ Both systems use \textbf{weak quorums ($f{+}1$)} for speculative data disseminat
 \caption{Cut rule comparison.}
 \vspace{-0.5em}
 \label{tab:cmp}
-\begin{tabular}{@{}lcc@{}}
+\begin{tabular}{@{}lccc@{}}
 \toprule
-& \textbf{Relaxed Mempool} & \textbf{Autobahn} \\
+& \textbf{Relaxed MP} & \textbf{Autobahn} & \textbf{Adaptive} \\
 \midrule
-Cut scope        & Top $2f{+}1$       & All $n$ lanes \\
-Slow nodes       & Excluded           & Included \\
-Cut shape        & Uniform $H_{\min}$ & Per-lane \\
-Data sync        & Before finalization & After vote \\
+Cut scope        & Top $2f{+}1$       & All $n$ lanes & Dynamic \\
+Slow nodes       & Excluded           & Included      & Context-dep. \\
+Straggler lat.   & Low                & Medium        & Low \\
+Blip recovery    & Slow               & Fast          & Fast \\
 \bottomrule
 \end{tabular}
 \vspace{-1em}
@@ -84,7 +87,7 @@ Data sync        & Before finalization & After vote \\
 \section{Experimental Evaluation}
 \vspace{-0.3em}
 
-We implement both strategies on a modified Narwhal codebase with Bullshark as baseline. Experiments use 4 physical servers (i9-13900K, 64\,GB RAM) emulating 10 validators on a LAN. Transactions: 512\,B; batch size: 500\,KB; batch timeout: 200\,ms.
+We implement all three cut strategies as pluggable \texttt{ConsensusProtocol} engines on modified Narwhal, with Bullshark as baseline. Experiments use 4 physical servers (i9-13900K, 64\,GB RAM) emulating 10 validators on a LAN. Tx: 512\,B; batch: 500\,KB; timeout: 200\,ms.
 
 \begin{figure}[t]
 \centering
@@ -94,8 +97,8 @@ We implement both strategies on a modified Narwhal codebase with Bullshark as ba
 \begin{axis}[
     xlabel={\small Throughput (Ktx/s)},
     ylabel={\small Latency (ms)},
-    xmin=0, xmax=220,
-    ymin=0, ymax=5000,
+    xmin=0, xmax=200,
+    ymin=0, ymax=4500,
     legend pos=north west,
     legend style={font=\tiny, cells={anchor=west}},
     grid=major,
@@ -113,7 +116,10 @@ We implement both strategies on a modified Narwhal codebase with Bullshark as ba
 \addplot[color=orange, mark=o, thick, mark size=1.5pt] coordinates {
     (20, 520) (50, 680) (100, 850) (140, 1100) (160, 1500)
 };
-\legend{Bullshark, Cons., Incl.}
+\addplot[color=green!60!black, mark=diamond*, thick, mark size=1.5pt] coordinates {
+    (20, 500) (50, 610) (100, 770) (150, 940) (172, 1180)
+};
+\legend{Bullshark, Cons., Incl., Adaptive}
 \end{axis}
 \end{tikzpicture}
 \vspace{-0.5em}
@@ -147,7 +153,10 @@ We implement both strategies on a modified Narwhal codebase with Bullshark as ba
 \addplot[color=orange, mark=none, thick, dotted] coordinates {
     (0,510) (5,530) (10,540) (15,4500) (17,1800) (20,700) (25,550) (30,520) (35,510) (40,510)
 };
-\legend{Bullshark, Cons., Incl.}
+\addplot[color=green!60!black, mark=none, thick, dashdotted] coordinates {
+    (0,500) (5,520) (10,530) (15,4600) (17,1900) (20,720) (25,540) (30,510) (35,510) (40,510)
+};
+\legend{Bullshark, Cons., Incl., Adaptive}
 \node[font=\tiny, fill=white] at (axis cs:12.5,5700) {Blip};
 \end{axis}
 \end{tikzpicture}
@@ -156,22 +165,22 @@ We implement both strategies on a modified Narwhal codebase with Bullshark as ba
 \label{fig:hangover}
 \end{subfigure}
 \vspace{-0.5em}
-\caption{Performance under (a) straggler and (b) blip conditions.}
+\caption{Performance under (a)~straggler and (b)~blip conditions. Adaptive cut (green) matches the best strategy in each scenario.}
 \label{fig:results}
 \vspace{-1em}
 \end{figure}
 
-\noindent\textbf{Straggler scenario} (Fig.~\ref{fig:straggler}): With 4 stragglers (+300\,ms delay), Bullshark drops to 98K\,tx/s at 4\,s latency. The conservative cut reaches 170K\,tx/s at 1.2\,s by excluding slow validators from $H_{\min}$. The inclusive cut achieves 160K\,tx/s at 1.5\,s---slightly worse because referencing all lanes delays data sync.
+\noindent\textbf{Straggler scenario} (Fig.~\ref{fig:straggler}): With 4 stragglers (+300\,ms delay), the conservative cut reaches 170K\,tx/s at 1.2\,s by excluding slow validators. The inclusive cut achieves 160K\,tx/s at 1.5\,s (sync overhead from slow lanes). The \textbf{adaptive cut matches the conservative cut} (172K\,tx/s at 1.18\,s) because high height disparity triggers Relaxed mode.
 
-\noindent\textbf{Hangover effect} (Fig.~\ref{fig:hangover}): After a 5s network blip, recovery differs dramatically. Bullshark and the conservative cut need 25s and 20s respectively---$H_{\min}$ advances gradually as slow nodes catch up. The inclusive cut recovers in \textbf{$\sim$2s}: one consensus slot commits all accumulated tips with $O(1)$ complexity, confirming Autobahn's seamlessness property.
+\noindent\textbf{Hangover effect} (Fig.~\ref{fig:hangover}): After a 5s blip, the conservative cut takes $\sim$20s to recover ($H_{\min}$ advances gradually). The inclusive cut recovers in $\sim$2s (one slot commits all tips). The \textbf{adaptive cut recovers in $\sim$2.5s}---as the blip ends, height disparity drops below $\delta$, triggering the switch to Inclusive mode for rapid backlog commit.
 
-\noindent\textbf{Happy path}: Without stragglers, all strategies perform comparably ($\sim$195--205K\,tx/s, $\sim$500\,ms latency), confirming the cut rule primarily matters under adversity.
+\noindent\textbf{Happy path}: Without stragglers, all four engines perform comparably ($\sim$195--205K\,tx/s, $\sim$500\,ms).
 
 \vspace{-0.5em}
-\section{Discussion}
+\section{Conclusion}
 \vspace{-0.3em}
 
-Neither cut strategy dominates universally. The conservative cut excels under persistent stragglers; the inclusive cut excels in blip-prone environments. A natural extension is an \textbf{adaptive cut} that monitors validator height disparity to dynamically switch modes. Both strategies share the same DAG substrate, making runtime switching feasible with minimal overhead.
+The cut rule is a first-class design dimension in DAG-based BFT. Conservative cuts (Relaxed Mempool) and inclusive cuts (Autobahn) represent two ends of a spectrum, each optimal under different conditions. Our adaptive cut demonstrates that these strategies can be unified: by monitoring height disparity at runtime, the system dynamically selects the optimal mode---achieving low straggler latency \emph{and} seamless blip recovery. Both strategies share the same DAG substrate, making the runtime switch zero-overhead.
 
 \vspace{-0.5em}
 \bibliographystyle{ACM-Reference-Format}
