@@ -7,6 +7,7 @@
     rust_2021_compatibility
 )]
 
+pub mod auditchain;
 pub mod bullshark;
 pub mod consensus;
 #[cfg(test)]
